@@ -122,7 +122,9 @@ def test_engine_failure_is_recorded_as_the_outcome(
     result = only_result(results_dir)
     assert result["outcome"] == outcome
     assert message in result["error"]
-    assert result["runs"] == []
+    [run] = result["runs"]
+    assert run["outcome"] == outcome
+    assert "load_seconds" not in run
     assert result["env"]["engine"]["name"] == "fake"
 
 

@@ -40,6 +40,13 @@ def _installed_commit() -> str | None:
     return json.loads(direct_url).get("vcs_info", {}).get("commit_id")
 
 
+def _mlx_peak_memory_bytes() -> int | None:
+    import mlx.core as mx
+
+    get_peak = getattr(mx, "get_peak_memory", None) or getattr(mx.metal, "get_peak_memory", None)
+    return None if get_peak is None else int(get_peak())
+
+
 class _Stage:
     def __init__(self, stage: str, on_event: EventSink):
         self.stage, self.on_event = stage, on_event
@@ -197,4 +204,14 @@ class MlxYueEngine:
         )
         result.save_artifacts(output_dir)
         files = sorted(p for p in output_dir.rglob("*") if p.is_file())
-        return RunOutput(output_dir / "audio.flac", len(audio) / SAMPLE_RATE, files)
+        return RunOutput(
+            output_dir / "audio.flac",
+            len(audio) / SAMPLE_RATE,
+            files,
+            lazy_load_seconds={
+                key: float(seconds)
+                for key, seconds in pipe.load_timing.items()
+                if key.endswith("_load_seconds")
+            },
+            engine_peak_memory_bytes=_mlx_peak_memory_bytes(),
+        )

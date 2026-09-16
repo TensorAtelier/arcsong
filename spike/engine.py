@@ -44,6 +44,10 @@ class RunOutput:
     audio_path: Path
     audio_seconds: float
     files: list[Path] = field(default_factory=list)
+    # Weights an Engine loads lazily inside a Stage, e.g. {"nar_load_seconds": 4.2}.
+    lazy_load_seconds: dict[str, float] = field(default_factory=dict)
+    # The Engine's own peak-memory figure (MLX: mx.get_peak_memory()), if it has one.
+    engine_peak_memory_bytes: int | None = None
 
 
 def never_cancelled() -> bool:

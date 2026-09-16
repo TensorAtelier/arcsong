@@ -30,12 +30,18 @@ class FakeEngine:
     def __init__(
         self,
         *,
-        stage_seconds: float = 0.0,
+        stage_seconds: float | dict[str, float] = 0.0,
         audio_seconds: float = 0.5,
         fail_in: str | None = None,
         failure: str = "error",
+        load_seconds: float = 0.0,
+        lazy_load_seconds: dict[str, float] | None = None,
+        peak_memory_bytes: int | None = None,
     ):
         self.stage_seconds = stage_seconds
+        self.load_seconds = load_seconds
+        self.lazy_load_seconds = dict(lazy_load_seconds or {})
+        self.peak_memory_bytes = peak_memory_bytes
         self.audio_seconds = audio_seconds
         self.fail_in = fail_in
         self.failure = failure
@@ -63,12 +69,14 @@ class FakeEngine:
 
     def _stage(self, stage: str, on_event: EventSink, value: Any) -> Any:
         on_event(StageEvent(stage, "start"))
-        time.sleep(self.stage_seconds)
+        seconds = self.stage_seconds
+        time.sleep(seconds.get(stage, 0.0) if isinstance(seconds, dict) else seconds)
         on_event(StageEvent(stage, "end"))
         return value
 
     def load(self, precision: str) -> None:
         self._maybe_fail("load")
+        time.sleep(self.load_seconds)
         self.precision = precision
 
     def plan(self, request, *, cancelled: CancelCheck = never_cancelled, on_event=ignore_event):
@@ -119,4 +127,17 @@ class FakeEngine:
             out.setsampwidth(2)
             out.setframerate(SAMPLE_RATE)
             out.writeframes(pcm)
-        return RunOutput(audio_path, len(pcm) / 2 / SAMPLE_RATE, [audio_path])
+        score_path = output_dir / "score.abc"
+        score_path.write_text(score["score"])
+        semantic_path = output_dir / "semantic.bin"
+        semantic_path.write_bytes(bytes(semantic))
+        latents_path = output_dir / "extra" / "latents.bin"
+        latents_path.parent.mkdir(exist_ok=True)
+        latents_path.write_bytes(bytes(64 * len(latents)))
+        return RunOutput(
+            audio_path,
+            len(pcm) / 2 / SAMPLE_RATE,
+            [audio_path, score_path, semantic_path, latents_path],
+            lazy_load_seconds=dict(self.lazy_load_seconds),
+            engine_peak_memory_bytes=self.peak_memory_bytes,
+        )

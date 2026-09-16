@@ -13,3 +13,7 @@ Read first: spec, ledger D-017 and D-019; `CONTEXT.md`; every file in the result
 - [ ] The recommendation walks D-017's criteria in order and states the Engine
 - [ ] PLAN.md's M0 checkboxes are ticked with a link to the report; no other PLAN.md section is rewritten
 - [ ] `uv run pytest -q` and `uv run ruff check .` pass
+
+## Comments
+
+**Driver, after ticket 02 (from QA):** (1) The 250 ms sampled `peak_footprint_bytes` reads 0.02–0.66 GiB below macOS's `lifetime_peak_footprint_bytes`; quote the lifetime figure, or both. (2) `spike/results/doctor-mlx-clip-bf16-32.json` (ticket 01) uses the older per-run shape (no `run`/`outcome`/memory fields) and `SCHEMA_VERSION` was not bumped; the report generator must tolerate both shapes, or doctor results can be regenerated. (3) LM Studio and ComfyUI were running throughout the mlx timing matrix (`env.model_servers`); run-to-run synthesis time varied up to ~25%. Say so next to the timing numbers.
