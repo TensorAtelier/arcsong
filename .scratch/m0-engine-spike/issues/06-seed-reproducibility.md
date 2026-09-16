@@ -12,3 +12,7 @@ Read first: spec, ledger D-011; `CONTEXT.md`.
 - [ ] Results JSON exists for both Engines with warm/warm and warm/fresh comparisons and the first diverging Stage (or "none")
 - [ ] One same-seed listening pair per Engine exists, with paths recorded in the results
 - [ ] `uv run pytest -q` and `uv run ruff check .` pass
+
+## Comments
+
+**Driver, after ticket 01:** the `clip` case (upstream quickstart request) already supplies a Score (`abc`) and caps semantic tokens at 400, so running it never exercises planning: no Score gets written. The `song` case has no `abc`, so planning runs. For any check that needs the planning Stage or compares a generated Score, use a variant of `clip` without `abc` (a short-lyrics request with planning mode `full`), or `song`. Keep `clip` itself unchanged: its doctor results already exist.

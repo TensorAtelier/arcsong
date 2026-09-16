@@ -11,3 +11,7 @@ Read first: spec, ledger D-010, D-015; `CONTEXT.md`.
 - [ ] Tests through `FakeEngine` (with scripted cancel responsiveness per Stage) cover latency calculation, the reuse check and the leftover-file check
 - [ ] Results JSON exists for both Engines, with per-Stage cancel latency, a reuse-after-cancel outcome and leftover files
 - [ ] `uv run pytest -q` and `uv run ruff check .` pass
+
+## Comments
+
+**Driver, after ticket 01:** the `clip` case (upstream quickstart request) already supplies a Score (`abc`) and caps semantic tokens at 400, so running it never exercises planning: no Score gets written. The `song` case has no `abc`, so planning runs. For any check that needs the planning Stage or compares a generated Score, use a variant of `clip` without `abc` (a short-lyrics request with planning mode `full`), or `song`. Keep `clip` itself unchanged: its doctor results already exist.
