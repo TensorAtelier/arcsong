@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+spike/runs/
+spike/vendor/
+spike/models/
+spike/listen/
+*.npy
+*.flac
+*.wav
+*.mp3
+*.gguf
+*.safetensors
