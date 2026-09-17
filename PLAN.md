@@ -166,6 +166,7 @@ waveforms, star/pick, then "Finalize" the pick: re-synthesize its saved Semantic
 noise at 32 steps (~361 s for a 3-min song instead of a full 486 s re-render).
 
 ### M3 — Score workflow (#7)
+Done 2026-09-17 (`.scratch/m3-score/REPORT.md`): "Score only" runs the planning Stage alone in seconds; the Score view renders notation (abcjs) with a melody preview from a vendored local piano, an ABC editor with live re-render, mlx-Yue's own validation message and a diff against the original, "Remove chords", and "Render song from this Score" (planning skipped), verified on real weights. Schema v3 stores a Score job's ABC.
 "Plan only" button → notation view (abcjs) + MIDI melody preview → ABC text editor with
 live re-render and validation (the port has ABC preflight + `strip-chords`) → render song
 from edited score. Show plan diff vs original.
