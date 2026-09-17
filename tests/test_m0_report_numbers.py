@@ -19,6 +19,12 @@ def span(values, fmt="{:.1f}") -> str:
     return f"{fmt.format(min(values))}–{fmt.format(max(values))}"
 
 
+def assert_occurs(text: str, number: str, times: int) -> None:
+    """Every prose occurrence must carry the recomputed value: editing any one of them to a
+    different number lowers the count and fails."""
+    assert text.count(number) == times, (number, text.count(number), times)
+
+
 def interpretation() -> str:
     """The report with generated blocks removed, so matches come from hand-written text."""
     text = REPORT.read_text()
@@ -29,14 +35,15 @@ def test_draft_final_arithmetic_matches_results():
     t = load("draft-final-mlx-song-8bit-8-32.json")["timing"]
     draft, final, direct = t["draft_seconds"], t["final_seconds"], t["direct_seconds"]
     text = interpretation()
-    for number in (
-        f"{draft:.1f}", f"{final:.1f}", f"{direct:.1f}", f"{t['final_to_direct_ratio']:.3f}",
-        f"{draft + final:.1f}", f"{draft + final - direct:.1f}",
-        f"{2 * draft + final:.1f}", f"{2 * direct:.1f}",
+    for number, times in (
+        (f"{draft:.1f}", 4), (f"{final:.1f}", 4), (f"{direct:.1f}", 4),
+        (f"{t['final_to_direct_ratio']:.3f}", 1), (f"{draft + final:.1f}", 1),
+        (f"{draft + final - direct:.1f}", 2), (f"{2 * draft + final:.1f}", 1),
+        (f"{2 * direct:.1f}", 1),
     ):  # fmt: skip
-        assert number in text, number
+        assert_occurs(text, number, times)
     fallback = load("draft-final-audiocpp-song-q8_0-8-32.json")["draft_to_final"]["fallback"]
-    assert f"{fallback['same_seed_rerun']['seconds']:.1f}" in text
+    assert_occurs(text, f"{fallback['same_seed_rerun']['seconds']:.1f}", 2)
 
 
 def test_cancel_ranges_match_results():
@@ -47,7 +54,7 @@ def test_cancel_ranges_match_results():
             for path in sorted(RESULTS.glob(f"cancel-{engine}-*.json"))
             for run in json.loads(path.read_text())["runs"]
         ]
-        assert span(latencies, "{:.3f}") in text, engine
+        assert_occurs(text, span(latencies, "{:.3f}"), 2)
 
 
 def test_memory_and_planning_ranges_match_results():
@@ -58,23 +65,23 @@ def test_memory_and_planning_ranges_match_results():
             runs = load(f"timing-mlx-song-{precision}-{steps}.json")["runs"]
             peaks[precision, steps] = [r["lifetime_peak_footprint_bytes"] for r in runs]
     every = [b / GIB for runs in peaks.values() for b in runs]
-    assert span(every, "{:.2f}") in text
+    assert_occurs(text, span(every, "{:.2f}"), 1)
     savings = [
         (bf16 - q) / GIB
         for steps in (8, 32)
         for bf16, q in zip(peaks["bf16", steps], peaks["8bit", steps], strict=True)
     ]
-    assert span(savings, "{:.2f}") in text
+    assert_occurs(text, span(savings, "{:.2f}"), 2)
     q8 = [
         r["lifetime_peak_footprint_bytes"] / GIB
         for s in (8, 32)
         for r in load(f"timing-audiocpp-song-q8_0-{s}.json")["runs"]
     ]
-    assert span(q8, "{:.2f}") in text
+    assert_occurs(text, span(q8, "{:.2f}"), 4)
     planning = [
         r["stage_seconds"]["planning"]
         for p in ("bf16", "8bit")
         for s in (8, 32)
         for r in load(f"timing-mlx-song-{p}-{s}.json")["runs"]
     ]
-    assert span(planning) in text
+    assert_occurs(text, span(planning), 2)

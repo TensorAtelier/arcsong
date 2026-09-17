@@ -56,7 +56,7 @@ it before M1.
 | Must-have | mlx-Yue | audio.cpp v0.8.0 |
 |---|---|---|
 | Cancel returns within ~5 s without a process kill, or a kill-and-reload the UI can live with | **Pass, no kill.** In-process cancel returned in 0.002–0.129 s in all four Stages; the next Take ran in the same process with no reload (`cancel-mlx-*.json`). | **Pass, by kill.** Killing the CLI returned in 0.065–0.120 s; the next Take ran in 11.2–13.9 s for `clip` (`cancel-audiocpp-*.json`). There is nothing to reload because every Take is a new process that loads the model anyway (`repro-audiocpp-clip-q8_0-32-planned.json`). |
-| Per-Stage progress | **Pass.** Stage start and end come live from the staged API (`cancel-mlx-*.json`: the Stage was seen before cancel in 4 of 4 Stages). Progress within a Stage: not measured. | **Pass, Stage level only.** Stage starts are inferred from the `--log` line that ends the Stage before (4 of 4 Stages seen, `cancel-audiocpp-*.json`). In the `song` run log (`spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log`, not a results file) semantic generation and synthesis log nothing until they end, so no % bar inside the two longest Stages; decoding logs one line per VAE chunk (6 lines). |
+| Per-Stage progress | **Pass.** Stage start and end come live from the staged API (`cancel-mlx-*.json`: the Stage was seen before cancel in 4 of 4 Stages). Progress within a Stage: not measured. | **Pass, Stage level only.** Stage starts are inferred from the `--log` line that ends the Stage before (4 of 4 Stages seen, `cancel-audiocpp-*.json`). In the `song` run log (`spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log`, not a results file) synthesis logs nothing until it ends and semantic generation logs at most a KV-cache refill line mid-Stage (useless for progress), so no % bar inside the two longest Stages; decoding logs one line per VAE chunk (6 lines). |
 | Run planning alone (Score for #7) | **Pass.** `plan()` is a public Stage method and its Score is exported and was compared (`repro-mlx-clip-8bit-32-planned.json`), so "plan only → approve → render" stops after planning. | **Fail.** The CLI only runs a whole Take, and the Score is "not exported by the Engine" (`repro-audiocpp-clip-q8_0-32-planned.json`). audio.cpp PR #561 "Export generated Yue2 ABC plan as a score artifact" (merged 2026-09-15 23:09 UTC, after the v0.8.0 tag; source: GitHub) attaches the generated Score as `score.abc` to the result of a *full run*. That lets a UI show and edit a Score after a render and re-import it through `abc`, but it adds no way to stop after planning: plan-first is still a whole render on audio.cpp. |
 | Re-synthesize saved Semantic tokens (#5) | **Pass.** The Final re-synthesized the Draft's 4618 Semantic tokens and noise and matched a direct 32-step render bit for bit (`draft-final-mlx-song-8bit-8-32.json`). | **Fail.** `unsupported`: the CLI neither exports nor accepts Semantic tokens, so a Final is a full re-run (`draft-final-audiocpp-song-q8_0-8-32.json`). PR #561 does not change this. |
 
@@ -282,9 +282,10 @@ arrive only when a Stage ends.
 
 **Progress within a Stage was not measured.** No results file records how often mlx-Yue's
 `on_token` or step callbacks fire, so whether they map to a % bar is still open.
-audio.cpp's `--log` is silent inside planning's Score writing, semantic generation and
-synthesis: in the `song` run log `spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log`
-(a run directory, not a results file), synthesis logged nothing between its setup lines and
+audio.cpp's `--log` gives no usable progress inside planning's Score writing, semantic generation or
+synthesis. In the `song` run log `spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log`
+(a run directory, not a results file), semantic generation logged only a KV-cache refill
+(lines stamped 18:11:49, about 111 s into the Stage) and synthesis logged nothing between its setup lines and
 its end, which the results file puts at 607.8 s. Decoding does log inside the Stage: that
 log has 6 `framework.oobleck_audio_vae.decode.full_ms` lines, one per VAE chunk, about 4 s
 apart, which could drive a coarse decoding bar.
@@ -438,6 +439,8 @@ the results files; the rest comes from ticket QA notes and `pmset` logs.
   on **battery**, and the other audio.cpp cases ran on AC.
 - **Sleep.** The Mac slept 17:38–17:44 local (00:38–00:44 UTC). No kept result overlaps it:
   the affected audio.cpp bf16/32 case was rerun under `caffeinate` and started at 01:38 UTC.
+  The audio.cpp log parser clamps a Stage start that appears to begin before the previous
+  Stage ended (a sign of sleep) without flagging it in the results; no kept result was clamped.
 - **Possible battery effect.** audio.cpp bf16/8's synthesis took 175.2/175.3 s, slower than
   q8_0/8's 158.5/157.9 s, even though bf16 synthesized faster than q8_0 at 32 steps
   (535.6/543.3 s against 607.8/607.2 s). Battery power may explain it, so treat audio.cpp
@@ -530,9 +533,9 @@ melody, lyrics, arrangement and timing (mlx-Yue audio correlation 0.984). Listen
 
 ## Findings that affect the plan
 
-Flags for the user. `PLAN.md` is changed only inside its M0 section: the checkboxes are ticked, one pointer line to this report was added under the M0 heading, and the progress checkbox got a one-line note that callback rate within a Stage was not measured.
+Flags for the user. `PLAN.md` is changed only inside its M0 section: the checkboxes are ticked except per-stage progress, one pointer line to this report was added under the M0 heading, and the progress checkbox stays open with a one-line note that callback rate within a Stage was not measured.
 
-1. **Engine choice (M0, Architecture, M5).** mlx-Yue is confirmed for v1 by D-017 step 1.
+1. **Engine choice (M0, Architecture, M5).** mlx-Yue is recommended for v1 by D-017 step 1 (a proposal: confirm or override it).
    M5's NVIDIA path is still open: audio.cpp is healthier and easier to install, but it
    needs Semantic-token input before it can back #5. Revisit at M5 (see Hybrid options).
 2. **#5 placement ("v1 if M0 confirms").** Feasibility is confirmed on mlx-Yue, with

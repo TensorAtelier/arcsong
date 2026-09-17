@@ -116,7 +116,7 @@ Answered 2026-09-16 — see [`docs/m0-report.md`](docs/m0-report.md) (recommenda
 - [x] Seed reproducibility: same seed + inputs → same audio on MLX/Metal? "Re-run with these
       settings" and draft→final both depend on it; if not, the UI says "similar", not "same".
 - [x] Artifact sizes per song (`.npy` intermediates vs FLAC) — sizes the library cleanup feature.
-- [x] Per-stage progress: what callbacks fire, how often, and can they map to a % bar?
+- [ ] Per-stage progress: what callbacks fire, how often, and can they map to a % bar?
       (Stage-level answered; callback rate within a Stage not measured — see report.)
 - [x] Cancellation: does `cancelled()` stop each stage promptly and leave the pipeline reusable?
 - [x] Draft→final: render at 8 steps, then re-`synthesize` the saved semantic tokens + noise at
