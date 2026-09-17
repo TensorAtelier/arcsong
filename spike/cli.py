@@ -10,6 +10,8 @@ from collections.abc import Callable
 from functools import partial
 from pathlib import Path
 
+from spike import audiocpp_setup
+from spike.audiocpp_engine import AudioCppEngine
 from spike.cases import load_case
 from spike.fake import FakeEngine
 from spike.measurements import doctor, timing
@@ -22,8 +24,21 @@ DEFAULT_RUNS_DIR = SPIKE_DIR / "runs"
 
 ENGINES: dict[str, Callable[[argparse.Namespace], EngineFactory]] = {
     "mlx": lambda args: partial(MlxYueEngine, models_dir=args.mlx_models),
+    "audiocpp": lambda args: partial(AudioCppEngine, models_dir=args.audiocpp_models),
     "fake": lambda args: partial(FakeEngine),
 }
+
+
+def _audiocpp_models_argument(command: argparse.ArgumentParser) -> None:
+    command.add_argument(
+        "--audiocpp-models",
+        type=Path,
+        default=Path(
+            os.environ.get("SPIKE_AUDIOCPP_MODELS", audiocpp_setup.DEFAULT_MODELS_DIR)
+        ).expanduser(),
+        help="directory holding the audio.cpp GGUF model directory "
+        "(env SPIKE_AUDIOCPP_MODELS; default %(default)s)",
+    )
 
 
 def _common_arguments(command: argparse.ArgumentParser) -> None:
@@ -36,6 +51,7 @@ def _common_arguments(command: argparse.ArgumentParser) -> None:
         help="mlx-Yue weights directory holding converted/ and vae/ "
         "(env SPIKE_MLX_MODELS; default %(default)s)",
     )
+    _audiocpp_models_argument(command)
     command.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
     command.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
 
@@ -43,6 +59,15 @@ def _common_arguments(command: argparse.ArgumentParser) -> None:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="spike", description="M0 engine spike harness")
     commands = parser.add_subparsers(dest="command", required=True)
+
+    run = commands.add_parser(
+        "setup",
+        help="Download the pinned audio.cpp release and YuE2 GGUF weights, verifying sha256 "
+        "(mlx-Yue is installed by uv sync and reuses existing weights)",
+    )
+    run.add_argument("--pins", type=Path, default=audiocpp_setup.PINS_PATH)
+    run.add_argument("--vendor-dir", type=Path, default=audiocpp_setup.DEFAULT_VENDOR_DIR)
+    _audiocpp_models_argument(run)
 
     run = commands.add_parser("doctor", help="Load an Engine and render the clip case")
     _common_arguments(run)
@@ -81,8 +106,26 @@ def _exit_on_termination() -> None:
             signal.signal(signum, handler)
 
 
+def _setup(args: argparse.Namespace) -> int:
+    try:
+        done = audiocpp_setup.setup(
+            audiocpp_setup.load_pins(args.pins),
+            args.vendor_dir,
+            args.audiocpp_models,
+            fetch=audiocpp_setup.fetch_url,
+        )
+    except audiocpp_setup.ChecksumMismatch as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+    fetched = ", ".join(done.downloaded) if done.downloaded else "nothing (all files in place)"
+    print(f"audio.cpp CLI: {done.cli}\nYuE2 weights: {done.model_dir}\ndownloaded: {fetched}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.command == "setup":
+        return _setup(args)
     common = dict(
         engine_name=args.engine,
         engine_factory=ENGINES[args.engine](args),

@@ -1,0 +1,218 @@
+0.008 [TRACE ts=20260916-170136] runtime.model.family yue2
+0.008 [TRACE ts=20260916-170136] runtime.model.variant Yue2
+0.008 [TRACE ts=20260916-170136] runtime.model.root /Users/julian/projects/songloom/spike/models/Yue2-3B-GGUF
+0.008 [TRACE ts=20260916-170136] runtime.model.discovered_config_count 4
+0.008 [TRACE ts=20260916-170136] runtime.model.discovered_weight_count 2
+0.008 [TRACE ts=20260916-170136] runtime.model.task_count 1
+0.008 [TRACE ts=20260916-170136] runtime.model.language_count 1
+0.008 [TRACE ts=20260916-170136] runtime.model.supports_speaker_reference 0
+0.008 [TRACE ts=20260916-170136] runtime.model.supports_style_condition 1
+0.008 [TRACE ts=20260916-170136] runtime.model.supports_timestamps 0
+0.042 ggml_metal_device_init: testing tensor API for f16 support
+0.043 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'dummy_kernel', name = 'dummy_kernel'
+0.045 ggml_metal_library_compile_pipeline: loaded dummy_kernel                                  0x10623fd70 | th_max = 1024 | th_width =   32
+0.045 ggml_metal_device_init: testing tensor API for bfloat support
+0.045 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'dummy_kernel', name = 'dummy_kernel'
+0.045 ggml_metal_library_compile_pipeline: loaded dummy_kernel                                  0x10623e770 | th_max = 1024 | th_width =   32
+0.045 ggml_metal_library_init: using embedded metal library
+0.056 ggml_metal_library_init: loaded in 0.011 sec
+0.056 ggml_metal_rsets_init: creating a residency set collection (keep_alive = 180 s)
+0.056 ggml_metal_device_init: GPU name:   MTL0 (Apple M5 Pro)
+0.056 ggml_metal_device_init: GPU family: MTLGPUFamilyApple10  (1010)
+0.056 ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+0.056 ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+0.056 ggml_metal_device_init: simdgroup reduction   = true
+0.056 ggml_metal_device_init: simdgroup matrix mul. = true
+0.056 ggml_metal_device_init: has unified memory    = true
+0.056 ggml_metal_device_init: has bfloat            = true
+0.056 ggml_metal_device_init: has tensor            = true
+0.056 ggml_metal_device_init: use residency sets    = true
+0.056 ggml_metal_device_init: use shared buffers    = true
+0.056 ggml_metal_device_init: recommendedMaxWorkingSetSize  = 55662.79 MB
+0.056 ggml_metal_init: allocating
+0.056 ggml_metal_init: found device: Apple M5 Pro
+0.056 ggml_metal_init: picking default device: Apple M5 Pro
+0.056 ggml_metal_init: use fusion         = true
+0.056 ggml_metal_init: use concurrency    = true
+0.056 ggml_metal_init: use graph optimize = true
+0.449 [TRACE ts=20260916-170137] yue2.request seed=831001 cot=full guidance_scale=1 num_inference_steps=8 context=24576 abc=generated nar_noise=generated
+0.449 [TRACE ts=20260916-170137] yue2.sampling.abc temperature=0.7 top_p=0.9 top_k=30 repetition_penalty=1.005 penalty_window=100 min_tokens=32 max_tokens=4096
+0.449 [TRACE ts=20260916-170137] yue2.sampling.semantic temperature=1 top_p=0.95 top_k=100 repetition_penalty=1.2 penalty_window=50 min_tokens=200 max_tokens=400
+0.450 [TIMING ts=20260916-170137] yue2.plan_ms 0.86825
+0.770 [TIMING ts=20260916-170137] yue2.ar.init_ms 320.197041
+0.833 [TIMING ts=20260916-170137] yue2.ar.ensure_generation_ms 63.415125
+0.834 [TIMING ts=20260916-170137] yue2.ar.generate.prefix_tokens 128
+0.928 [TIMING ts=20260916-170137] yue2.ar.decode.graph.build_ms 94.486125
+0.928 [TRACE ts=20260916-170137] yue2.ar.decode.cache_steps 4224
+0.929 [TIMING ts=20260916-170137] yue2.ar.prefill.graph.build_ms 0.969959
+0.929 [TRACE ts=20260916-170137] yue2.ar.prefill.steps 128
+0.929 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_get_rows_f16', name = 'kernel_get_rows_f16'
+0.929 ggml_metal_library_compile_pipeline: loaded kernel_get_rows_f16                           0x106247670 | th_max = 1024 | th_width =   32
+0.929 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_mul_f32_4', name = 'kernel_rms_norm_mul_f32_4'
+0.930 ggml_metal_library_compile_pipeline: loaded kernel_rms_norm_mul_f32_4                     0x106247ef0 | th_max = 1024 | th_width =   32
+0.930 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32', name = 'kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1'
+0.930 ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1      0x106248a70 | th_max = 1024 | th_width =   32
+0.930 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rope_neox_f32', name = 'kernel_rope_neox_f32_imrope=0'
+0.930 ggml_metal_library_compile_pipeline: loaded kernel_rope_neox_f32_imrope=0                 0x106248df0 | th_max = 1024 | th_width =   32
+0.930 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f32_f32', name = 'kernel_cpy_f32_f32'
+0.930 ggml_metal_library_compile_pipeline: loaded kernel_cpy_f32_f32                            0x106249170 | th_max = 1024 | th_width =   32
+0.930 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_contig_f32_f32', name = 'kernel_cpy_contig_f32_f32'
+0.930 ggml_metal_library_compile_pipeline: loaded kernel_cpy_contig_f32_f32                     0x1062494f0 | th_max = 1024 | th_width =   32
+0.930 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_row_f32', name = 'kernel_cpy_row_f32'
+0.930 ggml_metal_library_compile_pipeline: loaded kernel_cpy_row_f32                            0xc89ae8000 | th_max = 1024 | th_width =   32
+0.930 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_blk', name = 'kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64'
+0.930 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64      0xc89ae8380 | th_max = 1024 | th_width =   32
+0.930 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk128_dv128', name = 'kernel_flash_attn_ext_f32_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=1024_ns20=1024_nsg=4'
+1.031 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=1024_ns20=1024_nsg=4      0xc89ae8700 | th_max = 1024 | th_width =   32
+1.031 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0'
+1.032 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0      0xc89ae8a80 | th_max = 1024 | th_width =   32
+1.032 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=0'
+1.032 ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=0           0xc89ae8e00 | th_max = 1024 | th_width =   32
+1.032 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0'
+1.032 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0      0xc89ae9180 | th_max = 1024 | th_width =   32
+1.032 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_f32_4', name = 'kernel_rms_norm_f32_4'
+1.032 ggml_metal_library_compile_pipeline: loaded kernel_rms_norm_f32_4                         0xc89ae9500 | th_max = 1024 | th_width =   32
+1.034 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q8_0_f32', name = 'kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1'
+1.034 ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1      0xc89ae9c00 | th_max = 1024 | th_width =   32
+1.075 [TIMING ts=20260916-170137] yue2.ar.generate.prefill_ms 241.9775
+1.076 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_set_rows_f32_i32', name = 'kernel_set_rows_f32_i32'
+1.076 ggml_metal_library_compile_pipeline: loaded kernel_set_rows_f32_i32                       0xc89aea300 | th_max = 1024 | th_width =   32
+1.076 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f32_dk128_dv128', name = 'kernel_flash_attn_ext_vec_f32_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=0_ns10=1024_ns20=1024_nsg=4_nwg=32'
+1.110 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f32_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=0_ns10=1024_ns20=1024_nsg=4_nwg=32      0xc89aea680 | th_max = 1024 | th_width =   32
+1.110 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32'
+1.110 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32      0xc89aeaa00 | th_max = 1024 | th_width =   32
+1.110 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'
+1.110 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0xc89aead80 | th_max = 1024 | th_width =   32
+1.110 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'
+1.110 ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0xc89aeb100 | th_max = 1024 | th_width =   32
+1.110 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'
+1.110 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0xc89aeb480 | th_max = 1024 | th_width =   32
+10.102 [TIMING ts=20260916-170146] yue2.ar.generate.sample_ms 106.33357000000005
+10.102 [TIMING ts=20260916-170146] yue2.ar.generate.decode_ms 8920.39920300001
+10.102 [TIMING ts=20260916-170146] yue2.ar.generate.refill_prefill_ms 0
+10.102 [TIMING ts=20260916-170146] yue2.ar.generate.refill_count 0
+10.102 [TIMING ts=20260916-170146] yue2.ar.generate.emitted_tokens 579
+10.102 [TIMING ts=20260916-170146] yue2.ar.generate.total_ms 9268.905166
+10.102 [TIMING ts=20260916-170146] yue2.semantic.abc_generate_ms 9332.362459
+10.102 [TIMING ts=20260916-170146] yue2.semantic.abc_generated_tokens 579
+10.102 [TIMING ts=20260916-170146] yue2.semantic.abc_truncated 0
+10.116 [TIMING ts=20260916-170146] yue2.ar.ensure_generation_ms 0.008292
+10.116 [TIMING ts=20260916-170146] yue2.ar.generate.prefix_tokens 709
+10.160 [TIMING ts=20260916-170146] yue2.ar.decode.graph.build_ms 44.098583
+10.160 [TRACE ts=20260916-170146] yue2.ar.decode.cache_steps 1109
+10.162 [TIMING ts=20260916-170146] yue2.ar.prefill.graph.build_ms 2.305167
+10.162 [TRACE ts=20260916-170146] yue2.ar.prefill.steps 709
+10.162 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32', name = 'kernel_mul_mm_q8_0_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+10.163 ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0xc89aeb800 | th_max = 1024 | th_width =   32
+10.163 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=64'
+10.163 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=64      0xc89aebb80 | th_max = 1024 | th_width =   32
+10.163 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk128_dv128', name = 'kernel_flash_attn_ext_f32_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=1024_ns20=1024_nsg=4'
+10.163 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=1024_ns20=1024_nsg=4      0xc89b50000 | th_max = 1024 | th_width =   32
+10.477 [TIMING ts=20260916-170147] yue2.ar.generate.prefill_ms 360.900417
+10.477 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=32'
+10.477 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=32      0xc89b50a80 | th_max = 1024 | th_width =   32
+10.477 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f32_dk128_dv128', name = 'kernel_flash_attn_ext_vec_f32_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=1024_ns20=1024_nsg=1_nwg=32'
+10.477 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f32_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=1024_ns20=1024_nsg=1_nwg=32      0xc89b50e00 | th_max = 1024 | th_width =   32
+17.123 [TIMING ts=20260916-170153] yue2.ar.generate.sample_ms 51.64869899999999
+17.123 [TIMING ts=20260916-170153] yue2.ar.generate.decode_ms 6594.089829000007
+17.123 [TIMING ts=20260916-170153] yue2.ar.generate.refill_prefill_ms 0
+17.123 [TIMING ts=20260916-170153] yue2.ar.generate.refill_count 0
+17.123 [TIMING ts=20260916-170153] yue2.ar.generate.emitted_tokens 400
+17.123 [TIMING ts=20260916-170153] yue2.ar.generate.total_ms 7006.867917
+17.123 [TIMING ts=20260916-170153] yue2.semantic.tokens 400
+17.123 [TIMING ts=20260916-170153] yue2.semantic.truncated 1
+17.130 [TIMING ts=20260916-170153] yue2.semantic_ms 16679.696583
+17.454 [TIMING ts=20260916-170154] yue2.nar.init_ms 324.717875
+17.454 [TIMING ts=20260916-170154] yue2.nar.synthesize.codec_tokens 400
+17.454 [TIMING ts=20260916-170154] yue2.nar.synthesize.chunks 1
+17.454 [TIMING ts=20260916-170154] yue2.nar.synthesize.context 24576
+17.471 [TIMING ts=20260916-170154] yue2.ar.prefix_state.graph.build_ms 16.187625
+17.471 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f32_f16', name = 'kernel_cpy_f32_f16'
+17.471 ggml_metal_library_compile_pipeline: loaded kernel_cpy_f32_f16                            0xc89b51180 | th_max = 1024 | th_width =   32
+17.471 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_contig_f32_f16', name = 'kernel_cpy_contig_f32_f16'
+17.471 ggml_metal_library_compile_pipeline: loaded kernel_cpy_contig_f32_f16                     0xc89b51500 | th_max = 1024 | th_width =   32
+17.471 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f16_f16', name = 'kernel_cpy_f16_f16'
+17.471 ggml_metal_library_compile_pipeline: loaded kernel_cpy_f16_f16                            0xc89b51880 | th_max = 1024 | th_width =   32
+17.471 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_contig_f16_f16', name = 'kernel_cpy_contig_f16_f16'
+17.471 ggml_metal_library_compile_pipeline: loaded kernel_cpy_contig_f16_f16                     0xc89b51c00 | th_max = 1024 | th_width =   32
+17.760 [TIMING ts=20260916-170154] yue2.nar.graph.build_ms 0.259125
+17.761 [TIMING ts=20260916-170154] yue2.nar.graph.alloc_ms 1.067417
+17.761 [TIMING ts=20260916-170154] yue2.nar.graph.frames 400
+17.761 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f16_f32_4', name = 'kernel_mul_mv_f16_f32_4_nsg=2_ne12=1_r2=1_r3=1'
+17.761 ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f16_f32_4_nsg=2_ne12=1_r2=1_r3=1      0xc89b50700 | th_max = 1024 | th_width =   32
+17.761 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f16_f32_4', name = 'kernel_mul_mv_f16_f32_4_nsg=4_ne12=1_r2=1_r3=1'
+17.761 ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f16_f32_4_nsg=4_ne12=1_r2=1_r3=1      0xc89b52300 | th_max = 1024 | th_width =   32
+17.761 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_repeat_f32', name = 'kernel_repeat_f32'
+17.761 ggml_metal_library_compile_pipeline: loaded kernel_repeat_f32                             0xc89b52680 | th_max = 1024 | th_width =   32
+17.761 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f16_f32', name = 'kernel_cpy_f16_f32'
+17.761 ggml_metal_library_compile_pipeline: loaded kernel_cpy_f16_f32                            0xc89b52a00 | th_max = 1024 | th_width =   32
+17.761 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_contig_f16_f32', name = 'kernel_cpy_contig_f16_f32'
+17.761 ggml_metal_library_compile_pipeline: loaded kernel_cpy_contig_f16_f32                     0xc89b52d80 | th_max = 1024 | th_width =   32
+17.761 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_concat', name = 'kernel_concat'
+17.761 ggml_metal_library_compile_pipeline: loaded kernel_concat                                 0xc89b53100 | th_max = 1024 | th_width =   32
+17.761 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=0_ncpsg=64'
+17.762 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=0_ncpsg=64      0xc89b53480 | th_max = 1024 | th_width =   32
+17.762 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f16_dk128_dv128', name = 'kernel_flash_attn_ext_f16_dk128_dv128_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=1024_ns20=1024_nsg=4'
+17.762 ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f16_dk128_dv128_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=1024_ns20=1024_nsg=4      0xc89b53800 | th_max = 1024 | th_width =   32
+21.498 [TIMING ts=20260916-170158] yue2.nar.synthesize.prefill_state_ms 305.007166
+21.498 [TIMING ts=20260916-170158] yue2.nar.synthesize.solve_chunks_ms 3738.344833
+21.498 [TIMING ts=20260916-170158] yue2.nar.synthesize.total_ms 4043.6375
+21.498 [TIMING ts=20260916-170158] yue2.nar_ms 4368.39325
+21.525 [TIMING ts=20260916-170158] yue2.vae.init_ms 0.014875
+21.525 [TIMING ts=20260916-170158] yue2.vae_decode.latent_frames 400
+21.525 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.weights_bind_ms 0.161375
+21.586 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.weights_upload_ms 60.604667
+21.586 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.weights_total_ms 60.805
+21.587 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.require_weights_ms 62.171875
+21.624 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.decode.graph_batch 1
+21.624 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.decode.graph_latent_frames 400
+21.624 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.decode.graph_output_frames 767936
+21.624 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.decode.graph_build_ms 36.48925
+21.624 [TIMING ts=20260916-170158] framework.oobleck_audio_vae.decode.input_upload_ms 0.015542
+21.624 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_transpose_f32', name = 'kernel_cpy_transpose_f32'
+21.624 ggml_metal_library_compile_pipeline: loaded kernel_cpy_transpose_f32                      0xc89b50380 | th_max = 1024 | th_width =   32
+21.624 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_im2col_f16', name = 'kernel_im2col_f16'
+21.624 ggml_metal_library_compile_pipeline: loaded kernel_im2col_f16                             0xc89ae9f80 | th_max = 1024 | th_width =   32
+21.624 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f16_f16', name = 'kernel_mul_mm_f16_f16_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+21.624 ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f16_f16_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0xc89ae9880 | th_max = 1024 | th_width =   32
+21.624 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32', name = 'kernel_unary_f32_f32_op=114_cnt=1'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_op=114_cnt=1             0xc89b9c000 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=1'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=1      0xc89b9c380 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=15_cnt=0'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=15_cnt=0            0xc89b9c700 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32', name = 'kernel_unary_f32_f32_op=10_cnt=1'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_op=10_cnt=1              0xc89b9ca80 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=3_nf=1_rb=0_cb=1'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=3_nf=1_rb=0_cb=1      0xc89b9ce00 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0xc89b9d180 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_col2im_1d_f32', name = 'kernel_col2im_1d_f32'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_col2im_1d_f32                          0xc89b9d500 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=1'
+21.625 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=1      0xc89b9d880 | th_max = 1024 | th_width =   32
+21.625 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32', name = 'kernel_unary_f32_f32_op=15_cnt=0'
+21.626 ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_op=15_cnt=0              0xc89b9df80 | th_max = 1024 | th_width =   32
+21.626 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=0'
+21.626 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=0      0xc89b9e300 | th_max = 1024 | th_width =   32
+21.626 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=0'
+21.626 ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=0      0xc89b9e680 | th_max = 1024 | th_width =   32
+21.626 ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f16_f16_4', name = 'kernel_mul_mv_f16_f16_4_nsg=4_ne12=1_r2=1_r3=1'
+21.626 ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f16_f16_4_nsg=4_ne12=1_r2=1_r3=1      0xc89b9ea00 | th_max = 1024 | th_width =   32
+23.253 [TIMING ts=20260916-170159] framework.oobleck_audio_vae.decode.graph_compute_ms 1629.009083
+23.254 [TIMING ts=20260916-170159] framework.oobleck_audio_vae.decode.output_read_ms 1.151375
+23.254 [TIMING ts=20260916-170159] framework.oobleck_audio_vae.decode.total_ms 1630.217292
+23.254 [TIMING ts=20260916-170159] framework.oobleck_audio_vae.decode_planar_ms 1728.8955
+23.255 [TIMING ts=20260916-170159] framework.oobleck_audio_vae.decode.interleave_ms 1.261667
+23.255 [TIMING ts=20260916-170159] framework.oobleck_audio_vae.decode.audio_frames 767936
+23.255 [TIMING ts=20260916-170159] framework.oobleck_audio_vae.decode.full_ms 1730.176791
+23.256 [TIMING ts=20260916-170159] yue2.vae_decode.tiles 1
+23.256 [TIMING ts=20260916-170159] yue2.vae_decode.tile_decode_ms 1730.945
+23.256 [TIMING ts=20260916-170159] yue2.vae_decode.output_frames 767936
+23.256 [TIMING ts=20260916-170159] yue2.vae_decode_ms 1731.020834
+23.256 [TIMING ts=20260916-170159] session.wall_ms 22807.176458
+23.369 ggml_metal_free: deallocating
+23.731 family=yue2
+23.731 task=gen
+23.731 mode=offline
+23.731 audio_out=/private/tmp/claude-501/-Users-julian-projects-songloom/a664d1f7-f035-4ffb-9e8c-ae5542607873/scratchpad/capture2/audio.wav

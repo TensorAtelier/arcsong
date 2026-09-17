@@ -5,7 +5,7 @@ Coverage: [x] scope [x] actors [x] terms [x] data [x] interfaces [x] stack [x] e
 Facts gathered 2026-09-16 before deciding:
 - `~/projects/mlx-Yue` is cloned at `9253ed1` with a working `.venv` and weights (`models/converted` 9.2 GB: AR bf16 + 8bit, NAR bf16; `models/vae` 0.5 GB).
 - mlx-Yue exposes `lyra.YuE2Pipeline` with public `plan`, `generate_semantic`, `synthesize(noise=)`, `decode`, each taking `cancelled=`; `on_token` on the token stages; `save_artifacts`.
-- audio.cpp v0.8.0 (2026-09-15, Apache-2.0) ships `audio-v0.8.0-bin-macos-arm64-metal.tar.gz` with YuE2. Its C++ runtime has the same four stages internally, but the CLI, server and C ABI expose only a whole run. No cancel or progress callback for YuE2 was found; the CLI has `--log` progress output and `nar_noise_file`, `num_inference_steps`, `abc`/`abc_file` options. GGUF weights: HF `audio-cpp/audio.cpp-gguf` (default `yue2-3b-q8_0.gguf` + `yue2-vae-f16.gguf`).
+- audio.cpp v0.8.0 (2026-09-15, Apache-2.0) ships `audio-v0.8.0-bin-macos-arm64-metal.tar.gz` with YuE2. Its C++ runtime has the same four stages internally, but the CLI, server and C ABI expose only a whole run. No cancel or progress callback for YuE2 was found; the CLI has `--log` progress output and `nar_noise_file`, `num_inference_steps`, `abc`/`abc_file` options. GGUF weights: HF `audio-cpp/Yue2-3B-GGUF`, corrected after ticket 03: the general `audio-cpp/audio.cpp-gguf` repo has no YuE2 files (default `yue2-3b-q8_0.gguf` + `yue2-vae-f16.gguf`).
 - Machine: M5 Pro, 64 GiB, macOS 26.4.1, 227 GiB free disk. `uv`, `cmake`, Xcode present; `ffmpeg` absent (only needed for transcription, out of scope).
 - Published reference (stavitian, mlx-Yue, M5 Pro 24 GB): 3:20 song at 32 steps = 337 s, 10.4 GiB peak.
 

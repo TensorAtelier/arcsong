@@ -28,7 +28,7 @@
 ## 02 — mlx-Yue Stage timing, peak memory and artifact sizes
 
 - Result: done
-- Commit: COMMIT02
+- Commit: 4c27e25
 - QA rounds: 1
 - Verification:
   ```
@@ -39,3 +39,21 @@
   All checks passed!
   ```
 - QA verdict: PASS — all four real results files checked field by field against the run folders on disk (Stage sums, serial start times, footprint vs MLX peak, file lists); the fake-engine matrix plus resume was exercised; the timeout and orphan-child tests were run 3×.
+
+## 03 — audio.cpp setup and doctor
+
+- Result: done
+- Commit: COMMIT03
+- QA rounds: 1
+- Verification:
+  ```
+  $ uv run pytest -q
+  38 passed in 15.65s
+  $ uv run ruff check .
+  All checks passed!
+  $ uv run spike setup
+  downloaded: nothing (all files in place)
+  $ uv run spike doctor --engine audiocpp --force
+  ok doctor-audiocpp-clip-bf16-32 in 29.9s -> /Users/julian/projects/songloom/spike/results/doctor-audiocpp-clip-bf16-32.json
+  ```
+- QA verdict: PASS — setup reran with nothing to fetch; a real sha256 mismatch through the CLI exited 1 with nothing left behind; the real GPU doctor made a non-silent 16 s WAV with `outcome: ok`, version 0.8.0; all pins cross-checked against the GitHub digest and the HF LFS hashes.
