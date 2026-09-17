@@ -162,3 +162,19 @@
   2. docs/m0-report.md:429–447 — missing caveat: the log parser clamps Stage starts after a sleep without flagging it (no kept result clamped).
   3. docs/m0-report.md:535 — Findings 1 says mlx-Yue is "confirmed"; D-017 makes it a proposal the user confirms.
   4. tests/test_m0_report_numbers.py — substring checks miss drift for 11 of 15 numbers that repeat in the prose.
+
+## 09 — M0 report and Engine recommendation (unparked)
+
+- Result: done
+- Commit: 0ec12eb (fixes), merged in 96b4882
+- QA rounds: 2 + fixed after the user's approval, without a third QA round
+- Verification:
+  ```
+  $ uv run pytest -q
+  110 passed in 85.37s (0:01:25)
+  $ uv run ruff check .
+  All checks passed!
+  $ uv run spike report (twice) ; cmp with the prior copy
+  IDENTICAL
+  ```
+- Note: the fixes were applied by the driver directly, with no fresh QA pass. Mutation check: editing one prose occurrence of 223.2 fails `test_draft_final_arithmetic_matches_results`.

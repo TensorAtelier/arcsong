@@ -6,13 +6,13 @@ Read first: spec, ledger D-017 and D-019; `CONTEXT.md`; every file in the result
 
 **Blocked by:** 02, 04, 05, 06, 07, 08
 
-**Status:** blocked
+**Status:** done
 
-- [ ] `uv run spike report` regenerates the report's tables from the results files; a test with fixture results checks every M0 question gets a section and missing results are shown as "not measured"
-- [ ] Every number in the report appears in, and cites, a results file
-- [ ] The recommendation walks D-017's criteria in order and states the Engine
-- [ ] PLAN.md's M0 checkboxes are ticked with a link to the report; no other PLAN.md section is rewritten
-- [ ] `uv run pytest -q` and `uv run ruff check .` pass
+- [x] `uv run spike report` regenerates the report's tables from the results files; a test with fixture results checks every M0 question gets a section and missing results are shown as "not measured"
+- [x] Every number in the report appears in, and cites, a results file
+- [x] The recommendation walks D-017's criteria in order and states the Engine
+- [x] PLAN.md's M0 checkboxes are ticked with a link to the report; no other PLAN.md section is rewritten
+- [x] `uv run pytest -q` and `uv run ruff check .` pass
 
 ## Comments
 
@@ -36,3 +36,5 @@ Read first: spec, ledger D-017 and D-019; `CONTEXT.md`; every file in the result
 3. docs/m0-report.md:535 — Findings 1 says mlx-Yue is "confirmed" by D-017 step 1; D-017 makes it a proposal the user confirms (and report line 51 says so). Fix: "proposed"/"recommended".
 4. tests/test_m0_report_numbers.py:32–37, 50, 61, 67, 73, 80 — substring checks miss drift for 11 of 15 numbers that appear more than once in the prose (e.g. 223.2, 360.8, 485.5, 98.4, 776.9, cancel ranges, 0.08–0.25, 6.27–6.28, 37.9–62.9). Fix: assert every occurrence (regex on the surrounding phrase) or the expected count.
 QA round 2 otherwise confirmed: regeneration byte-identical; all recomputed numbers match unrounded results; PR #561 described accurately; PLAN.md changed only in M0; all other caveats present; listening paths exist.
+
+**Resolved 2026-09-17 (user approved):** the four round-2 defects plus the goal review's fifth (PLAN.md progress box ticked although within-Stage rate wasn't measured; now left open) were fixed on the wip branch in `0ec12eb`, then merged into `feat/m0-engine-spike` (`96b4882`). Verified: 110 tests pass, ruff clean, regeneration byte-identical, and a mutation check shows the numbers test now fails on single-occurrence drift. Within-Stage progress continues as ticket 10.

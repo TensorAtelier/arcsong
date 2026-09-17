@@ -5,9 +5,9 @@ Local web UI for the YuE2 music model. Plan: `PLAN.md`. Prior art: `docs/prior-a
 ## M0 engine spike (`spike/`)
 
 Measurement harness comparing the mlx-Yue and audio.cpp Engines; not product code.
-Run log and findings: `.scratch/m0-engine-spike/REPORT.md` (the report itself, `docs/m0-report.md`, is parked on `wip/m0-engine-spike/09-m0-report`).
+Findings and Engine recommendation: `docs/m0-report.md` (regenerate its tables with `uv run spike report`). Run log: `.scratch/m0-engine-spike/REPORT.md`.
 
-- `uv run spike <setup|doctor|timing|cancel|repro|draft-final|hygiene|download> --engine mlx|audiocpp|fake`
+- `uv run spike <setup|doctor|timing|cancel|repro|draft-final|hygiene|download|report> --engine mlx|audiocpp|fake`
 - Verify: `uv run pytest -q` and `uv run ruff check .` (tests use `FakeEngine`; no real weights).
 - Each measurement writes one JSON per case to `spike/results/` (committed) and skips existing results unless `--force`. Audio and tensors go to the gitignored `spike/runs/` and `spike/listen/`.
 - mlx-Yue weights come from `~/projects/mlx-Yue/models` (`SPIKE_MLX_MODELS`). audio.cpp v0.8.0 and its GGUF weights come from `uv run spike setup` (pins in `spike/audiocpp_pins.json`).
