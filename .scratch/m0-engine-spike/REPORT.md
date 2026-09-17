@@ -16,6 +16,7 @@
 | 07 Draft→Final, both Engines | done | `0079aed` | 2 |
 | 08 Stale resource files and download checks (mlx-Yue) | done | `1b5dfbd` | 1 |
 | 09 M0 report and Engine recommendation | done (unparked 2026-09-17) | `0ec12eb`, merged `96b4882` | 2 + fixes |
+| 10 Progress within a Stage, both Engines | **blocked** | `wip/m0-engine-spike/10-within-stage-progress` (`d191ac6`) | 2 |
 
 ## Goal review (verbatim)
 
@@ -100,6 +101,14 @@ DEFECTS:
 *Update 2026-09-17: ticket 09 was unparked with the user's approval. All five defects below were fixed in `0ec12eb` and merged (`96b4882`). Stories 24–26 are now on the branch. Within-Stage progress (goal review defect 3) continues as ticket 10.*
 
 - **09 — M0 report and Engine recommendation.** Branch `wip/m0-engine-spike/09-m0-report` (`f9e22e3`). It failed QA round 2 on four small defects: (1) the report says audio.cpp semantic generation logs nothing until it ends, but q8_0 logs show one mid-Stage KV-cache refill line; (2) the "parser clamps Stage starts after sleep" caveat is missing; (3) Findings 1 says mlx-Yue is "confirmed", which should say recommended (D-017); (4) the prose-number test misses drift for 11 of 15 repeated numbers. The goal review adds (5): PLAN.md ticks "Per-stage progress" although within-Stage rate wasn't measured. Everything else in the report passed a line-by-line QA recheck against the results.
+
+## Ticket 10 (added 2026-09-17)
+
+Parked after two QA rounds. The measurement holds up: QA rebuilt the analysis from the raw timelines and matched both results files. What M1 can use for a progress bar:
+- **mlx-Yue:** `on_token` in planning and semantic generation gives a steady running count with no total, up to 71 events/s, which the SSE throttle must absorb. Synthesis and decoding have no public callback; yue2's `N/total` lines on stderr give a stepped % (at most one line per 5 s through a pipe; synthesis starts 15.3 s in, and decoding has only 3 updates).
+- **audio.cpp:** nothing usable inside any Stage. Synthesis is silent for ~131 s, and the decoding chunk total only appears at the end.
+
+Open defects: mlx-Yue decoding's verdict ('stepped %') contradicts the PLAN.md note and prose ('too coarse'); a test docstring cites numbers from a superseded run. Both can be fixed without GPU runs.
 
 ## Look here first
 

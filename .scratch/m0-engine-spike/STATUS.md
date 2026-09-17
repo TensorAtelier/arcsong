@@ -178,3 +178,21 @@
   IDENTICAL
   ```
 - Note: the fixes were applied by the driver directly, with no fresh QA pass. Mutation check: editing one prose occurrence of 223.2 fails `test_draft_final_arithmetic_matches_results`.
+
+## 10 — Progress within a Stage, both Engines
+
+- Result: blocked
+- Wip branch: wip/m0-engine-spike/10-within-stage-progress (d191ac6)
+- QA rounds: 2
+- Verification:
+  ```
+  $ uv run pytest -q
+  135 passed in 95.37s (0:01:35)
+  $ uv run ruff check .
+  All checks passed!
+  $ uv run spike report --out <scratch copy of docs/m0-report.md>   (twice) ; cmp
+  BYTE-STABLE
+  ```
+- QA verdict: FAIL —
+  1. PLAN.md:120 and docs/m0-report.md (must-have row, mlx synthesis/decoding prose, "What M1 can use", finding 9) — mlx-Yue decoding's results verdict `uneven_percent` renders as "stepped %", contradicting the note/prose that call it unusable; the PLAN.md note's token-count claim doesn't name mlx-Yue.
+  2. tests/test_progress.py:194–195 — the docstring cites numbers from a superseded run as coming from the committed results file.
