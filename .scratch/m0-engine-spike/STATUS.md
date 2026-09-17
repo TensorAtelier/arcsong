@@ -128,7 +128,7 @@
 ## 08 — Stale resource files and model download checks (mlx-Yue)
 
 - Result: done
-- Commit: COMMIT08
+- Commit: 1b5dfbd
 - QA rounds: 1
 - Verification:
   ```
@@ -142,3 +142,23 @@
   ok download-mlx-weights in 22.8s
   ```
 - QA verdict: PASS — both measurements re-run independently with matching results. Claims checked against the mlx-Yue 9253ed1 source and huggingface_hub 1.31.0; the VAE really came over the network; the temp dir was deleted; ~/projects/mlx-Yue/models was unchanged (path/size/mtime diff).
+
+## 09 — M0 report and Engine recommendation
+
+- Result: blocked
+- Wip branch: wip/m0-engine-spike/09-m0-report (f9e22e3)
+- QA rounds: 2
+- Verification:
+  ```
+  $ uv run pytest -q
+  110 passed in 86.29s (0:01:26)
+  $ uv run ruff check .
+  All checks passed!
+  $ uv run spike report --out <scratch>/qa09r2/m0-report.md ; cmp with docs/m0-report.md
+  IDENTICAL
+  ```
+- QA verdict: FAIL — 
+  1. docs/m0-report.md:59, :285 — claims audio.cpp semantic generation logs nothing until it ends; the cited q8_0 log shows a KV-cache refill line mid-Stage.
+  2. docs/m0-report.md:429–447 — missing caveat: the log parser clamps Stage starts after a sleep without flagging it (no kept result clamped).
+  3. docs/m0-report.md:535 — Findings 1 says mlx-Yue is "confirmed"; D-017 makes it a proposal the user confirms.
+  4. tests/test_m0_report_numbers.py — substring checks miss drift for 11 of 15 numbers that repeat in the prose.

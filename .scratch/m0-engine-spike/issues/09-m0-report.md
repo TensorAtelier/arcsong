@@ -6,7 +6,7 @@ Read first: spec, ledger D-017 and D-019; `CONTEXT.md`; every file in the result
 
 **Blocked by:** 02, 04, 05, 06, 07, 08
 
-**Status:** ready-for-agent
+**Status:** blocked
 
 - [ ] `uv run spike report` regenerates the report's tables from the results files; a test with fixture results checks every M0 question gets a section and missing results are shown as "not measured"
 - [ ] Every number in the report appears in, and cites, a results file
@@ -27,3 +27,12 @@ Read first: spec, ledger D-017 and D-019; `CONTEXT.md`; every file in the result
 **Driver, after ticket 07 (from QA):** (1) audio.cpp `timing.final_saving_seconds` (4.1 s, ratio 0.995) is run-to-run jitter between two full re-runs, not a saving; don't report it as one. The real audio.cpp Draft→Final cost is `fallback.same_seed_rerun` (776.9 s, a full re-run). (2) The mlx proof that the Final re-synthesizes is Final == direct-32 bit for bit from a separate process. `reused ... equal: true` compares re-saved copies and proves little, and the Final's own `result.json` repeats the Draft's planning/semantic timings, so use the harness's `final_seconds`. (3) "A plain same-seed audio.cpp Draft needs no probe and shares the Engine's noise" is inferred from ticket 06, not measured; label it. (4) mlx-Yue Draft 223 s + Final 361 s = 584 s, versus direct-32 486 s: the saving applies only to Drafts that get a Final. State this per D-012 (#5 placement).
 
 **Driver, after ticket 08 (from QA):** (1) `after_redownload` is `snapshot_download` over the fixed directory: huggingface_hub re-hashes the VAE and skips fetching it, and re-fetches only the small files. Don't call it a fresh download. (2) The minimal working fix is to delete `converted/.cache` and `converted/.gitattributes` (or use `ignore_patterns` for `.gitattributes` at download). `vae/.cache` never breaks VAE verification. (3) The three large safetensors were cloned, not downloaded. A real full download would add metadata/lock pairs for them too, and deleting `.cache` still covers that. Say the download check covered small files + VAE (~530 MB). (4) Hygiene covers kills mid-synthesis only. A kill while the Take is being saved (partly written output directory) was not measured. Note the gap for M1's worker cleanup.
+
+**QA round 1 (FAIL):** 5 defects: PR #561 overstated as enabling planning alone; two sums computed from rounded values; 8-bit speed/memory claims contradicted by results; the audio.cpp log claim was too broad; the PLAN.md change description was inaccurate. All fixed in round 2.
+
+**QA round 2 (FAIL) — parked on `wip/m0-engine-spike/09-m0-report` (f9e22e3). Open defects:**
+1. docs/m0-report.md:59 and :285 — says audio.cpp semantic generation logs nothing until it ends, but the cited log `spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log` lines 110–113 show a KV-cache refill ~111 s into the Stage (every q8_0 log has `refill_count 1`; bf16 none). Synthesis really is silent. Fix: say semantic generation logs only an occasional refill line that is useless for progress.
+2. docs/m0-report.md:429–447 — the ticket-04 caveat is missing: the audio.cpp log parser clamps Stage starts after a sleep without flagging it, and no kept result was clamped. Add it next to the Sleep bullet.
+3. docs/m0-report.md:535 — Findings 1 says mlx-Yue is "confirmed" by D-017 step 1; D-017 makes it a proposal the user confirms (and report line 51 says so). Fix: "proposed"/"recommended".
+4. tests/test_m0_report_numbers.py:32–37, 50, 61, 67, 73, 80 — substring checks miss drift for 11 of 15 numbers that appear more than once in the prose (e.g. 223.2, 360.8, 485.5, 98.4, 776.9, cancel ranges, 0.08–0.25, 6.27–6.28, 37.9–62.9). Fix: assert every occurrence (regex on the surrounding phrase) or the expected count.
+QA round 2 otherwise confirmed: regeneration byte-identical; all recomputed numbers match unrounded results; PR #561 described accurately; PLAN.md changed only in M0; all other caveats present; listening paths exist.
