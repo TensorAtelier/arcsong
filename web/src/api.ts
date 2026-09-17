@@ -150,6 +150,12 @@ export interface SetupPart {
   id: "engine" | "covers" | string;
   label: string;
   summary: string;
+  /** The Song model part, which songs need. */
+  required: boolean;
+  /** Installed, nothing rewriting it, and its own checks pass — the server's own verdict. */
+  usable: boolean;
+  /** Its checks have run at least once. */
+  checked: boolean;
   weights: Weights;
   download: Download;
   checks: Check[];

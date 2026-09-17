@@ -11,6 +11,7 @@ import random
 import re
 import shutil
 import threading
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
@@ -117,12 +118,19 @@ def create_app(
     models = models or FakeModels(root / "models")
     covers = covers or FakeModels(root / "covers-models")
     parts = [
-        Part(ENGINE, "Song model", models, "Writes and sings songs. Needed to make anything."),
+        Part(
+            ENGINE,
+            "Song model",
+            models,
+            "Writes and sings songs. Needed to make anything.",
+            required=True,
+        ),
         Part(
             COVERS,
             "Covers",
             covers,
-            "Optional: transcribes a recording you upload into a Score you can re-sing.",
+            "Optional: transcribes a recording you upload into a Score you can re-sing. "
+            "SheetSage2 and MERT-v2-FullSong, under the same licence as the song weights.",
         ),
     ]
 
@@ -183,7 +191,17 @@ def create_app(
             raise HTTPException(422, "Synthesis steps must be 8 or 32.")
         uploads = root / "uploads"
         uploads.mkdir(exist_ok=True)
-        suffix = Path(audio.filename or "").suffix[:16] or ".audio"
+        suffix = _upload_suffix(audio.filename)
+        # Save the recording first: a refused upload must not leave a job behind.
+        staged = uploads / f"incoming-{uuid.uuid4().hex}{suffix}"
+        try:
+            written = await _save_upload(audio, staged)
+        except HTTPException:
+            staged.unlink(missing_ok=True)
+            raise
+        if written == 0:
+            staged.unlink(missing_ok=True)
+            raise HTTPException(422, "That file is empty.")
         request = {
             "style": style,
             "lyrics": lyrics,
@@ -196,11 +214,7 @@ def create_app(
         }
         job = app.state.store.create_job(request, kind="cover")
         path = uploads / f"{job['id']}{suffix}"
-        written = await _save_upload(audio, path)
-        if written == 0:
-            path.unlink(missing_ok=True)
-            app.state.store.mark_finished(job["id"], "failed", "the upload was empty")
-            raise HTTPException(422, "That file is empty.")
+        staged.replace(path)
         app.state.store.set_source_audio(job["id"], str(path))
         app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
@@ -433,6 +447,12 @@ def create_app(
         app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
     return app
+
+
+def _upload_suffix(filename: str | None) -> str:
+    """A safe extension from the upload's name; the name itself never reaches the filesystem."""
+    suffix = Path(filename or "").suffix[:16]
+    return suffix if re.fullmatch(r"\.[A-Za-z0-9]{1,15}", suffix or "") else ".audio"
 
 
 async def _save_upload(upload: UploadFile, path: Path) -> int:

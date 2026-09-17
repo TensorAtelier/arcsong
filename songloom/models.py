@@ -75,11 +75,30 @@ def weights_state(models: Models) -> dict[str, Any]:
 
 
 def bytes_on_disk(models: Models) -> int:
-    """What downloads have written so far, partial files included, capped at the total so
-    metadata files never push the bar past 100%."""
-    root = models.directory
-    written = sum(f.stat().st_size for f in root.rglob("*") if f.is_file()) if root.is_dir() else 0
-    return min(written, sum(models.files().values()))
+    """What this part's download has written so far, partly written files included. Counts only
+    the files the part declares, because two parts can share one directory (the covers weights
+    sit beside the song weights)."""
+    written = 0
+    for name, size in models.files().items():
+        path = models.directory / name
+        if path.is_file():
+            written += min(path.stat().st_size, size)
+            continue
+        partial = _incomplete_path(models.directory, name)
+        if partial is not None and partial.is_file():
+            written += min(partial.stat().st_size, size)
+    return written
+
+
+def _incomplete_path(directory: Path, name: str) -> Path | None:
+    """Where the hub writes a file it is still fetching: `<local dir>/.cache/huggingface/
+    download/<rest>.incomplete`, with the part's first path segment as the local dir."""
+    parts = Path(name).parts
+    if len(parts) < 2:
+        return None
+    root, rest = directory / parts[0], Path(*parts[1:])
+    cache = root / ".cache" / "huggingface" / "download" / rest
+    return cache.with_name(cache.name + ".incomplete")
 
 
 # --- mlx-Yue --------------------------------------------------------------------------------
@@ -124,10 +143,13 @@ LICENCE = {
     "id": "CC-BY-NC-4.0",
     "name": "Creative Commons Attribution-NonCommercial 4.0",
     "url": "https://creativecommons.org/licenses/by-nc/4.0/legalcode",
+    # Every set of weights songloom downloads, song and covers alike, under this one licence.
     "models": [
         "https://huggingface.co/m-a-p/YuE2-3B",
         "https://huggingface.co/m-a-p/YuE2-Vae",
         f"https://huggingface.co/{CONVERTED_REPO}",
+        "https://huggingface.co/m-a-p/SheetSage2",
+        "https://huggingface.co/m-a-p/MERT-v2-FullSong",
     ],
 }
 RUNTIME_CHECK_SECONDS = 60

@@ -42,6 +42,7 @@ class MlxYueEngine:
         self.transcription_models = Path(transcription_models or models).expanduser()
         self.require_ac = require_ac
         self._pipe: Any = None
+        self._sheetsage: Any = None
         self._generation_config: Any = None
         self._precision: str | None = None
 
@@ -77,11 +78,12 @@ class MlxYueEngine:
         emit({"type": "stage", "stage": TRANSCRIBING})
         if out_dir.exists():
             shutil.rmtree(out_dir)  # transcription insists on a fresh directory
-        result = transcribe(
+        # mlx-Yue raises its own InterruptedError on cancel; the guard turns it into Cancelled.
+        result = _cancel_guard(cancelled)(
+            transcribe,
             audio,
             out_dir,
-            model_path=str(self.transcription_models / "sheetsage2"),
-            base_model=str(self.transcription_models / "mert2"),
+            model=self._transcriber(cancelled),
             offline=True,
             task=TRANSCRIPTION_TASK,
             cancelled=cancelled,
@@ -91,6 +93,19 @@ class MlxYueEngine:
         if result.get("status") != "complete" or not abc:
             raise ValueError(result.get("abc_error") or "the recording produced no Score")
         return ScoreOutput(abc)
+
+    def _transcriber(self, cancelled: CancelCheck):
+        """SheetSage2 and its 2.4 GB MERT2 parent, loaded once and kept for later covers."""
+        if self._sheetsage is None:
+            from lyra.transcription.model import SheetSage2
+
+            self._sheetsage = SheetSage2.from_pretrained(
+                str(self.transcription_models / "sheetsage2"),
+                str(self.transcription_models / "mert2"),
+                offline=True,
+                cancelled=cancelled,
+            )
+        return self._sheetsage
 
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         """The planning Stage alone: seconds, and nothing is written to disk."""

@@ -85,7 +85,8 @@ export default function SetupView({ setup, error, onChanged }: Props) {
       <div className="setup-section">
         <h3>Model licence</h3>
         <p>
-          The YuE2 model weights are licensed under{" "}
+          Every set of weights songloom downloads — the song model and, if you use covers, the
+          transcription models — is licensed under{" "}
           <a href={licence.url} target="_blank" rel="noreferrer">
             {licence.name}
           </a>{" "}
@@ -157,7 +158,7 @@ function PartSection({ part, acknowledged, busy, checking, onAct }: PartProps) {
             </span>
           </li>
         ))}
-        {checking && (
+        {(checking || !part.checked) && (
           <li className="check muted">
             <span className="mark">…</span>
             <span>Checking…</span>

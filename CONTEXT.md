@@ -34,6 +34,10 @@ _Avoid_: HQ render, full quality
 Make a Draft's Final by re-synthesizing its saved Semantic tokens and noise; planning and semantic generation don't run again.
 _Avoid_: upscale, enhance, re-render
 
+**Cover**:
+A song made from a recording the user uploads: it is transcribed into a Score, which is then re-sung with a new style and lyrics.
+_Avoid_: remix, remake, version
+
 **Variations**:
 Several Takes of one Song request that differ only in seed, queued together and compared side by side.
 _Avoid_: batch, candidates, alternatives
@@ -45,7 +49,7 @@ _Avoid_: favourite, like, rating
 ### Inside generation
 
 **Stage**:
-One of the four steps a Take passes through: planning (writes the Score), semantic generation (writes Semantic tokens), synthesis (turns them into Latents), decoding (turns Latents into audio).
+One step of a job's work. A Take passes through four: planning (writes the Score), semantic generation (writes Semantic tokens), synthesis (turns them into Latents), decoding (turns Latents into audio). A Cover has one of its own, transcribing, which comes before any of those.
 _Avoid_: phase, step
 
 **Semantic tokens**:

@@ -72,6 +72,8 @@ class Part:
     label: str
     models: Models
     summary: str = ""
+    # The Engine part: songs need it, and it never waits for its checks to finish.
+    required: bool = False
 
 
 class Setup:
@@ -130,21 +132,26 @@ class Setup:
         with self._lock:
             download = dict(self._downloads[part.id])
             checks = list(self._part_checks.get(part.id, []))
+            checked = part.id in self._part_checks
         if download["state"] == "running":
             download["bytes"] = bytes_on_disk(part.models)
             download["bytes_total"] = weights["bytes_total"]
-        return {
+        snapshot = {
             "id": part.id,
             "label": part.label,
             "summary": part.summary,
+            "required": part.required,
             "weights": weights,
             "download": download,
+            "checked": checked,
             "checks": [
                 *checks,
                 _disk_check(part.models.directory, weights),
                 _weights_check(weights, download["state"], part.label),
             ],
         }
+        snapshot["usable"] = _part_usable(snapshot)
+        return snapshot
 
     def part(self, part_id: str) -> dict[str, Any] | None:
         part = self.parts.get(part_id)
@@ -153,7 +160,7 @@ class Setup:
     def usable(self, part_id: str) -> bool:
         """This part's weights are installed, nothing is rewriting them, and its own checks pass."""
         snapshot = self.part(part_id)
-        return snapshot is not None and _part_usable(snapshot)
+        return snapshot is not None and snapshot["usable"]
 
     def can_render(self, *_ignored) -> bool:
         return self.usable(ENGINE)
@@ -333,8 +340,12 @@ def _disk_check(directory: Path, weights: dict[str, Any]) -> Check:
 
 
 def _part_usable(snapshot: dict[str, Any]) -> bool:
-    """Installed, no download rewriting or failing on it, and its own checks (Metal, ffmpeg)
-    all pass — sizes alone can't catch a corrupt file, so a failed verification blocks too."""
+    """Installed, no download rewriting or failing on it, and its own checks (Metal, ffmpeg) all
+    pass — sizes alone can't catch a corrupt file, so a failed verification blocks too. An
+    optional part also waits for its checks: covers without ffmpeg would fail in the worker,
+    while the Engine part doesn't wait, since a bad runtime fails the model load anyway."""
+    if not snapshot["checked"] and not snapshot["required"]:
+        return False
     return (
         snapshot["weights"]["installed"]
         and snapshot["download"]["state"] not in ("running", "failed")

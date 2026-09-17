@@ -66,7 +66,6 @@ class JobRunner:
         self.songs_dir = songs_dir
         # A cover's transcription exports (MIDI, LAB, result.json) live beside the songs.
         self.covers_dir = songs_dir.parent / "covers"
-        self.uploads_dir = songs_dir.parent / "uploads"
         self.spec = spec
         self.cancel_grace = cancel_grace
         self.load_retry = load_retry

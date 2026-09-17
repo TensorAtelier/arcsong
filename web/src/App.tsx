@@ -25,15 +25,9 @@ function viewFromHash(): View {
   return hash === HASHES.library ? "library" : hash === HASHES.setup ? "setup" : "create";
 }
 
-/** Covers need their own weights and ffmpeg; Setup reports both on the covers part. */
+/** Covers need their own weights and ffmpeg; the server decides, so the two never disagree. */
 function coversReady(setup: Setup | null): boolean {
-  const part = setup?.parts?.find((p) => p.id === "covers");
-  if (!part) return false;
-  return (
-    part.weights.installed &&
-    part.download.state !== "running" &&
-    part.checks.every((check) => check.status !== "fail" || check.id === "weights")
-  );
+  return setup?.parts?.find((p) => p.id === "covers")?.usable ?? false;
 }
 
 /** The Score behind `#/score/job/<id>` or `#/score/song/<id>`, or null. */

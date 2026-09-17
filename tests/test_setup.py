@@ -407,3 +407,35 @@ def test_the_real_transcription_weights_are_described(tmp_path):
     }
     [ffmpeg] = models.engine_checks()
     assert ffmpeg["id"] == "ffmpeg" and ffmpeg["status"] in ("ok", "fail")
+
+
+def test_a_parts_progress_counts_only_its_own_files(tmp_path):
+    """The covers weights sit beside the song weights, so a part must not count the other's
+    files as its own download progress."""
+    from songloom.models import TranscriptionModels, bytes_on_disk
+
+    shared = tmp_path / "models"
+    (shared / "converted").mkdir(parents=True)
+    (shared / "converted" / "ar-8bit.safetensors").write_bytes(b"x" * 4096)  # a song weight
+    covers = TranscriptionModels(shared)
+
+    assert bytes_on_disk(covers) == 0
+
+    sheet = shared / "sheetsage2"
+    sheet.mkdir()
+    (sheet / "config.json").write_bytes(b"y" * 2060)
+    partial = sheet / ".cache" / "huggingface" / "download"
+    partial.mkdir(parents=True)
+    (partial / "model.safetensors.incomplete").write_bytes(b"z" * 1000)
+
+    assert bytes_on_disk(covers) == 2060 + 1000
+    assert bytes_on_disk(covers) < weights_state(covers)["bytes_total"]
+
+
+def test_the_licence_names_every_set_of_weights_songloom_downloads(tmp_path):
+    with serve_parts(tmp_path) as client:
+        licence = client.get("/api/setup").json()["licence"]
+
+    assert licence["id"] == "CC-BY-NC-4.0"
+    assert any("SheetSage2" in url for url in licence["models"])
+    assert any("MERT-v2-FullSong" in url for url in licence["models"])

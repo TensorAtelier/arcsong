@@ -20,5 +20,14 @@ Their licence texts ship inside their npm packages, listed in `web/package.json`
 
 ## Model weights
 
-The YuE2 weights songloom downloads are **not** covered by this repository's licence: they are
-CC BY-NC 4.0 (non-commercial), and the Setup page shows and records that acknowledgement.
+The weights songloom downloads are **not** covered by this repository's licence. All of them are
+CC BY-NC 4.0 (non-commercial), and the Setup page shows and records that acknowledgement:
+
+- Song model: [m-a-p/YuE2-3B](https://huggingface.co/m-a-p/YuE2-3B),
+  [m-a-p/YuE2-Vae](https://huggingface.co/m-a-p/YuE2-Vae), converted for MLX as
+  [vanch007/mlx-Yue2-3B](https://huggingface.co/vanch007/mlx-Yue2-3B).
+- Covers (optional): [m-a-p/SheetSage2](https://huggingface.co/m-a-p/SheetSage2) and its parent
+  [m-a-p/MERT-v2-FullSong](https://huggingface.co/m-a-p/MERT-v2-FullSong).
+
+Covers also need [ffmpeg](https://ffmpeg.org), which songloom detects but never ships: it is a
+separate program under its own licence, installed by you.
