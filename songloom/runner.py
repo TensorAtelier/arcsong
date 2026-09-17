@@ -175,6 +175,14 @@ class JobRunner:
             listed = self.store.list_jobs()
         return [{**j, "live": live if j["id"] == running else None, "seq": seq} for j in listed]
 
+    def group(self, group_id: int) -> list[dict[str, Any]]:
+        """A group's jobs, oldest first, with live progress like `jobs()`."""
+        with self._lock:
+            running, live = self._running, dict(self._live)
+            seq = next(self._seq)
+            listed = self.store.list_group(group_id)
+        return [{**j, "live": live if j["id"] == running else None, "seq": seq} for j in listed]
+
     def dispatch(self) -> None:
         """Send the oldest queued job to the worker if it is idle, starting a worker if there is
         none (unless the last model load failed too recently)."""
@@ -220,6 +228,15 @@ class JobRunner:
 
     def next_seq(self) -> int:
         return next(self._seq)
+
+    def star_song(self, song_id: int, starred: bool) -> dict[str, Any] | None:
+        if not self.store.set_starred(song_id, starred):
+            return None
+        song = self.store.get_song(song_id)
+        self.publish_message({"type": "song", "song": song, "seq": self.next_seq()})
+        # The job snapshot carries the star too.
+        self.publish(song["job_id"])
+        return song
 
     def publish_message(self, message: dict[str, Any]) -> None:
         """Broadcast a message that is not a job snapshot (`deleted`, `setup`)."""

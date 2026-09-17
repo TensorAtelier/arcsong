@@ -32,13 +32,32 @@ STATIC_DIR = Path(__file__).parent / "static"
 AUDIO_TYPES = {".flac": "audio/flac", ".wav": "audio/wav"}
 
 
+SEED_LIMIT = 2**31
+MAX_VARIATIONS = 8
+
+
 class SongRequest(BaseModel):
     style: str = Field(min_length=1)
     lyrics: str = ""
     mode: Literal["full", "melody", "off"] = "full"
-    seed: int | None = Field(default=None, ge=0, lt=2**31)
+    seed: int | None = Field(default=None, ge=0, lt=SEED_LIMIT)
     precision: Literal["8bit", "bf16"] = "8bit"
     steps: Literal[8, 32] = 32
+
+
+class GroupRequest(SongRequest):
+    count: int = Field(ge=2, le=MAX_VARIATIONS)
+
+
+class Star(BaseModel):
+    starred: bool
+
+
+def variation_seeds(seed: int | None, count: int) -> list[int]:
+    """A given seed s gives s, s+1, …; no seed gives distinct random seeds."""
+    if seed is None:
+        return random.sample(range(SEED_LIMIT), count)
+    return [(seed + i) % SEED_LIMIT for i in range(count)]
 
 
 def create_app(
@@ -84,11 +103,31 @@ def create_app(
             raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
         request = body.model_dump()
         if request["seed"] is None:
-            request["seed"] = random.randrange(2**31)
+            request["seed"] = random.randrange(SEED_LIMIT)
         job = app.state.store.create_job(request)
         app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
         return app.state.runner.job(job["id"])
+
+    @app.post("/api/groups", status_code=201)
+    def create_group(body: GroupRequest):
+        """Queue Variations: `count` jobs of one Song request that differ only in seed."""
+        if not app.state.setup.can_render():
+            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
+        base = body.model_dump(exclude={"count"})
+        requests = [{**base, "seed": seed} for seed in variation_seeds(body.seed, body.count)]
+        jobs = app.state.store.create_group(requests)
+        for job in jobs:
+            app.state.runner.publish(job["id"])
+        app.state.runner.dispatch()
+        return [app.state.runner.job(job["id"]) for job in jobs]
+
+    @app.get("/api/groups/{group_id}")
+    def get_group(group_id: int):
+        jobs = app.state.runner.group(group_id)
+        if not jobs:
+            raise HTTPException(404, "no such group")
+        return jobs
 
     @app.get("/api/jobs")
     def list_jobs():
@@ -113,7 +152,8 @@ def create_app(
     async def events(request: Request):
         """Server-sent events: a `job` message with the job's snapshot whenever a job changes
         (created, started, Stage change, progress at most a few times a second, finished); a
-        `deleted` message when a song is deleted; a `setup` message with the Setup snapshot when
+        `deleted` message when a song is deleted; a `song` message with the song when its star
+        changes; a `setup` message with the Setup snapshot when
         checks finish, the licence is acknowledged, or a download starts, progresses or ends."""
         broadcaster = app.state.runner.broadcaster
         subscription = broadcaster.subscribe()
@@ -180,6 +220,13 @@ def create_app(
         if song is None:
             raise HTTPException(404, "no such song")
         return {"deleted": song_id, "job_id": song["job_id"]}
+
+    @app.put("/api/songs/{song_id}/star")
+    def star_song(song_id: int, body: Star):
+        song = app.state.runner.star_song(song_id, body.starred)
+        if song is None:
+            raise HTTPException(404, "no such song")
+        return _with_size(song)
 
     @app.get("/api/songs/{song_id}/download")
     def download_song(song_id: int, format: Literal["flac", "wav"] = "flac"):
