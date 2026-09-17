@@ -27,7 +27,7 @@ Ranked by *how often a user needs it* × *how much it makes the app worth openin
 | 2 | **Job queue with live progress + cancel** | A full song takes minutes; a UI that freezes or can't be cancelled is unusable. | v1 |
 | 3 | **Library** — list past songs, play, download FLAC/WAV, view settings, "re-run with these settings" | Generative output is disposable only if you can find the good ones again. | v1 |
 | 4 | **Model setup screen** — detect/download weights with progress, run `doctor`, show licence | Without it, first run fails for anyone who didn't follow the README exactly. | v1 |
-| 5 | **Draft → final** — quick 8-step render, then re-synthesize the same take at 32 steps | M0: feasible on mlx-Yue and bit-identical to a direct 32-step render. Synthesis dominates a 32-step Take, but the saving only appears with 2+ Drafts per Final (one Draft + Final = 584 s vs 486 s direct), so it pairs with variations. v1 still gets the fast first listen by exposing Synthesis steps (8 = draft, 32 = final). | Steps selector v1; "Finalize" action v1.1 (with #6) |
+| 5 | **Draft → final** — quick 8-step render, then re-synthesize the same take at 32 steps | M0: feasible on mlx-Yue and bit-identical to a direct 32-step render. Synthesis dominates a 32-step Take, but the saving only appears with 2+ Drafts per Final (one Draft + Final = 584 s vs 486 s direct), so it pairs with variations. v1 still gets the fast first listen by exposing Synthesis steps (8 = draft, 32 = final). | Steps selector v1; "Finalize" shipped in M2 (with #6) |
 | 6 | **Variations / compare** — N seeds of one request, side-by-side players, star/pick | Output is stochastic; upstream's best benchmark result is *best-of-8*. Picking is how people get good songs. | v1.1 |
 | 7 | **Score view & edit** — render the generated ABC plan as notation, preview melody via MIDI synth, edit, re-render song from edited score | YuE2's unique feature vs Suno-likes. Plan-first flow also lets users approve a melody *before* the expensive render. | v1.2 |
 | 8 | **Prompt helpers** — style preset library, lyric section tags (`[Verse]`/`[Chorus]`) template, length estimate | Cheap, raises hit rate for new users. Can trickle in alongside anything. | ongoing |
@@ -160,6 +160,7 @@ from M0: after `snapshot_download`, delete `converted/.cache` and `converted/.gi
 (or ignore `.gitattributes`), or mlx-Yue's `verify_conversion` rejects the directory.
 
 ### M2 — Variations + Finalize (#6, #5)
+Done 2026-09-17 (`.scratch/m2-variations/REPORT.md`): Create queues 2/4/8 Takes with distinct seeds; a Compare view shows a waveform per Take with one shared playhead; star a pick (Starred filter in the Library); Finalize re-synthesizes a Draft's saved Semantic tokens and noise at 32 steps, verified on real weights.
 "Generate ×N" Drafts (8 steps) with distinct seeds, compare view with synced players +
 waveforms, star/pick, then "Finalize" the pick: re-synthesize its saved Semantic tokens and
 noise at 32 steps (~361 s for a 3-min song instead of a full 486 s re-render).
