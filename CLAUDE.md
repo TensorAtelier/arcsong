@@ -6,6 +6,7 @@ Local web UI for the YuE2 music model. Plan: `PLAN.md`. Prior art: `docs/prior-a
 
 - Run: `uv run songloom serve` (127.0.0.1:8840, `--engine mlx|fake`, `--data DIR`), or `dev start songloom`. Data (SQLite `songloom.db` + `songs/<job id>/`) lives in `$SONGLOOM_DATA`, else `~/Library/Application Support/songloom`. mlx-Yue weights come from `$SONGLOOM_MLX_MODELS`, else `~/projects/mlx-Yue/models`.
 - Shape: FastAPI (`app.py`) → `JobRunner` (`runner.py`, owns the queue, live progress, SSE broadcast, worker restarts) → one spawned worker process (`worker.py`) that owns the Engine (`mlx_engine.py`, or `fake_engine.py` for tests). Only the server writes the database. A song is indexed only after mlx-Yue's `save_artifacts` returns.
+- Library: `GET /api/songs`, `GET /api/library` (usage), `GET /api/songs/{id}/download?format=flac|wav` (converted in memory, keeping bit depth), `DELETE /api/songs/{id}` (permanent: Take directory, song row and job row; broadcasts an SSE `deleted` message). The page is a Create / Library view pair on `#/` and `#/library`.
 - Web: Vite + React + TS in `web/`, built into `songloom/static/` (committed, so running needs no Node). After editing `web/src`, run `cd web && npm run build` and commit the build.
 - Verify: `uv run pytest -q`, `uv run ruff check .`, `cd web && npm run typecheck`. Real render test: `SONGLOOM_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py`.
 
@@ -15,6 +16,7 @@ Gotchas:
 - Job snapshots carry a `seq` seeded from the clock, so it keeps increasing across restarts; the page reloads the job list whenever its event stream reconnects.
 - Serve FLAC as `audio/flac`; Chrome won't play the `audio/x-flac` that mimetypes guesses.
 - Static files are mounted last in `create_app`; a mount registered before a route swallows it.
+- The page remembers deleted song and job ids, so a list response already in flight can't resurrect a deleted song. Keep that filter when adding new list reloads.
 
 ## M0 engine spike (`spike/`)
 
