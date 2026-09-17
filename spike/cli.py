@@ -14,7 +14,7 @@ from spike import audiocpp_setup
 from spike.audiocpp_engine import AudioCppEngine
 from spike.cases import load_case
 from spike.fake import FakeEngine
-from spike.measurements import cancel, doctor, draft_final, repro, timing
+from spike.measurements import cancel, doctor, download, draft_final, hygiene, repro, timing
 from spike.mlx_engine import DEFAULT_MODELS_DIR, MlxYueEngine
 from spike.results import case_stem
 from spike.runner import DEFAULT_TIMEOUT_SECONDS, EngineFactory, resummarize, run_case
@@ -174,6 +174,40 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_TIMEOUT_SECONDS,
         help="seconds before a run is killed and recorded as failed (default %(default)g)",
     )
+
+    run = commands.add_parser(
+        "hygiene",
+        help="Kill a clip Take mid-synthesis, rerun to the same output directory, and find "
+        "the cleanup a rerun needs (staged API and the Engine's command line)",
+    )
+    _common_arguments(run)
+    run.add_argument("--precision", help="default: 8bit for mlx")
+    run.add_argument("--steps", type=int, default=hygiene.STEPS, help="Synthesis steps")
+    run.add_argument(
+        "--kill-after",
+        type=float,
+        default=hygiene.KILL_AFTER_SECONDS,
+        help="seconds synthesis runs before the Take is killed (default %(default)g)",
+    )
+    run.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help="seconds before a run is killed and recorded as failed (default %(default)g)",
+    )
+
+    run = commands.add_parser(
+        "download",
+        help="Download a small weight set into a temporary directory, record the metadata "
+        "files the hub adds, verify, and show a fix working",
+    )
+    _common_arguments(run)
+    run.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help="seconds before a run is killed and recorded as failed (default %(default)g)",
+    )
     return parser
 
 
@@ -301,5 +335,28 @@ def main(argv: list[str] | None = None) -> int:
             timeout=args.timeout,
             **common,
         )
+    elif args.command == "hygiene":
+        run_case(
+            measurement=hygiene.MEASUREMENT,
+            measure=hygiene.measure,
+            summarize=hygiene.summarize,
+            case=hygiene.CASE,
+            request=load_case(hygiene.CASE),
+            params=hygiene.params(
+                args.precision or hygiene.PRECISIONS[args.engine], args.steps, args.kill_after
+            ),
+            timeout=args.timeout,
+            **common,
+        )
+    elif args.command == "download":
+        run_case(
+            measurement=download.MEASUREMENT,
+            measure=download.measure,
+            summarize=download.summarize,
+            case=download.CASE,
+            request={},
+            params={},
+            timeout=args.timeout,
+            **common,
+        )
     return 0
-

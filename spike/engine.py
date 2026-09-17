@@ -63,6 +63,31 @@ class RunOutput:
     details: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class CliTake:
+    """A whole Take started through an Engine's own command line (optional capability
+    `take_command`). `stage_markers` maps a Stage to text its output prints as it begins."""
+
+    argv: list[str]
+    env: dict[str, str] = field(default_factory=dict)
+    stage_markers: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class WeightsDownload:
+    """What an Engine's weight download put in a directory (optional capability
+    `download_weights`). Paths are relative to that directory."""
+
+    # The directories the Engine loads weights from, e.g. {"converted": ..., "vae": ...}.
+    weight_dirs: dict[str, str]
+    # Files fetched from the model hub, as the hub names them (joined to their directory).
+    downloaded: list[str]
+    # Files placed without downloading them (e.g. local copies of large weights).
+    supplied_locally: list[dict[str, Any]] = field(default_factory=list)
+    # How each directory was fetched: repository, revision, patterns.
+    sources: list[dict[str, Any]] = field(default_factory=list)
+
+
 def never_cancelled() -> bool:
     return False
 

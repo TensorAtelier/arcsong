@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import argparse
+import json
 import os
+import shutil
 import signal
+import sys
+import tempfile
 import time
 import wave
 import zlib
@@ -15,11 +20,13 @@ import numpy as np
 from spike.engine import (
     STAGES,
     CancelCheck,
+    CliTake,
     EngineInfo,
     EventSink,
     RunOutput,
     StageEvent,
     Unsupported,
+    WeightsDownload,
     ignore_event,
     never_cancelled,
 )
@@ -62,7 +69,11 @@ class FakeEngine:
         takes_reuse_loaded_model: bool = True,
         own_noise_hidden: bool = False,
         noise_probe_seconds: float = 0.0,
+        take_cli: bool = True,
+        download_metadata: bool = True,
     ):
+        # The options this Engine was made with, so its command line can make the same one.
+        self.options = {k: v for k, v in locals().items() if k != "self"}
         self.stage_seconds = stage_seconds
         self.load_seconds = load_seconds
         self.lazy_load_seconds = dict(lazy_load_seconds or {})
@@ -90,6 +101,11 @@ class FakeEngine:
         # count (`noise_probe_seconds`) and supplying harness-written noise.
         self.own_noise_hidden = own_noise_hidden
         self.noise_probe_seconds = noise_probe_seconds
+        # Like mlx-Yue: a command line (`python -m spike.fake take ...`) that refuses a
+        # non-empty output directory and a stale `<output>.resources.json[l]` next to it.
+        self.take_cli = take_cli
+        # Like a Hugging Face `local_dir` download: `.cache/huggingface/...` metadata.
+        self.download_metadata = download_metadata
         self.precision: str | None = None
         self.cancelled_before = False
         self.usable = True
@@ -315,3 +331,129 @@ class FakeEngine:
         pcm = self.decode(latents, cancelled=cancelled, on_event=on_event)
         score = (draft_dir / "score.abc").read_text()
         return self._save(Path(output_dir), score, semantic, noise, latents, pcm)
+
+    def take_command(
+        self, request: dict, output_dir: Path, precision: str, steps: int, workdir: Path
+    ) -> CliTake:
+        """A whole Take through this Engine's command line (see `take_cli`)."""
+        if not self.take_cli:
+            raise Unsupported("FakeEngine has no command line")
+        workdir.mkdir(parents=True, exist_ok=True)
+        request_path = workdir / "request.json"
+        request_path.write_text(json.dumps(request))
+        argv = [sys.executable, "-m", "spike.fake", "take", "--options", json.dumps(self.options),
+                "--request", str(request_path), "--output", str(output_dir),
+                "--precision", precision, "--steps", str(steps)]  # fmt: skip
+        return CliTake(argv, stage_markers={stage: _marker(stage) for stage in STAGES})
+
+    # Like mlx-Yue's converted directory: exactly these files, plus an optional README.
+    CONVERTED_FILES = frozenset({"config.json", "weights.bin"})
+    CONVERTED_OPTIONAL = frozenset({"README.md"})
+
+    def download_weights(self, target_dir: Path) -> WeightsDownload:
+        """Mimics a hub `local_dir` snapshot of each weight directory (with `.gitattributes`
+        and, if `download_metadata`, `.cache/huggingface/...`), with the large converted
+        weight supplied locally instead of downloaded."""
+        repos = {"converted": [".gitattributes", "config.json"], "vae": ["model.bin"]}
+        downloaded = []
+        for directory, names in repos.items():
+            for name in names:
+                path = target_dir / directory / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"fake {name}\n")
+                downloaded.append(f"{directory}/{name}")
+                if self.download_metadata:
+                    meta = target_dir / directory / ".cache" / "huggingface"
+                    (meta / "download").mkdir(parents=True, exist_ok=True)
+                    (meta / ".gitignore").write_text("*\n")
+                    (meta / "download" / f"{name}.metadata").write_text("etag\n")
+        (target_dir / "converted" / "weights.bin").write_bytes(b"weights")
+        return WeightsDownload(
+            weight_dirs={"converted": "converted", "vae": "vae"},
+            downloaded=downloaded,
+            supplied_locally=[
+                {"path": "converted/weights.bin", "source": "fake", "method": "copy"}
+            ],
+            sources=[{"repository": f"fake/{name}", "local_dir": name} for name in repos],
+        )
+
+    def unexpected_weight_files(self, weight_dirs: dict[str, Path]) -> list[Path]:
+        converted = Path(weight_dirs["converted"])
+        allowed = self.CONVERTED_FILES | self.CONVERTED_OPTIONAL
+        return sorted(
+            path
+            for path in converted.rglob("*")
+            if path.is_file() and path.relative_to(converted).as_posix() not in allowed
+        )
+
+    def verify_weights(self, weight_dirs: dict[str, Path]) -> dict:
+        converted = Path(weight_dirs["converted"])
+        present = {p.relative_to(converted).as_posix() for p in converted.rglob("*") if p.is_file()}
+        unexpected = [
+            p.relative_to(converted).as_posix() for p in self.unexpected_weight_files(weight_dirs)
+        ]
+        missing = sorted(self.CONVERTED_FILES - present)
+        if missing or unexpected:
+            raise ValueError(
+                f"Converted directory has missing or unexpected files: "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+        if not (Path(weight_dirs["vae"]) / "model.bin").is_file():
+            raise FileNotFoundError("No VAE weights")
+        return {"files": sorted(present)}
+
+
+def _marker(stage: str) -> str:
+    return f"fake: {stage} begins"
+
+
+def _take_cli(argv: list[str]) -> int:
+    """Mimics mlx-Yue's `generate --output`: an empty output directory is required, and
+    `<output>.resources.jsonl` (written from the start) and `<output>.resources.json`
+    (written at the end) must not exist yet. The Take is saved when it is complete."""
+    parser = argparse.ArgumentParser(prog="python -m spike.fake take")
+    parser.add_argument("--options", required=True)
+    parser.add_argument("--request", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--precision", required=True)
+    parser.add_argument("--steps", type=int, required=True)
+    args = parser.parse_args(argv)
+    output: Path = args.output
+    if output.exists() and any(output.iterdir()):
+        print("error: Output directory must be empty", file=sys.stderr)
+        return 2
+    log_path = output.with_name(output.name + ".resources.jsonl")
+    report_path = output.with_name(output.name + ".resources.json")
+    for path in (log_path, report_path):
+        if path.exists():
+            print(f"FileExistsError: Resource evidence already exists: {path}", file=sys.stderr)
+            return 1
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("x") as log:
+        log.write(json.dumps({"sample": 1}) + "\n")
+        log.flush()
+        engine = FakeEngine(**json.loads(args.options))
+        engine.load(args.precision)
+
+        def on_event(event: StageEvent) -> None:
+            if event.kind == "start":
+                print(_marker(event.stage), file=sys.stderr, flush=True)
+
+        request = json.loads(args.request.read_text())
+        with tempfile.TemporaryDirectory() as staging:
+            engine.run(request, args.steps, Path(staging) / "take", on_event=on_event)
+            shutil.copytree(Path(staging) / "take", output, dirs_exist_ok=True)
+    report_path.write_text(json.dumps({"samples": 1}))
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] != ["take"]:
+        print("usage: python -m spike.fake take ...", file=sys.stderr)
+        return 2
+    return _take_cli(argv[1:])
+
+
+if __name__ == "__main__":
+    sys.exit(main())

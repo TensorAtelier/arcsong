@@ -110,7 +110,7 @@
 ## 07 — Draft→Final, both Engines
 
 - Result: done
-- Commit: COMMIT07
+- Commit: 0079aed
 - QA rounds: 2
 - Verification:
   ```
@@ -124,3 +124,21 @@
   ```
 - QA verdict: PASS — every number checked against the run dirs (numpy/soundfile, sha1, mtimes, CLI logs). mlx Final == direct-32 bit for bit and is a real re-synthesis (360 s, no planning or semantic generation); audio.cpp's Draft time excludes the probe, and the noise mismatch and same-seed workaround are explained; `--resummarize` reproduces the committed files exactly and runs nothing.
   (Round 1: FAIL — 4 defects in how audio.cpp's result was recorded; fixed without a GPU rerun.)
+
+## 08 — Stale resource files and model download checks (mlx-Yue)
+
+- Result: done
+- Commit: COMMIT08
+- QA rounds: 1
+- Verification:
+  ```
+  $ uv run pytest -q
+  100 passed in 85.99s (0:01:25)
+  $ uv run ruff check .
+  All checks passed!
+  $ caffeinate -ims uv run spike hygiene --engine mlx --results-dir qa08/results --runs-dir qa08/runs
+  ok hygiene-mlx-clip-8bit-8 in 63.2s
+  $ caffeinate -ims uv run spike download --engine mlx --results-dir qa08/results --runs-dir qa08/runs
+  ok download-mlx-weights in 22.8s
+  ```
+- QA verdict: PASS — both measurements re-run independently with matching results. Claims checked against the mlx-Yue 9253ed1 source and huggingface_hub 1.31.0; the VAE really came over the network; the temp dir was deleted; ~/projects/mlx-Yue/models was unchanged (path/size/mtime diff).

@@ -6,9 +6,9 @@ Read first: spec, ledger D-013; `CONTEXT.md`. mlx-Yue source is installed as a d
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Results JSON for `hygiene`, with the leftover files after a kill, the rerun outcome with and without cleanup, and the cleanup rule
-- [ ] Results JSON for `download`, with the file set downloaded, extra metadata files, the verification outcome, and a fix shown working
-- [ ] The temporary download directory is deleted afterwards
-- [ ] `uv run pytest -q` and `uv run ruff check .` pass
+- [x] Results JSON for `hygiene`, with the leftover files after a kill, the rerun outcome with and without cleanup, and the cleanup rule
+- [x] Results JSON for `download`, with the file set downloaded, extra metadata files, the verification outcome, and a fix shown working
+- [x] The temporary download directory is deleted afterwards
+- [x] `uv run pytest -q` and `uv run ruff check .` pass

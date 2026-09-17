@@ -7,7 +7,10 @@ only the fresh child process that runs a measurement loads them.
 from __future__ import annotations
 
 import dataclasses
+import fnmatch
 import json
+import subprocess
+import sys
 import time
 from importlib import metadata
 from pathlib import Path
@@ -18,10 +21,12 @@ import numpy as np
 from spike.engine import (
     STAGES,
     CancelCheck,
+    CliTake,
     EngineInfo,
     EventSink,
     RunOutput,
     StageEvent,
+    WeightsDownload,
     ignore_event,
     never_cancelled,
 )
@@ -29,6 +34,20 @@ from spike.engine import (
 DEFAULT_MODELS_DIR = Path("~/projects/mlx-Yue/models").expanduser()
 DISTRIBUTION = "mlx-yue"
 SAMPLE_RATE = 48000
+# Pre-converted weights (mlx-Yue README) and the VAE; downloads use their current revision
+# except the VAE, which mlx-Yue pins.
+CONVERTED_REPO = "vanch007/mlx-Yue2-3B"
+# The converted repository's large weights: taken from the local models directory as APFS
+# clones rather than downloaded again (D-013); verification hashes them all the same.
+CONVERTED_LOCAL_PATTERNS = ("*.safetensors",)
+VAE_PATTERNS = ("config.json", "weights_manifest.json", "model.safetensors")
+# Text the mlx-Yue command line prints to stderr as a Stage begins.
+CLI_STAGE_MARKERS = {
+    STAGES[0]: "Planning score",
+    STAGES[1]: "Generating song",
+    STAGES[2]: "Synthesizing audio",
+    STAGES[3]: "Decoding audio",
+}
 _SAMPLING_KEYS = ("abc_sampling", "semantic_sampling")
 
 
@@ -310,3 +329,119 @@ class MlxYueEngine:
             },
             noise_path=output_dir / "noise.npy" if (output_dir / "noise.npy").is_file() else None,
         )
+
+    def take_command(
+        self, request: dict, output_dir: Path, precision: str, steps: int, workdir: Path
+    ) -> CliTake:
+        """`mlx-yue generate <request> --output <output_dir>` with this Engine's weights."""
+        from yue2.protocol import GenerationConfig
+
+        workdir.mkdir(parents=True, exist_ok=True)
+        request_path = workdir / "request.json"
+        generation = GenerationConfig(ode_steps=steps).to_dict()
+        request_path.write_text(json.dumps({**request, "generation_config": generation}))
+        argv = [
+            str(Path(sys.executable).with_name("mlx-yue")), "generate", str(request_path),
+            "--output", str(output_dir),
+            "--model", str(self.models_dir / "converted"), "--vae", str(self.models_dir / "vae"),
+            "--precision", precision, "--offline",
+        ]  # fmt: skip
+        if self.require_ac:
+            argv.append("--require-ac")
+        return CliTake(argv, stage_markers=dict(CLI_STAGE_MARKERS))
+
+    def download_weights(self, target_dir: Path) -> WeightsDownload:
+        """The README's `snapshot_download(..., local_dir=...)` for the converted weights
+        and the VAE, into `target_dir/converted` and `target_dir/vae`. Only the converted
+        repository's small files and the VAE (config, manifest, weights) are downloaded;
+        its large weights are cloned from `models_dir/converted`. Running it again over
+        the same directory downloads again, as a setup screen's retry would."""
+        from huggingface_hub import HfApi, snapshot_download
+        from lyra.conversion import VAE_REPO, VAE_REVISION
+
+        api = HfApi()
+        converted_revision = api.model_info(CONVERTED_REPO).sha
+        plans = [
+            {
+                "repository": CONVERTED_REPO,
+                "revision": converted_revision,
+                "local_dir": "converted",
+                "ignore_patterns": list(CONVERTED_LOCAL_PATTERNS),
+            },
+            {
+                "repository": VAE_REPO,
+                "revision": VAE_REVISION,
+                "local_dir": "vae",
+                "allow_patterns": list(VAE_PATTERNS),
+            },
+        ]
+        downloaded: list[str] = []
+        for plan in plans:
+            repo_files = api.list_repo_files(plan["repository"], revision=plan["revision"])
+            snapshot_download(
+                plan["repository"],
+                revision=plan["revision"],
+                local_dir=target_dir / plan["local_dir"],
+                allow_patterns=plan.get("allow_patterns"),
+                ignore_patterns=plan.get("ignore_patterns"),
+            )
+            downloaded += [
+                f"{plan['local_dir']}/{name}"
+                for name in repo_files
+                if _selected(name, plan.get("allow_patterns"), plan.get("ignore_patterns"))
+            ]
+
+        supplied = []
+        source_dir = self.models_dir / "converted"
+        for source in sorted(source_dir.iterdir()):
+            if not any(fnmatch.fnmatch(source.name, p) for p in CONVERTED_LOCAL_PATTERNS):
+                continue
+            target = target_dir / "converted" / source.name
+            if not (target.is_file() and target.stat().st_size == source.stat().st_size):
+                target.unlink(missing_ok=True)
+                # APFS clone: no extra disk space, and the source is never written.
+                subprocess.run(["cp", "-c", str(source), str(target)], check=True)
+            supplied.append(
+                {"path": f"converted/{source.name}", "source": str(source), "method": "cp -c"}
+            )
+        return WeightsDownload(
+            weight_dirs={"converted": "converted", "vae": "vae"},
+            downloaded=sorted(downloaded),
+            supplied_locally=supplied,
+            sources=plans,
+        )
+
+    @staticmethod
+    def unexpected_weight_files(weight_dirs: dict[str, Path]) -> list[Path]:
+        """Files in the converted directory `verify_conversion` rejects: anything but the
+        files its `conversion.json` lists, `conversion.json` itself and `README.md`."""
+        converted = Path(weight_dirs["converted"])
+        manifest_path = converted / "conversion.json"
+        if not manifest_path.is_file():
+            return []
+        allowed = set(json.loads(manifest_path.read_text())["files"]) | {
+            "conversion.json",
+            "README.md",
+        }
+        return sorted(
+            path
+            for path in converted.rglob("*")
+            if path.is_file() and path.relative_to(converted).as_posix() not in allowed
+        )
+
+    @staticmethod
+    def verify_weights(weight_dirs: dict[str, Path]) -> dict:
+        """What `YuE2Pipeline` checks before loading: `verify_conversion` on the converted
+        directory (every file hashed) and the VAE's weight identity."""
+        from lyra.conversion import verify_conversion
+        from yue2.storage import model_identity
+
+        manifest = verify_conversion(Path(weight_dirs["converted"]))
+        vae = model_identity(Path(weight_dirs["vae"]))
+        return {"converted_files": sorted(manifest["files"]), "vae_files": sorted(vae["files"])}
+
+
+def _selected(name: str, allow: list[str] | None, ignore: list[str] | None) -> bool:
+    if allow is not None and not any(fnmatch.fnmatch(name, p) for p in allow):
+        return False
+    return not (ignore is not None and any(fnmatch.fnmatch(name, p) for p in ignore))
