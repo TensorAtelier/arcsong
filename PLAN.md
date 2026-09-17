@@ -152,7 +152,8 @@ worker crash mid-job → job marked failed, next job runs; restart recovery; one
 test with real weights behind a flag.
 
 ### M1b — v1 usable (features #3–#4)
-Library done 2026-09-17 (`.scratch/m1b-library/REPORT.md`): list, filter, play, settings, FLAC/WAV download, re-run, edit in Create, disk usage and permanent delete. The Setup page is next (`m1b-setup`).
+Library done 2026-09-17 (`.scratch/m1b-library/REPORT.md`): list, filter, play, settings, FLAC/WAV download, re-run, edit in Create, disk usage and permanent delete.
+Setup done 2026-09-17 (`.scratch/m1b-setup/REPORT.md`): checks (Metal, RAM warning below 24 GiB, AC power, disk, weights), CC BY-NC 4.0 acknowledgement gating the download, a ~10.45 GB download of all precisions with progress, cancel/resume, metadata cleanup and verification. Weights now default to `<data>/models`. v1 (#1–#4) is feature-complete.
 Library (list/filter, player, download, re-run, disk usage + Take/Draft deletion), Setup page
 (model download with progress, `doctor`, licence acknowledgement, RAM check). Download fix
 from M0: after `snapshot_download`, delete `converted/.cache` and `converted/.gitattributes`
