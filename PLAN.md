@@ -144,6 +144,7 @@ Answered 2026-09-16 — see [`docs/m0-report.md`](docs/m0-report.md) (recommenda
 - [x] Model download without the HF cache-metadata files that fail `verify_conversion`.
 
 ### M1a — First song end to end (features #1–#2)
+Done 2026-09-17 (`.scratch/m1a-first-song/REPORT.md`). The review's 5 defects (shutdown with an open page, orphaned workers, load-failure restart loops, `seq` reset on restart, a Take finishing during shutdown) are fixed with tests.
 Backend: FastAPI, SQLite schema (jobs, songs), worker + queue + IPC, SSE progress, engine
 adapter. Frontend: bare Create page (style, lyrics with section-tag template, mode, seed,
 precision, advanced drawer) and Queue panel. Tests: engine adapter against a fake engine;

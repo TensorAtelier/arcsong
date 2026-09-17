@@ -15,3 +15,4 @@ spike/listen/
 *.gguf
 *.safetensors
 *.swp
+node_modules/
