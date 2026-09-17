@@ -7,4 +7,4 @@ goal: Build M2 from PLAN.md: "Generate ×N" Drafts with distinct seeds, a compar
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review — MET; 3 defects and 2 risks fixed after review (see REPORT.md)
