@@ -77,3 +77,23 @@ def test_lines_without_stage_timings_yield_no_events():
     assert parser.feed("ggml_metal_device_init: testing tensor API for f16 support", 1.0) == []
     assert parser.feed("[TIMING ts=20260916-170044] yue2.ar.init_ms 363.672875", 2.0) == []
     assert parser.feed("audio_out=/tmp/audio.wav", 3.0) == []
+
+
+def test_a_stage_never_starts_before_the_previous_stage_ended():
+    # The CLI's timer keeps counting while the Mac sleeps; the harness's monotonic clock
+    # does not, so a logged duration can exceed the time since the previous Stage ended.
+    parser = StageLogParser(started=0.0)
+    events = []
+    for line, t in [
+        ("[TIMING ts=0] yue2.plan_ms 1.0", 1.0),
+        ("[TIMING ts=0] yue2.semantic.abc_generate_ms 9000.0", 10.0),
+        ("[TIMING ts=0] yue2.semantic_ms 19000.0", 20.0),
+        ("[TIMING ts=0] yue2.nar_ms 500000.0", 100.0),
+        ("[TIMING ts=0] yue2.vae_decode_ms 900000.0", 110.0),
+    ]:
+        events.extend(parser.feed(line, t))
+
+    seconds = stage_seconds(events)
+    assert seconds["synthesis"] == pytest.approx(80.0)
+    assert seconds["decoding"] == pytest.approx(10.0)
+    assert all(a.t <= b.t for a, b in zip(events, events[1:], strict=False))

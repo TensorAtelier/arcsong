@@ -34,8 +34,10 @@ with open(os.environ["FAKE_CLI_RECORD"], "w") as record:
 if os.environ.get("FAKE_CLI_HANG"):
     print("[TIMING ts=0] yue2.plan_ms 1.0", flush=True)
     time.sleep(120)
+block = bytearray(b"\\x01") * (int(os.environ.get("FAKE_CLI_ALLOCATE_MIB", "0")) * 2**20)
 for entry in open({log!r}).read().splitlines():
     print(entry.split(" ", 1)[1], flush=True)
+time.sleep(float(os.environ.get("FAKE_CLI_HOLD_SECONDS", "0")))
 if os.environ.get("FAKE_CLI_FAIL"):
     print("ggml_metal: out of memory", flush=True)
     sys.exit(3)
@@ -236,3 +238,50 @@ def test_the_cli_dies_with_a_timed_out_run(tmp_path, fake_cli, monkeypatch):
     if alive(pid):
         os.kill(pid, signal.SIGKILL)
         pytest.fail("audiocpp_cli outlived its killed run")
+
+
+def run_timing(tmp_path, engine, *extra):
+    return cli.main(
+        ["timing", "--engine", engine, "--results-dir", str(tmp_path / "results"),
+         "--runs-dir", str(tmp_path / "runs"), *extra]
+    )  # fmt: skip
+
+
+def test_timing_runs_the_song_case_at_bf16_and_q8_0_by_default(tmp_path, fake_cli):
+    assert run_timing(tmp_path, "audiocpp", "--runs", "1") == 0
+
+    names = sorted(p.name for p in (tmp_path / "results").glob("*.json"))
+    assert names == [
+        "timing-audiocpp-song-bf16-32.json",
+        "timing-audiocpp-song-bf16-8.json",
+        "timing-audiocpp-song-q8_0-32.json",
+        "timing-audiocpp-song-q8_0-8.json",
+    ]
+    for name in names:
+        assert json.loads((tmp_path / "results" / name).read_text())["outcome"] == "ok"
+
+
+def test_timing_results_match_the_other_engines_field_for_field(tmp_path, fake_cli, monkeypatch):
+    monkeypatch.setenv("FAKE_CLI_ALLOCATE_MIB", "256")
+    monkeypatch.setenv("FAKE_CLI_HOLD_SECONDS", "1")
+    run_timing(tmp_path / "audiocpp", "audiocpp", "--precisions", "q8_0", "--steps", "32")
+    run_timing(tmp_path / "fake", "fake", "--precisions", "8bit", "--steps", "32")
+
+    [path] = (tmp_path / "audiocpp" / "results").glob("*.json")
+    result = json.loads(path.read_text())
+    [other] = (tmp_path / "fake" / "results").glob("*.json")
+    reference = json.loads(other.read_text())
+    assert result.keys() == reference.keys()
+    assert [run["outcome"] for run in result["runs"]] == ["ok", "ok"], result.get("error")
+    for run in result["runs"]:
+        assert run.keys() == reference["runs"][0].keys()
+        assert list(run["stage_seconds"]) == list(STAGES)
+        assert {"session_load_seconds", "ar_load_seconds", "nar_load_seconds",
+                "vae_load_seconds"} <= set(run["lazy_load_seconds"])  # fmt: skip
+        assert run["model_load_seconds"] == pytest.approx(
+            run["load_seconds"] + sum(run["lazy_load_seconds"].values())
+        )
+        files = {f["path"] for f in run["files"]}
+        assert {"audio.wav", "audiocpp.log"} <= files
+        # The CLI subprocess's footprint is measured, not only the Python wrapper's.
+        assert run["peak_footprint_bytes"] > 256 * 2**20

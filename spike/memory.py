@@ -2,7 +2,9 @@
 
 Physical footprint (`ri_phys_footprint` from `proc_pid_rusage`) counts Metal unified
 memory that RSS misses, and is what macOS memory pressure acts on. Sampling from a
-watcher works the same for an in-process Engine child and a subprocess binary.
+watcher works the same for an in-process Engine child and a subprocess binary: each
+sample sums the watched process and every process it has launched (e.g. the
+`audiocpp_cli` a Python child drives), so both Engines are measured as a whole.
 """
 
 from __future__ import annotations
@@ -38,6 +40,10 @@ if platform.system() == "Darwin":
     _libproc = ctypes.CDLL("/usr/lib/libproc.dylib", use_errno=True)
     _libproc.proc_pid_rusage.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
     _libproc.proc_pid_rusage.restype = ctypes.c_int
+    _libproc.proc_listchildpids.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int]
+    _libproc.proc_listchildpids.restype = ctypes.c_int
+
+MAX_CHILDREN = 1024
 
 
 def _rusage(pid: int) -> _RUsageInfoV4 | None:
@@ -49,6 +55,24 @@ def _rusage(pid: int) -> _RUsageInfoV4 | None:
     return usage
 
 
+def child_pids(pid: int) -> list[int]:
+    """Direct children of `pid` (empty if it has none or can't be read)."""
+    if _libproc is None:
+        return []
+    buffer = (ctypes.c_int * MAX_CHILDREN)()
+    count = _libproc.proc_listchildpids(pid, buffer, ctypes.sizeof(buffer))
+    return [child for child in buffer[: max(0, min(count, MAX_CHILDREN))] if child > 0]
+
+
+def process_tree(pid: int) -> list[int]:
+    """`pid` followed by all of its descendants."""
+    tree, index = [pid], 0
+    while index < len(tree):
+        tree.extend(child for child in child_pids(tree[index]) if child not in tree)
+        index += 1
+    return tree
+
+
 def phys_footprint(pid: int) -> int | None:
     """Current physical footprint of `pid` in bytes, or None if it can't be read."""
     usage = _rusage(pid)
@@ -56,7 +80,12 @@ def phys_footprint(pid: int) -> int | None:
 
 
 class MemorySampler:
-    """Samples a pid's physical footprint on a background thread until stopped."""
+    """Samples the physical footprint of a pid and its descendants until stopped.
+
+    `peak_bytes` is the largest sum of current footprints seen in one sample;
+    `lifetime_peak_bytes` the largest sum of each process's own lifetime peak, an upper
+    bound that also catches spikes between samples.
+    """
 
     def __init__(self, pid: int, interval: float = DEFAULT_INTERVAL):
         self.pid = pid
@@ -69,10 +98,12 @@ class MemorySampler:
         self._thread = threading.Thread(target=self._loop, name="memory-sampler", daemon=True)
 
     def _sample(self) -> None:
-        usage = _rusage(self.pid)
-        if usage is None:
+        usages = [_rusage(pid) for pid in process_tree(self.pid)]
+        if usages[0] is None:
             return
-        footprint, lifetime = int(usage.phys_footprint), int(usage.lifetime_max_phys_footprint)
+        usages = [usage for usage in usages if usage is not None]
+        footprint = sum(int(usage.phys_footprint) for usage in usages)
+        lifetime = sum(int(usage.lifetime_max_phys_footprint) for usage in usages)
         with self._sampled:
             self.peak_bytes = max(self.peak_bytes or 0, footprint)
             if lifetime:

@@ -38,6 +38,8 @@ MODEL_GGUF = {"q8_0": "yue2-3b-q8_0.gguf", "bf16": "yue2-3b-bf16.gguf"}
 PRECISIONS = tuple(MODEL_GGUF)
 VAE_GGUF = "yue2-vae-f16.gguf"
 POLL_SECONDS = 0.05
+# Overlap with the previous Stage beyond line-arrival jitter means the clocks diverged.
+CLOCK_SLACK_SECONDS = 1.0
 LOG_NAME = "audiocpp.log"
 AUDIO_NAME = "audio.wav"
 SCORE_NAME = "score.abc"
@@ -75,6 +77,7 @@ class StageLogParser:
     scalars: dict[str, float] = field(default_factory=dict)
     _planning_start: float | None = None
     _planning_end: float | None = None
+    _last_end: float | None = None
 
     def feed(self, line: str, t: float) -> list[StageEvent]:
         match = _SCALAR.match(line.strip())
@@ -94,6 +97,7 @@ class StageLogParser:
             if planning_start is None:
                 planning_start = t - seconds
             planning_end = self._planning_end if self._planning_end is not None else planning_start
+            self._last_end = t
             return [
                 StageEvent(PLANNING, "start", planning_start),
                 StageEvent(PLANNING, "end", planning_end),
@@ -101,10 +105,22 @@ class StageLogParser:
                 StageEvent(SEMANTIC, "end", t),
             ]
         elif key == "yue2.nar_ms":
-            return [StageEvent(SYNTHESIS, "start", t - seconds), StageEvent(SYNTHESIS, "end", t)]
+            return self._span(SYNTHESIS, seconds, t)
         elif key == "yue2.vae_decode_ms":
-            return [StageEvent(DECODING, "start", t - seconds), StageEvent(DECODING, "end", t)]
+            return self._span(DECODING, seconds, t)
         return []
+
+    def _span(self, stage: str, seconds: float, t: float) -> list[StageEvent]:
+        """A Stage ending at `t`, starting no earlier than the previous Stage ended.
+
+        The CLI's timer keeps counting while the Mac sleeps and ours does not, so a
+        logged duration can reach back past the previous Stage.
+        """
+        start = t - seconds
+        if self._last_end is not None and start < self._last_end - CLOCK_SLACK_SECONDS:
+            start = self._last_end
+        self._last_end = t
+        return [StageEvent(stage, "start", start), StageEvent(stage, "end", t)]
 
     def load_seconds(self) -> dict[str, float]:
         load = {

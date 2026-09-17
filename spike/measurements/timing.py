@@ -17,7 +17,7 @@ MEASUREMENT = "timing"
 CASE = "song"
 STEPS = (8, 32)
 RUNS = 2
-PRECISIONS = {"mlx": ("bf16", "8bit"), "fake": ("bf16", "8bit")}
+PRECISIONS = {"mlx": ("bf16", "8bit"), "audiocpp": ("bf16", "q8_0"), "fake": ("bf16", "8bit")}
 
 
 def stage_seconds(events: list[StageEvent]) -> dict[str, float]:

@@ -43,7 +43,7 @@
 ## 03 — audio.cpp setup and doctor
 
 - Result: done
-- Commit: COMMIT03
+- Commit: 61b4337
 - QA rounds: 1
 - Verification:
   ```
@@ -57,3 +57,18 @@
   ok doctor-audiocpp-clip-bf16-32 in 29.9s -> /Users/julian/projects/songloom/spike/results/doctor-audiocpp-clip-bf16-32.json
   ```
 - QA verdict: PASS — setup reran with nothing to fetch; a real sha256 mismatch through the CLI exited 1 with nothing left behind; the real GPU doctor made a non-silent 16 s WAV with `outcome: ok`, version 0.8.0; all pins cross-checked against the GitHub digest and the HF LFS hashes.
+
+## 04 — audio.cpp Stage timing, peak memory and artifact sizes
+
+- Result: done
+- Commit: COMMIT04
+- QA rounds: 1
+- Verification:
+  ```
+  $ uv run pytest -q
+  ..........................................                               [100%]
+  42 passed in 21.18s
+  $ uv run ruff check .
+  All checks passed!
+  ```
+- QA verdict: PASS — the 4 audio.cpp results files were checked field by field against the mlx results, the files on disk, the raw log durations and `pmset -g log`. All 8 runs are ok, no kept run overlaps the 17:38–17:44 sleep, and footprints include the CLI (6.26 / 8.84 GiB).

@@ -6,11 +6,11 @@ Read first: spec, ledger D-008, D-009, D-014; `CONTEXT.md`. Tickets 02 and 03 ex
 
 **Blocked by:** 02, 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `uv run spike timing --engine audiocpp` has run the full 8-run matrix on this Mac; one results JSON per (precision, steps) case, with fields matching the mlx-Yue timing results
-- [ ] The engineer's report quotes total and per-Stage times for q8_0/32 steps and bf16/32 steps next to the mlx-Yue numbers from ticket 02
-- [ ] `uv run pytest -q` and `uv run ruff check .` pass
+- [x] `uv run spike timing --engine audiocpp` has run the full 8-run matrix on this Mac; one results JSON per (precision, steps) case, with fields matching the mlx-Yue timing results
+- [x] The engineer's report quotes total and per-Stage times for q8_0/32 steps and bf16/32 steps next to the mlx-Yue numbers from ticket 02
+- [x] `uv run pytest -q` and `uv run ruff check .` pass
 
 ## Comments
 
