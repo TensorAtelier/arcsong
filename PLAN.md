@@ -172,6 +172,7 @@ live re-render and validation (the port has ABC preflight + `strip-chords`) → 
 from edited score. Show plan diff vs original.
 
 ### M4 — Covers & transcription (#9)
+Done 2026-09-17 (`.scratch/m4-covers/REPORT.md`): Setup gained parts, with Covers as an optional extra (ffmpeg detected, SheetSage2 + MERT2 downloaded, ~2.6 GiB). Upload a recording → it is transcribed into a Score (the same native ABC the model plans) → edit it in the M3 view → render a cover; ABC and MIDI export from any Score. Verified on real weights end to end. **Licences checked: SheetSage2 and MERT-v2-FullSong are CC BY-NC 4.0, like the song weights**, and are named in the Setup licence panel and `THIRD_PARTY_NOTICES.md`; ffmpeg is detected, never shipped. The uploaded recording is deleted as soon as the job ends.
 Optional extra install (ffmpeg + transcription models, with setup-screen detection). Upload
 audio → transcribe → edit score (reuses M3) → cover render. Export ABC/MIDI. Check the
 SheetSage2 and MERT2 weight licences before shipping.
@@ -192,8 +193,11 @@ with screenshots/audio samples, licence notices.
 - App code can be MIT/Apache-2.0; `mlx-Yue` is Apache-2.0, upstream code Apache-2.0.
 - Generated audio: don't make claims about output rights. Show a neutral "check the model
   licence before commercial use of outputs" note on the setup and export screens.
-- Covers: warn that users are responsible for rights to uploaded source audio.
-- Transcription models (SheetSage2, MERT2) have their own licences — check them in M4.
+- Covers: the upload panel requires a per-upload rights confirmation and says the user is
+  responsible for what they upload and for what they do with the result.
+- Transcription models (SheetSage2, MERT2): checked in M4 — both CC BY-NC 4.0, the same terms
+  as the song weights, so one acknowledgement covers them; both are named in the Setup licence
+  panel and `THIRD_PARTY_NOTICES.md`. ffmpeg is detected, not shipped.
 
 ## Prior art to look at before M0
 
