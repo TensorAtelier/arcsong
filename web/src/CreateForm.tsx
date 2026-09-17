@@ -61,6 +61,7 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
         mode: mode === "off" ? "full" : mode,
         seed: seed === "" ? null : Number(seed),
         precision,
+        steps,  // planning ignores it; rendering from the Score keeps this quality
       });
       onCreated(job);
       window.location.hash = `#/score/job/${job.id}`;

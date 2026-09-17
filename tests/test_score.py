@@ -1,12 +1,14 @@
 """Score-only runs, Score checking and rendering from an edited Score, through the fake Engine."""
 
 import sqlite3
+import time
 
 import pytest
 from fastapi.testclient import TestClient
 
 from songloom.app import create_app
 from songloom.db import Store
+from songloom.engine import EngineSpec
 from songloom.fake_engine import fake_score
 from tests.test_app import FAKE, wait_for
 from tests.test_variations import V1_SCHEMA
@@ -39,8 +41,6 @@ def test_a_score_job_writes_abc_and_makes_no_song(client):
 
 
 def test_a_score_job_reports_planning_and_the_queue_moves_on(tmp_path):
-    from songloom.engine import EngineSpec
-
     slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.3})
     with TestClient(create_app(slow, tmp_path)) as client:
         subscription = client.app.state.runner.broadcaster.subscribe()
@@ -61,8 +61,6 @@ def test_a_score_job_reports_planning_and_the_queue_moves_on(tmp_path):
 
 
 def test_a_queued_score_job_can_be_cancelled(tmp_path):
-    from songloom.engine import EngineSpec
-
     slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.5})
     with TestClient(create_app(slow, tmp_path)) as client:
         client.post("/api/jobs", json=REQUEST)  # keeps the Score job queued
@@ -156,8 +154,6 @@ def test_a_take_without_planning_has_no_score(client):
 
 
 def test_a_take_rendered_from_an_edited_score_skips_planning_and_keeps_it(tmp_path):
-    from songloom.engine import EngineSpec
-
     slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.3})
     edited = fake_score({"seed": 7}).replace("Q:1/4=97", "Q:1/4=120")
     with TestClient(create_app(slow, tmp_path)) as client:
@@ -202,3 +198,38 @@ def test_a_v1_database_migrates_all_the_way_to_v3(tmp_path):
 
     assert version == 3
     assert job["kind"] == "take" and job["score"] is None
+
+
+# --- Review fixes -----------------------------------------------------------------------------
+
+
+def test_a_score_only_run_keeps_the_quality_for_rendering_from_it(client):
+    job = client.post("/api/scores", json={"style": "pop", "steps": 32}).json()
+
+    assert job["request"]["steps"] == 32
+    draft = client.post("/api/scores", json={"style": "pop", "steps": 8}).json()
+    assert draft["request"]["steps"] == 8
+    assert client.post("/api/scores", json={"style": "pop"}).json()["request"]["steps"] == 32
+
+
+def test_variations_never_carry_a_score(client):
+    body = {**REQUEST, "count": 2, "abc": fake_score({"seed": 1})}
+
+    assert client.post("/api/groups", json=body).status_code == 422
+
+
+def test_a_running_score_job_can_be_cancelled(tmp_path):
+    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 3.0})
+    with TestClient(create_app(slow, tmp_path)) as client:
+        job = client.post("/api/scores", json={"style": "pop"}).json()
+        while not (client.get(f"/api/jobs/{job['id']}").json()["live"] or {}).get("stage"):
+            time.sleep(0.02)
+
+        assert client.post(f"/api/jobs/{job['id']}/cancel").status_code == 200
+        cancelled = wait_for(client, job["id"])
+        after = wait_for(client, client.post("/api/scores", json={"style": "pop"}).json()["id"])
+        starts = client.app.state.runner.worker_starts
+
+    assert cancelled["status"] == "cancelled" and cancelled["score"] is None
+    assert after["status"] == "done" and after["score"]
+    assert starts == 1  # cancelling a Score job doesn't cost a worker restart

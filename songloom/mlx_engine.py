@@ -47,6 +47,8 @@ class MlxYueEngine:
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         """The planning Stage alone: seconds, and nothing is written to disk."""
         self.load(request["precision"])
+        # Like render(): start from the weights' settings, not a previous Final's.
+        self._pipe.generation_config = self._generation_config
         emit({"type": "stage", "stage": STAGES[0]})
         plan = self._plan(self._pipe, request, cancelled, emit)
         if cancelled():

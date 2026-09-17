@@ -19,6 +19,7 @@ export default function ScoreView({ source, onJob }: Props) {
   const [request, setRequest] = useState<(SongRequest & { seed: number }) | null>(null);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [jobError, setJobError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [check, setCheck] = useState<ScoreCheck | null>(null);
   const [busy, setBusy] = useState(false);
@@ -36,17 +37,20 @@ export default function ScoreView({ source, onJob }: Props) {
             abc: score.abc,
             request: score.job.request,
             status: score.job.status,
+            error: score.job.error,
           }))
         : api.songScore(source.id).then((score) => ({
             abc: score.abc,
             request: score.request,
             status: "done",
+            error: null,
           }));
     load
       .then((loaded) => {
         if (cancelled) return;
         setLoaded(true);
         setStatus(loaded.status);
+        setJobError(loaded.error);
         setRequest(loaded.request);
         setOriginal((current) => {
           // Only the first Score to arrive seeds the editor; a reload must not undo edits.
@@ -60,23 +64,32 @@ export default function ScoreView({ source, onJob }: Props) {
     };
   }, [source.kind, source.id, attempt]);
 
-  // A Score job opened from Create is usually still running; watch for its Score.
+  // A Score job opened from Create is usually still running; watch for its Score, and only
+  // while it can still produce one — never after an error or a finished job.
   useEffect(() => {
-    if (original || status === "done" || status === "failed" || status === "cancelled") return;
+    const planning = status === "queued" || status === "running";
+    if (original || loadError !== null || source.kind !== "job" || !planning) return;
     const timer = setTimeout(() => setAttempt((n) => n + 1), 1000);
     return () => clearTimeout(timer);
-  }, [original, status, attempt]);
+  }, [original, loadError, status, source.kind, attempt]);
 
   // Validate as the user types, against the Score this one started from.
   useEffect(() => {
     if (original === null || !text.trim()) return;
+    let current = true;  // a slower earlier answer must not overwrite a newer one
     const timer = setTimeout(() => {
       api
         .checkScore(text, original)
-        .then(setCheck)
-        .catch((error) => setCheck({ ok: false, error: String(error), report: null, diff: null }));
+        .then((result) => current && setCheck(result))
+        .catch(
+          (error) =>
+            current && setCheck({ ok: false, error: String(error), report: null, diff: null }),
+        );
     }, CHECK_DELAY);
-    return () => clearTimeout(timer);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
   }, [text, original]);
 
   async function act<T>(action: () => Promise<T>, then: (value: T) => void) {
@@ -110,12 +123,22 @@ export default function ScoreView({ source, onJob }: Props) {
         <h2>Score</h2>
         {loadError && <p className="error">Could not load this Score: {loadError}</p>}
         {!loadError && (
-          <p className="muted">
-            {status === "done"
-              ? "This run wrote no Score."
-              : `Writing the Score (${status})… this page updates when it is ready.`}{" "}
-            <a href="#/">Back to Create</a>
-          </p>
+          <>
+            <p className="muted">
+              {status === "done"
+                ? "This run wrote no Score."
+                : status === "failed" || status === "cancelled"
+                  ? `This run ${status} before writing a Score.`
+                  : "Writing the Score… this page updates when it is ready."}{" "}
+              <a href="#/">Back to Create</a>
+            </p>
+            {jobError && (
+              <details className="error-details">
+                <summary>{jobError.trim().split("\n").pop()}</summary>
+                <pre>{jobError}</pre>
+              </details>
+            )}
+          </>
         )}
       </section>
     );
@@ -235,10 +258,12 @@ function Notation({ abc, valid }: { abc: string; valid: boolean }) {
     setTune(rendered ?? null);
   }, [abc]);
 
-  // A new Score invalidates whatever was primed for playback.
+  // A new Score invalidates whatever was primed, and leaving the view must not play on.
   useEffect(() => {
-    synth.current?.stop();
-    setPlaying(false);
+    return () => {
+      synth.current?.stop();
+      synth.current = null;
+    };
   }, [tune]);
 
   function stop() {
@@ -260,7 +285,12 @@ function Notation({ abc, valid }: { abc: string; valid: boolean }) {
       created.start();
       setPlaying(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const message = e instanceof Error ? e.message : String(e);
+      setError(
+        message.includes("Can't load sound")
+          ? "This Score has a note outside the piano the preview uses (A0–C8)."
+          : message,
+      );
     } finally {
       setPreparing(false);
     }

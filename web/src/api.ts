@@ -90,9 +90,6 @@ export interface Song {
   created_at: number;
   bytes: number;
   request: SongRequest & { seed: number };
-  kind: JobKind;
-  /** A Score job's ABC, once planning has finished. */
-  score: string | null;
   group_id: number | null;
   source_song_id: number | null;
   starred: boolean;
@@ -197,7 +194,7 @@ export const api = {
   finalize: (songId: number) => post<Job>(`/api/songs/${songId}/finalize`),
   peaks: (songId: number, buckets: number) =>
     fetch(`/api/songs/${songId}/peaks?buckets=${buckets}`).then((r) => json<Peaks>(r)),
-  createScore: (request: Omit<SongRequest, "steps" | "abc">) =>
+  createScore: (request: Omit<SongRequest, "abc">) =>
     fetch("/api/scores", {
       method: "POST",
       headers: { "content-type": "application/json" },

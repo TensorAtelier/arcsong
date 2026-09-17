@@ -67,6 +67,8 @@ class ScoreRequest(BaseModel):
     mode: Literal["full", "melody"] = "full"  # "off" writes no Score
     seed: int | None = Field(default=None, ge=0, lt=SEED_LIMIT)
     precision: Literal["8bit", "bf16"] = "8bit"
+    # Planning ignores this; it is kept so rendering from the Score uses the chosen quality.
+    steps: Literal[8, 32] = 32
 
 
 class CheckScore(BaseModel):
@@ -81,6 +83,8 @@ class StripChords(BaseModel):
 
 class GroupRequest(SongRequest):
     count: int = Field(ge=2, le=MAX_VARIATIONS)
+    # Variations differ only in seed, and a supplied Score would make them identical.
+    abc: None = None
 
 
 class Star(BaseModel):
@@ -148,7 +152,7 @@ def create_app(
         """Queue a Score-only run: planning alone, no audio."""
         if not app.state.setup.can_render():
             raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
-        request = {**body.model_dump(), "steps": 8, "abc": None}
+        request = {**body.model_dump(), "abc": None}
         if request["seed"] is None:
             request["seed"] = random.randrange(SEED_LIMIT)
         job = app.state.store.create_job(request, kind="score")

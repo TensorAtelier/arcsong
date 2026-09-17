@@ -77,7 +77,9 @@ function JobCard({ job, group, onChanged }: CardProps) {
       )}
       {job.source_song_id !== null && <div className="small">Final of song #{job.source_song_id}</div>}
 
-      {job.status === "running" && <Progress live={job.live} />}
+      {job.status === "running" && (
+        <Progress live={job.live} stages={job.kind === "score" ? STAGES.slice(0, 1) : STAGES} />
+      )}
 
       {job.kind === "score" && job.status === "done" && (
         <div className="small">
@@ -111,12 +113,12 @@ function JobCard({ job, group, onChanged }: CardProps) {
   );
 }
 
-export function Progress({ live }: { live: Live | null }) {
-  const current = STAGES.findIndex((s) => s.key === live?.stage);
+export function Progress({ live, stages = STAGES }: { live: Live | null; stages?: typeof STAGES }) {
+  const current = stages.findIndex((s) => s.key === live?.stage);
   return (
     <div className="progress">
-      <ol className="stages" aria-label="Stages">
-        {STAGES.map((stage, index) => (
+      <ol className="stages" aria-label="Stages" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
+        {stages.map((stage, index) => (
           <li
             key={stage.key}
             className={index < current ? "past" : index === current ? "current" : "future"}

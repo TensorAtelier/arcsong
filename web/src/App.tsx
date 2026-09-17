@@ -195,7 +195,8 @@ export default function App() {
       {view === "setup" ? (
         <SetupView setup={setup} error={setupError} onChanged={updateSetup} />
       ) : view === "score" && score !== null ? (
-        <ScoreView source={score} onJob={upsert} />
+        // Keyed, so opening another Score starts from its own text rather than this one's.
+        <ScoreView key={`${score.kind}/${score.id}`} source={score} onJob={upsert} />
       ) : view === "compare" && groupId !== null ? (
         <CompareView groupId={groupId} jobs={ordered} songs={songs} onJob={upsert} onSong={updateSong} />
       ) : view === "create" ? (
