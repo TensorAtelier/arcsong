@@ -13,6 +13,8 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from spike.engine import (
     STAGES,
     CancelCheck,
@@ -180,12 +182,14 @@ class MlxYueEngine:
         steps: int,
         output_dir: Path,
         *,
+        noise: Path | None = None,
+        keep_noise: bool = False,
         cancelled: CancelCheck = never_cancelled,
         on_event: EventSink = ignore_event,
     ) -> RunOutput:
-        """A whole Take through the Stage methods, saved with mlx-Yue's own artifacts."""
-        from lyra.pipeline import SongResult, initial_noise
-        from yue2.storage import identity
+        """A whole Take through the Stage methods, saved with mlx-Yue's own artifacts
+        (which always include the synthesis noise, so `keep_noise` needs no extra work)."""
+        from lyra.pipeline import initial_noise
 
         pipe = self._loaded()
         _, sampling = self._split(request)
@@ -195,9 +199,14 @@ class MlxYueEngine:
         semantic = self.generate_semantic(
             plan, sampling=sampling["semantic_sampling"], cancelled=cancelled, on_event=on_event
         )
-        noise = initial_noise(len(semantic.tokens), plan.request.seed)
+        if noise is None:
+            noise_array = initial_noise(len(semantic.tokens), plan.request.seed)
+        else:
+            noise_array = np.load(noise, allow_pickle=False)
         synthesis_start = time.perf_counter()
-        latents = self.synthesize(semantic, steps, noise, cancelled=cancelled, on_event=on_event)
+        latents = self.synthesize(
+            semantic, steps, noise_array, cancelled=cancelled, on_event=on_event
+        )
         synthesis_seconds = time.perf_counter() - synthesis_start
         decode_start = time.perf_counter()
         audio = self.decode(latents, cancelled=cancelled, on_event=on_event)
@@ -213,8 +222,74 @@ class MlxYueEngine:
             "load": dict(pipe.load_timing),
             "e2e_seconds": time.perf_counter() - start,
         }
+        return self._save(
+            output_dir, semantic, latents, audio, noise_array, config, timing, load_timing_before
+        )
+
+    def render_final(
+        self,
+        draft_dir: Path,
+        steps: int,
+        output_dir: Path,
+        *,
+        cancelled: CancelCheck = never_cancelled,
+        on_event: EventSink = ignore_event,
+    ) -> RunOutput:
+        """Loads the Draft's saved Take (integrity-checked by mlx-Yue), then re-synthesizes
+        its Semantic tokens with its noise at `steps` and decodes: planning and semantic
+        generation are not run again."""
+        from lyra.artifacts import load_artifacts
+        from yue2.protocol import GenerationConfig
+
+        pipe = self._loaded()
+        load_timing_before = dict(pipe.load_timing)
+        start = time.perf_counter()
+        saved = load_artifacts(Path(draft_dir))
+        if saved.noise is None:
+            raise ValueError(f"the Draft in {draft_dir} kept no synthesis noise")
+        # The Draft's generation settings (sampling included), with the Final's steps.
+        pipe.generation_config = dataclasses.replace(
+            GenerationConfig.from_dict(saved.config["generation"]), ode_steps=steps
+        )
+        synthesis_start = time.perf_counter()
+        latents = self.synthesize(
+            saved.semantic, steps, saved.noise, cancelled=cancelled, on_event=on_event
+        )
+        synthesis_seconds = time.perf_counter() - synthesis_start
+        decode_start = time.perf_counter()
+        audio = self.decode(latents, cancelled=cancelled, on_event=on_event)
+
+        request = saved.semantic.plan.request
+        config = pipe.effective_config(request)
+        timing = {
+            "abc": saved.semantic.plan.timing,
+            "semantic": saved.semantic.timing,
+            "draft_load_seconds": synthesis_start - start,
+            "nar_seconds": synthesis_seconds,
+            "vae_seconds": time.perf_counter() - decode_start,
+            "load": dict(pipe.load_timing),
+            "e2e_seconds": time.perf_counter() - start,
+        }
+        return self._save(
+            output_dir,
+            saved.semantic,
+            latents,
+            audio,
+            saved.noise,
+            config,
+            timing,
+            load_timing_before,
+        )
+
+    def _save(
+        self, output_dir, semantic, latents, audio, noise, config, timing, load_timing_before
+    ) -> RunOutput:
+        from lyra.pipeline import SongResult
+        from yue2.storage import identity
+
+        pipe = self._loaded()
         request_id = identity(
-            {"request": plan.request.to_dict(), "config": config, "weights": pipe.weights}
+            {"request": semantic.plan.request.to_dict(), "config": config, "weights": pipe.weights}
         )
         result = SongResult(
             audio, SAMPLE_RATE, semantic, latents, config, pipe.weights, timing, request_id, noise
@@ -233,4 +308,5 @@ class MlxYueEngine:
                 for stage, name in exported
                 if (output_dir / name).is_file()
             },
+            noise_path=output_dir / "noise.npy" if (output_dir / "noise.npy").is_file() else None,
         )

@@ -93,7 +93,7 @@
 ## 06 — Seed reproducibility, both Engines
 
 - Result: done
-- Commit: COMMIT06
+- Commit: 503771e
 - QA rounds: 2
 - Verification:
   ```
@@ -106,3 +106,21 @@
   ```
 - QA verdict: PASS — hashes of real Take files match the JSON; the warm pair shares a pid and the fresh Take has another; the comparators catch a 1-token / 1e-6 / 1-LSB change on real mlx and audio.cpp outputs; audio.cpp's uncompared Stages and its cold-per-Take nature are recorded; the listening pairs match their sources.
   (Round 1: FAIL — audio.cpp cold runs were labelled a warm process; fixed with `takes_reuse_loaded_model` / `warm_process` plus a note.)
+
+## 07 — Draft→Final, both Engines
+
+- Result: done
+- Commit: COMMIT07
+- QA rounds: 2
+- Verification:
+  ```
+  $ uv run pytest -q
+  91 passed in 72.43s (0:01:12)
+  $ uv run ruff check .
+  All checks passed!
+  $ uv run spike draft-final --engine {audiocpp,mlx} --results-dir <scratch copy> --runs-dir <scratch>/runs --listen-dir <scratch>/listen --resummarize
+  unsupported draft-final-audiocpp-song-q8_0-8-32 re-summarized from recorded runs -> …
+  ok draft-final-mlx-song-8bit-8-32 re-summarized from recorded runs -> …
+  ```
+- QA verdict: PASS — every number checked against the run dirs (numpy/soundfile, sha1, mtimes, CLI logs). mlx Final == direct-32 bit for bit and is a real re-synthesis (360 s, no planning or semantic generation); audio.cpp's Draft time excludes the probe, and the noise mismatch and same-seed workaround are explained; `--resummarize` reproduces the committed files exactly and runs nothing.
+  (Round 1: FAIL — 4 defects in how audio.cpp's result was recorded; fixed without a GPU rerun.)

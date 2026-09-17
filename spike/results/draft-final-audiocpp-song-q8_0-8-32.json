@@ -1,0 +1,278 @@
+{
+  "schema_version": 1,
+  "measurement": "draft-final",
+  "engine": "audiocpp",
+  "engine_version": "0.8.0",
+  "case": "song",
+  "params": {
+    "precision": "q8_0",
+    "draft_steps": 8,
+    "final_steps": 32
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "audio.cpp",
+      "version": "0.8.0",
+      "commit": "4af1432"
+    },
+    "model_servers": [
+      {
+        "server": "LM Studio",
+        "pid": 1445,
+        "rss_bytes": 429654016,
+        "command": "/Applications/LM Studio.app/Contents/MacOS/LM Studio"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1451,
+        "rss_bytes": 6832128,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/Electron Framework.framework/Helpers/chrome_crashpad_handler --no-rate-limit --no-upload-gzip --monitor-self-annotation=ptype=crashpad-handler --database=/Users/julian/Library/Application Support/LM Studio/Crashpad --annotation=_productName=LM Studio --annotation=_version=0.4.18+1 --annotation=plat=OS X --annotation=prod=Electron --annotation=ver=38.6.0 --handshake-fd=17"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1452,
+        "rss_bytes": 43843584,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper (GPU).app/Contents/MacOS/LM Studio Helper (GPU) --type=gpu-process --user-data-dir=/Users/julian/Library/Application Support/LM Studio --gpu-preferences=SAAAAAAAAAAgAAAIAAAAAAAAAAAAAGAAAwAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --seatbelt-client=30"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1453,
+        "rss_bytes": 19873792,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper.app/Contents/MacOS/LM Studio Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --user-data-dir=/Users/julian/Library/Application Support/LM Studio --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --seatbelt-client=30"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1454,
+        "rss_bytes": 16760832,
+        "command": "/Users/julian/.lmstudio/.internal/utils/node -e \\012function connectPort(port) {\\012  const handlersMap = new Map();\\012  return {\\012    postMessage: data => process.send({ port: port, data }),\\012    on: (event, handler) => {\\012      if (event !== \"message\") {\\012        throw new Error(\"Unsupported event: \" + event);\\012      }\\012      const innerHandler = payload => {\\012        if (payload.port === port) {\\012          handler({ data: payload.data });\\012        }\\012      }\\012      handlersMap.set(handler, innerHandler);\\012      process.on('message', innerHandler);\\012    },\\012    off: (event, handler) => {\\012      if (event !== \"message\") {\\012        throw new Error(\"Unsupported event: \" + event);\\012      }\\012      const innerHandler = handlersMap.get(handler);\\012      if (innerHandler) {\\012        process.off('message', innerHandler);\\012        handlersMap.delete(handler);\\012      }\\012    },\\012  };\\012}\\012process.parentPort = connectPort(0);\\012process.rcPort = connectPort(1);\\012process.resourcesPath = \"/Applications/LM Studio.app/Contents/Resources\";\\012require(\"/Applications/LM Studio.app/Contents/Resources/app/.webpack/lib/systemresourcesworker.js\"); /Applications/LM Studio.app/Contents/Resources/app/.webpack/lib/systemresourcesworker.js /Applications/LM Studio.app/Contents/Resources/app/.webpack/bin/liblmstudio/metal/liblmstudio_bindings.node"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1458,
+        "rss_bytes": 61882368,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper (Renderer).app/Contents/MacOS/LM Studio Helper (Renderer) --type=renderer --user-data-dir=/Users/julian/Library/Application Support/LM Studio --app-path=/Applications/LM Studio.app/Contents/Resources/app --no-sandbox --no-zygote --node-integration-in-worker --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=4 --time-ticks-at-unix-epoch=-1786127886274263 --launch-time-ticks=2551478391518 --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --lmstudio-window-key=window-1 --lmstudio-project-identifier=default-project-identifier"
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 36205,
+        "rss_bytes": 4374528,
+        "command": "/Users/julian/image_gen/ComfyUI/.venv/bin/python -c from multiprocessing.resource_tracker import main;main(23)"
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 74446,
+        "rss_bytes": 606502912,
+        "command": "/Users/julian/image_gen/ComfyUI/.venv/bin/python /Users/julian/image_gen/ComfyUI/main.py --highvram --use-pytorch-cross-attention"
+      }
+    ]
+  },
+  "outcome": "unsupported",
+  "started_at": "2026-09-17T03:43:41.101146+00:00",
+  "total_seconds": 2050.9136988753453,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "process": "draft",
+      "pid": 34116,
+      "load_seconds": 3.949971869587898e-05,
+      "draft": {
+        "steps": 8,
+        "seconds": 499.68829633295536,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft",
+        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/audio.wav",
+        "audio_seconds": 216.31866666666667,
+        "stage_outputs": {},
+        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.31920375,
+          "nar_load_seconds": 0.27738970799999996,
+          "vae_load_seconds": 1.0041e-05,
+          "session_load_seconds": 0.4210280003026128
+        },
+        "details": {
+          "semantic_tokens": 5408,
+          "noise_probe_seconds": 165.1974456673488,
+          "noise": "PCG64(seed) standard normal float32, written by the harness"
+        }
+      },
+      "final": {
+        "steps": 32,
+        "seconds": 772.7820932092145,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/final",
+        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/final/audio.wav",
+        "audio_seconds": 216.31866666666667,
+        "stage_outputs": {},
+        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.32144679200000004,
+          "nar_load_seconds": 0.253556125,
+          "vae_load_seconds": 1.2042000000000001e-05,
+          "session_load_seconds": 0.37940650014206767
+        },
+        "details": {},
+        "method": "full re-run",
+        "noise_source": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
+        "render_final_unsupported": "audio.cpp's CLI cannot take a Draft's Semantic tokens back: it neither exports them nor accepts them as input, so a Final means re-running the whole Take"
+      },
+      "child_wall_seconds": 1272.5784977497533,
+      "peak_footprint_bytes": 6731752808,
+      "lifetime_peak_footprint_bytes": 6748595536,
+      "footprint_samples": 4950,
+      "footprint_interval_seconds": 0.25
+    },
+    {
+      "run": 2,
+      "outcome": "ok",
+      "process": "direct",
+      "pid": 56962,
+      "load_seconds": 4.045804962515831e-05,
+      "direct": {
+        "steps": 32,
+        "seconds": 776.8852077079937,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-2/direct",
+        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-2/direct/audio.wav",
+        "audio_seconds": 216.31866666666667,
+        "stage_outputs": {},
+        "noise_path": null,
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.32393516699999997,
+          "nar_load_seconds": 0.251591375,
+          "vae_load_seconds": 1.1875e-05,
+          "session_load_seconds": 0.3841867917217314
+        },
+        "details": {}
+      },
+      "child_wall_seconds": 776.9886174169369,
+      "peak_footprint_bytes": 6730425728,
+      "lifetime_peak_footprint_bytes": 6744581480,
+      "footprint_samples": 3022,
+      "footprint_interval_seconds": 0.25
+    }
+  ],
+  "error": "Unsupported: audio.cpp's CLI cannot take a Draft's Semantic tokens back: it neither exports them nor accepts them as input, so a Final means re-running the whole Take",
+  "draft_to_final": {
+    "outcome": "unsupported",
+    "final_method": "full re-run",
+    "reason": "audio.cpp's CLI cannot take a Draft's Semantic tokens back: it neither exports them nor accepts them as input, so a Final means re-running the whole Take",
+    "reused": {
+      "synthesis noise": {
+        "supplied_from_draft": true,
+        "file": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32"
+      }
+    },
+    "fallback": {
+      "seconds": 772.7820932092145,
+      "noise": "supplied from the Draft's saved noise file",
+      "same_seed_rerun": {
+        "take": "direct",
+        "seconds": 776.8852077079937,
+        "note": "direct-32 is itself the same-seed full re-run without a noise file: the D-012 workaround when seed reproducibility holds. A plain same-seed Draft would share the Engine's own noise with it and needs no noise probe; its Final costs this run"
+      }
+    }
+  },
+  "timing": {
+    "draft_seconds": 334.49085066560656,
+    "final_seconds": 772.7820932092145,
+    "direct_seconds": 776.8852077079937,
+    "final_saving_seconds": 4.103114498779178,
+    "final_to_direct_ratio": 0.99471850608292,
+    "fallback_seconds": 772.7820932092145,
+    "noise_probe_seconds": 165.1974456673488,
+    "notes": "draft_seconds excludes noise_probe_seconds: the probe is harness work to learn the Semantic token count so the Draft's noise can be supplied as a file, not part of rendering a Draft; a plain same-seed Draft costs draft_seconds",
+    "final_lazy_load_seconds": 0.9544214591420678,
+    "direct_model_load_seconds": 0.9597656667713566
+  },
+  "final_vs_direct": {
+    "first_diverging_stage": "decoding",
+    "uncompared_stages_before": [
+      "planning",
+      "semantic generation",
+      "synthesis"
+    ],
+    "stages": {
+      "planning": {
+        "output": "Score",
+        "compared": false,
+        "reason": "not exported by the Engine"
+      },
+      "semantic generation": {
+        "output": "Semantic tokens",
+        "compared": false,
+        "reason": "not exported by the Engine"
+      },
+      "synthesis": {
+        "output": "Latents",
+        "compared": false,
+        "reason": "not exported by the Engine"
+      },
+      "decoding": {
+        "output": "audio",
+        "compared": true,
+        "equal": false,
+        "bit_identical": false,
+        "sample_counts": [
+          10383296,
+          10383296
+        ],
+        "max_abs_difference": 1.334075927734375,
+        "correlation": 0.03478145035561218
+      }
+    },
+    "note": "the Final was synthesized with the Draft's saved noise file, written by the harness; direct-32 used the Engine's own noise from the seed, which the Engine does not export and which differs from that file, so the two differ from synthesis on. This is not a reproducibility failure: see draft_to_final.fallback.same_seed_rerun"
+  },
+  "draft_vs_final": {
+    "first_diverging_stage": "decoding",
+    "uncompared_stages_before": [
+      "planning",
+      "semantic generation",
+      "synthesis"
+    ],
+    "stages": {
+      "planning": {
+        "output": "Score",
+        "compared": false,
+        "reason": "not exported by the Engine"
+      },
+      "semantic generation": {
+        "output": "Semantic tokens",
+        "compared": false,
+        "reason": "not exported by the Engine"
+      },
+      "synthesis": {
+        "output": "Latents",
+        "compared": false,
+        "reason": "not exported by the Engine"
+      },
+      "decoding": {
+        "output": "audio",
+        "compared": true,
+        "equal": false,
+        "bit_identical": false,
+        "sample_counts": [
+          10383296,
+          10383296
+        ],
+        "max_abs_difference": 0.759765625,
+        "correlation": 0.9865787948172243
+      }
+    }
+  },
+  "listening_pair": {
+    "draft": "/Users/julian/projects/songloom/spike/listen/draft-final-audiocpp-song-q8_0-8-32/draft-8.flac",
+    "final": "/Users/julian/projects/songloom/spike/listen/draft-final-audiocpp-song-q8_0-8-32/final-32.flac"
+  },
+  "resummarized_at": "2026-09-17T04:26:45.554908+00:00"
+}

@@ -13,6 +13,7 @@ import wave
 from functools import partial
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from spike import cli
@@ -21,6 +22,8 @@ from spike.engine import STAGES
 from spike.runner import run_case
 
 FIXTURE_LOG = Path(__file__).parent / "fixtures" / "audiocpp_clip_given_score.log"
+# `yue2.semantic.tokens` in the fixture log.
+FIXTURE_SEMANTIC_TOKENS = 400
 
 FAKE_CLI = """#!{python}
 import json, os, sys, time, wave
@@ -42,6 +45,11 @@ if os.environ.get("FAKE_CLI_HANG") or (hang_once and os.path.getsize(hang_once) 
 block = bytearray(b"\\x01") * (int(os.environ.get("FAKE_CLI_ALLOCATE_MIB", "0")) * 2**20)
 for entry in open({log!r}).read().splitlines():
     print(entry.split(" ", 1)[1], flush=True)
+noise = [a.split("=", 1)[1] for a in argv if a.startswith("nar_noise_file=")]
+if noise and os.path.getsize(noise[0]) != {semantic_tokens} * 64 * 4:
+    print("audiocpp_cli failed: Yue2 nar_noise_file frame count does not match "
+          "semantic codec count")
+    sys.exit(1)
 time.sleep(float(os.environ.get("FAKE_CLI_HOLD_SECONDS", "0")))
 if os.environ.get("FAKE_CLI_FAIL"):
     print("ggml_metal: out of memory", flush=True)
@@ -57,7 +65,9 @@ print("audio_out=" + out)
 def fake_cli(tmp_path, monkeypatch):
     path = tmp_path / "bin" / "audiocpp_cli"
     path.parent.mkdir()
-    path.write_text(FAKE_CLI.format(python=sys.executable, log=str(FIXTURE_LOG)))
+    path.write_text(FAKE_CLI.format(
+            python=sys.executable, log=str(FIXTURE_LOG), semantic_tokens=FIXTURE_SEMANTIC_TOKENS
+        ))
     path.chmod(0o755)
     models = tmp_path / "models"
     for name in ("yue2-3b-q8_0.gguf", "yue2-3b-bf16.gguf", "yue2-vae-f16.gguf"):
@@ -341,3 +351,76 @@ def test_takes_do_not_reuse_a_loaded_model_because_each_run_launches_the_cli(tmp
 
     assert factory().info().takes_reuse_loaded_model is False
     assert AudioCppEngine(cli=tmp_path / "missing").info().takes_reuse_loaded_model is False
+
+
+def test_a_take_keeping_its_noise_counts_semantic_tokens_then_runs_with_matching_noise(
+    tmp_path, fake_cli
+):
+    factory, record = fake_cli
+    engine = factory()
+    engine.load("q8_0")
+    request = {"style": "s", "lyrics": "l", "cot": "full", "seed": 831001}
+
+    output = engine.run(request, 8, tmp_path / "draft", keep_noise=True)
+
+    noise = np.fromfile(output.noise_path, dtype="<f4").reshape(-1, 64)
+    assert noise.shape == (FIXTURE_SEMANTIC_TOKENS, 64)
+    expected = np.random.Generator(np.random.PCG64(831001)).standard_normal(
+        (FIXTURE_SEMANTIC_TOKENS, 64), dtype=np.float32
+    )
+    assert np.array_equal(noise, expected)
+    argv = json.loads(record.read_text())["argv"]
+    assert f"nar_noise_file={output.noise_path}" in option(argv, "--request-option")
+    assert "num_inference_steps=8" in option(argv, "--request-option")
+    assert output.details["semantic_tokens"] == FIXTURE_SEMANTIC_TOKENS
+    assert output.details["noise_probe_seconds"] > 0
+    assert output.audio_path.is_file()
+
+
+def test_a_saved_noise_file_is_passed_to_the_cli(tmp_path, fake_cli):
+    factory, record = fake_cli
+    engine = factory()
+    engine.load("q8_0")
+    noise = tmp_path / "noise.f32"
+    noise.write_bytes(bytes(FIXTURE_SEMANTIC_TOKENS * 64 * 4))
+
+    output = engine.run(
+        {"style": "s", "lyrics": "l", "seed": 1}, 32, tmp_path / "final", noise=noise
+    )
+
+    argv = json.loads(record.read_text())["argv"]
+    assert f"nar_noise_file={noise}" in option(argv, "--request-option")
+    assert output.noise_path == noise
+
+
+def test_draft_final_records_resynthesis_as_unsupported_with_the_full_rerun_cost(
+    tmp_path, fake_cli
+):
+    assert cli.main(
+        ["draft-final", "--engine", "audiocpp", "--results-dir", str(tmp_path / "results"),
+         "--runs-dir", str(tmp_path / "runs"), "--listen-dir", str(tmp_path / "listen")]
+    ) == 0  # fmt: skip
+
+    data = only_result(tmp_path)
+    assert data["params"] == {"precision": "q8_0", "draft_steps": 8, "final_steps": 32}
+    assert data["outcome"] == "unsupported"
+    assert "Semantic tokens" in data["draft_to_final"]["reason"]
+    draft, final = data["runs"][0]["draft"], data["runs"][0]["final"]
+    assert final["method"] == "full re-run"
+    assert final["noise_source"] == draft["noise_path"]
+    assert data["draft_to_final"]["reused"]["synthesis noise"] == {
+        "supplied_from_draft": True,
+        "file": draft["noise_path"],
+    }
+    assert data["timing"]["fallback_seconds"] == final["seconds"]
+    probe = draft["details"]["noise_probe_seconds"]
+    assert data["timing"]["noise_probe_seconds"] == probe
+    assert data["timing"]["draft_seconds"] == pytest.approx(draft["seconds"] - probe)
+    # direct-32 used the CLI's own noise: the results say why the Final isn't compared equal.
+    assert data["runs"][1]["direct"]["noise_path"] is None
+    assert "noise" in data["final_vs_direct"]["note"]
+    same_seed = data["draft_to_final"]["fallback"]["same_seed_rerun"]
+    assert same_seed["seconds"] == data["timing"]["direct_seconds"]
+    assert data["final_vs_direct"]["stages"]["decoding"]["compared"] is True
+    for path in data["listening_pair"].values():
+        assert Path(path).is_file()

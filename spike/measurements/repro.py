@@ -182,7 +182,7 @@ def compare_takes(take: dict, other: dict) -> dict:
     }
 
 
-def _copy_as_flac(source: Path, target: Path) -> None:
+def copy_as_flac(source: Path, target: Path) -> None:
     import soundfile
 
     info = soundfile.info(str(source))
@@ -221,7 +221,7 @@ def summarizer(listen_dir: Path):
         pair: dict = {"comparison": chosen}
         for key, (take, name) in zip(("first", "second"), pairs[chosen], strict=True):
             target = target_dir / f"{name}.flac"
-            _copy_as_flac(Path(take["audio_path"]), target)
+            copy_as_flac(Path(take["audio_path"]), target)
             pair[key] = str(target)
         return {"comparisons": comparisons, "listening_pair": pair}
 

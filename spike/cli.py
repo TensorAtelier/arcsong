@@ -14,9 +14,10 @@ from spike import audiocpp_setup
 from spike.audiocpp_engine import AudioCppEngine
 from spike.cases import load_case
 from spike.fake import FakeEngine
-from spike.measurements import cancel, doctor, repro, timing
+from spike.measurements import cancel, doctor, draft_final, repro, timing
 from spike.mlx_engine import DEFAULT_MODELS_DIR, MlxYueEngine
-from spike.runner import DEFAULT_TIMEOUT_SECONDS, EngineFactory, run_case
+from spike.results import case_stem
+from spike.runner import DEFAULT_TIMEOUT_SECONDS, EngineFactory, resummarize, run_case
 
 SPIKE_DIR = Path(__file__).resolve().parent
 DEFAULT_RESULTS_DIR = SPIKE_DIR / "results"
@@ -141,6 +142,38 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_TIMEOUT_SECONDS,
         help="seconds before a run is killed and recorded as failed (default %(default)g)",
     )
+
+    run = commands.add_parser(
+        "draft-final",
+        help="Draft→Final: re-render a song Draft's Semantic tokens and noise at 32 steps, "
+        "against a direct 32-step render",
+    )
+    _common_arguments(run)
+    run.add_argument("--precision", help="default: 8bit for mlx, q8_0 for audio.cpp")
+    run.add_argument(
+        "--draft-steps", type=int, default=draft_final.DRAFT_STEPS, help="Draft Synthesis steps"
+    )
+    run.add_argument(
+        "--final-steps", type=int, default=draft_final.FINAL_STEPS, help="Final Synthesis steps"
+    )
+    run.add_argument(
+        "--listen-dir",
+        type=Path,
+        default=DEFAULT_LISTEN_DIR,
+        help="where the Draft/Final listening pair is copied (default %(default)s)",
+    )
+    run.add_argument(
+        "--resummarize",
+        action="store_true",
+        help="recompute the summary (and listening pair) from the runs an existing results "
+        "file recorded, without running the Engine",
+    )
+    run.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help="seconds before a run is killed and recorded as failed (default %(default)g)",
+    )
     return parser
 
 
@@ -233,6 +266,38 @@ def main(argv: list[str] | None = None) -> int:
             case=repro.CASE,
             request=repro.request_without_score(load_case(repro.CASE)),
             params=repro.params(args.precision or repro.PRECISIONS[args.engine], args.steps),
+            timeout=args.timeout,
+            **common,
+        )
+    elif args.command == "draft-final" and args.resummarize:
+        stem = case_stem(
+            draft_final.MEASUREMENT,
+            args.engine,
+            draft_final.CASE,
+            draft_final.params(
+                args.precision or draft_final.PRECISIONS[args.engine],
+                args.draft_steps,
+                args.final_steps,
+            ),
+        )
+        results_path = args.results_dir / f"{stem}.json"
+        if not results_path.exists():
+            print(f"error: no results to re-summarize at {results_path}", file=sys.stderr)
+            return 1
+        resummarize(results_path, draft_final.summarizer(args.listen_dir))
+    elif args.command == "draft-final":
+        run_case(
+            measurement=draft_final.MEASUREMENT,
+            measure=draft_final.draft_then_final,
+            measures=draft_final.MEASURES,
+            summarize=draft_final.summarizer(args.listen_dir),
+            case=draft_final.CASE,
+            request=load_case(draft_final.CASE),
+            params=draft_final.params(
+                args.precision or draft_final.PRECISIONS[args.engine],
+                args.draft_steps,
+                args.final_steps,
+            ),
             timeout=args.timeout,
             **common,
         )

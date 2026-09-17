@@ -10,6 +10,7 @@ exits by itself if the harness is killed outright.
 
 from __future__ import annotations
 
+import json
 import multiprocessing
 import os
 import re
@@ -123,6 +124,54 @@ def _run_child(
     return record
 
 
+def _conclude(
+    runs: list[dict], stem: str, summarize: Summarize | None
+) -> tuple[str, str | None, dict[str, Any]]:
+    """The case's outcome, error and summary fields from its runs."""
+    failures = [run for run in runs if run["outcome"] != "ok"]
+    extra: dict[str, Any] = {}
+    outcome = failures[0]["outcome"] if failures else "ok"
+    error = failures[0].get("error") if failures else None
+    if summarize is not None and not failures:
+        try:
+            extra = summarize(runs, stem)
+            # A summary may find the case's outcome, e.g. `unsupported` with a workaround.
+            if "outcome" in extra:
+                outcome, error = extra.pop("outcome"), extra.pop("error", None)
+        except Exception:  # noqa: BLE001 - a failed summary is the case's outcome
+            outcome, error = "failed", traceback.format_exc()
+    return outcome, error, extra
+
+
+def resummarize(
+    results_path: Path, summarize: Summarize, *, log: Callable[[str], None] = print
+) -> Path:
+    """Recomputes a case's summary from the runs its results file recorded, without running
+    anything: the runs, environment and timings are kept, earlier summary fields are
+    replaced, and `resummarized_at` records when."""
+    result = json.loads(results_path.read_text())
+    stem = results_path.stem
+    outcome, error, extra = _conclude(result["runs"], stem, summarize)
+    extra["resummarized_at"] = datetime.now(UTC).isoformat()
+    redone = build_result(
+        measurement=result["measurement"],
+        engine=result["engine"],
+        engine_version=result["engine_version"],
+        case=result["case"],
+        params=result["params"],
+        env=result["env"],
+        outcome=outcome,
+        started_at=result["started_at"],
+        total_seconds=result["total_seconds"],
+        runs=result["runs"],
+        error=error,
+        extra=extra,
+    )
+    write_result(results_path, redone)
+    log(f"{outcome} {stem} re-summarized from recorded runs -> {results_path}")
+    return results_path
+
+
 def run_case(
     *,
     measurement: str,
@@ -142,8 +191,9 @@ def run_case(
     log: Callable[[str], None] = print,
 ) -> Path:
     """Runs `measure` in `repeats` fresh children, or each of `measures` in its own child,
-    in order. Once every run is ok, `summarize` adds case-level fields to the results;
-    if it raises, that becomes the case's `failed` outcome."""
+    in order. Once every run is ok, `summarize` adds case-level fields to the results,
+    and may set the case's `outcome` (and `error`); if it raises, that becomes the case's
+    `failed` outcome."""
     children = list(measures) if measures is not None else [measure] * repeats
     stem = case_stem(measurement, engine_name, case, params)
     results_path = results_dir / f"{stem}.json"
@@ -175,15 +225,7 @@ def run_case(
         runs.append({"run": index, **record})
         log(f"{record['outcome']} {stem} run {index} in {record['child_wall_seconds']:.1f}s")
 
-    failures = [run for run in runs if run["outcome"] != "ok"]
-    extra: dict[str, Any] = {}
-    outcome = failures[0]["outcome"] if failures else "ok"
-    error = failures[0].get("error") if failures else None
-    if summarize is not None and not failures:
-        try:
-            extra = summarize(runs, stem)
-        except Exception:  # noqa: BLE001 - a failed summary is the case's outcome
-            outcome, error = "failed", traceback.format_exc()
+    outcome, error, extra = _conclude(runs, stem, summarize)
     total_seconds = time.perf_counter() - start
 
     result = build_result(

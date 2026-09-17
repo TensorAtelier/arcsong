@@ -22,6 +22,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from spike import audiocpp_setup
 from spike.engine import (
     STAGES,
@@ -45,6 +47,9 @@ CLOCK_SLACK_SECONDS = 1.0
 LOG_NAME = "audiocpp.log"
 AUDIO_NAME = "audio.wav"
 SCORE_NAME = "score.abc"
+NOISE_NAME = "noise.f32"
+NOISE_PROBE_DIR = "noise-probe"
+NOISE_CHANNELS = 64
 
 PLANNING, SEMANTIC, SYNTHESIS, DECODING = STAGES
 
@@ -264,7 +269,17 @@ class AudioCppEngine:
     def decode(self, latents, *, cancelled=never_cancelled, on_event=ignore_event) -> Any:
         raise self._unsupported("decoding of given Latents")
 
-    def command(self, request: dict, steps: int, output_dir: Path) -> list[str]:
+    def render_final(
+        self, draft_dir, steps, output_dir, *, cancelled=never_cancelled, on_event=ignore_event
+    ) -> RunOutput:
+        raise Unsupported(
+            "audio.cpp's CLI cannot take a Draft's Semantic tokens back: it neither exports "
+            "them nor accepts them as input, so a Final means re-running the whole Take"
+        )
+
+    def command(
+        self, request: dict, steps: int, output_dir: Path, noise: Path | None = None
+    ) -> list[str]:
         if self.precision is None:
             raise RuntimeError("call load(precision) before run")
         argv = [
@@ -284,6 +299,8 @@ class AudioCppEngine:
         ]  # fmt: skip
         if request.get("abc"):
             argv += ["--request-option", f"abc_file={output_dir / SCORE_NAME}"]
+        if noise is not None:
+            argv += ["--request-option", f"nar_noise_file={noise}"]
         for group, prefix in (("abc_sampling", "abc"), ("semantic_sampling", "semantic")):
             for key, value in (request.get(group) or {}).items():
                 argv += ["--request-option", f"{prefix}_{key}={value}"]
@@ -295,14 +312,80 @@ class AudioCppEngine:
         steps: int,
         output_dir: Path,
         *,
+        noise: Path | None = None,
+        keep_noise: bool = False,
         cancelled: CancelCheck = never_cancelled,
         on_event: EventSink = ignore_event,
     ) -> RunOutput:
+        """A whole Take. The CLI generates its own noise from the seed and can't export it,
+        so keeping the noise means supplying it: see `_keep_noise`."""
         output_dir = Path(output_dir)
+        details: dict[str, Any] = {}
+        if noise is None and keep_noise:
+            noise, details = self._keep_noise(request, steps, output_dir, cancelled)
+        parser = self._execute(request, steps, output_dir, noise, cancelled, on_event)
+        audio = output_dir / AUDIO_NAME
+        return RunOutput(
+            audio,
+            wav_seconds(audio),
+            sorted(p for p in output_dir.rglob("*") if p.is_file()),
+            lazy_load_seconds=parser.load_seconds(),
+            noise_path=noise,
+            details=details,
+        )
+
+    def _keep_noise(
+        self, request: dict, steps: int, output_dir: Path, cancelled: CancelCheck
+    ) -> tuple[Path, dict[str, Any]]:
+        """Writes seeded noise for the Take to `noise.f32` and returns its path.
+
+        `nar_noise_file` must hold exactly one frame per Semantic token, a count known only
+        once semantic generation ends. A probe run with a one-frame noise file stops with a
+        frame-count mismatch right after semantic generation, having logged
+        `yue2.semantic.tokens`; the seed reproduces those tokens in the real run.
+        """
+        probe_dir = output_dir / NOISE_PROBE_DIR
+        probe_dir.mkdir(parents=True, exist_ok=True)
+        probe_noise = probe_dir / NOISE_NAME
+        probe_noise.write_bytes(np.zeros(NOISE_CHANNELS, dtype="<f4").tobytes())
+        start = time.monotonic()
+        failure: Exception | None = None
+        try:
+            self._execute(request, steps, probe_dir, probe_noise, cancelled, ignore_event)
+        except RuntimeError as error:
+            failure = error
+        probe_seconds = time.monotonic() - start
+        counter = StageLogParser()
+        for line in (probe_dir / LOG_NAME).read_text(errors="replace").splitlines():
+            counter.feed(line, 0.0)
+        tokens = counter.scalars.get("yue2.semantic.tokens")
+        if tokens is None:
+            raise RuntimeError(f"the noise probe logged no yue2.semantic.tokens: {failure}")
+        frames = int(tokens)
+        noise = output_dir / NOISE_NAME
+        rng = np.random.Generator(np.random.PCG64(request["seed"]))
+        noise.write_bytes(
+            rng.standard_normal((frames, NOISE_CHANNELS), dtype=np.float32).astype("<f4").tobytes()
+        )
+        return noise, {
+            "semantic_tokens": frames,
+            "noise_probe_seconds": probe_seconds,
+            "noise": "PCG64(seed) standard normal float32, written by the harness",
+        }
+
+    def _execute(
+        self,
+        request: dict,
+        steps: int,
+        output_dir: Path,
+        noise: Path | None,
+        cancelled: CancelCheck,
+        on_event: EventSink,
+    ) -> StageLogParser:
         output_dir.mkdir(parents=True, exist_ok=True)
         if request.get("abc"):
             (output_dir / SCORE_NAME).write_text(request["abc"])
-        argv = self.command(request, steps, output_dir)
+        argv = self.command(request, steps, output_dir, noise)
         parser = StageLogParser(started=time.monotonic())
         log_path = output_dir / LOG_NAME
         tail: list[str] = []
@@ -359,10 +442,4 @@ class AudioCppEngine:
                 else f"exited with code {process.returncode}"
             )
             raise RuntimeError(f"audiocpp_cli {how}; last log lines:\n" + "\n".join(tail))
-        audio = output_dir / AUDIO_NAME
-        return RunOutput(
-            audio,
-            wav_seconds(audio),
-            sorted(p for p in output_dir.rglob("*") if p.is_file()),
-            lazy_load_seconds=parser.load_seconds(),
-        )
+        return parser

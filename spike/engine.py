@@ -57,6 +57,10 @@ class RunOutput:
     # The file holding each Stage's output, for the Stages whose output the Engine exports:
     # planning -> Score, semantic generation -> Semantic tokens, synthesis -> Latents.
     stage_outputs: dict[str, Path] = field(default_factory=dict)
+    # The synthesis noise the Take used, saved so a Final can reuse it; None if not kept.
+    noise_path: Path | None = None
+    # Engine-specific facts about how the Take was made, e.g. extra work to keep its noise.
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 def never_cancelled() -> bool:
@@ -105,6 +109,25 @@ class SpikeEngine(Protocol):
         steps: int,
         output_dir: Path,
         *,
+        noise: Path | None = None,
+        keep_noise: bool = False,
         cancelled: CancelCheck = ...,
         on_event: EventSink = ...,
-    ) -> RunOutput: ...
+    ) -> RunOutput:
+        """A whole Take. `noise` is a noise file an earlier run of this Engine saved
+        (`RunOutput.noise_path`) to synthesize with; `keep_noise` asks the Engine to save
+        the noise it uses even if that takes extra work."""
+        ...
+
+    def render_final(
+        self,
+        draft_dir: Path,
+        steps: int,
+        output_dir: Path,
+        *,
+        cancelled: CancelCheck = ...,
+        on_event: EventSink = ...,
+    ) -> RunOutput:
+        """Re-synthesizes and decodes the Semantic tokens and noise of the Draft saved in
+        `draft_dir` at `steps` Synthesis steps; `Unsupported` if they can't be taken back."""
+        ...

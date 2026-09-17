@@ -30,6 +30,7 @@ LATENT_CHANNELS = 8
 # Where scripted divergent Semantic tokens start to differ.
 DIVERGE_INDEX = 10
 LATENT_DIVERGENCE = 0.5
+NOISE_WEIGHT = 0.1
 
 
 def _write_wav(path: Path, pcm: bytes) -> None:
@@ -59,6 +60,8 @@ class FakeEngine:
         diverge_in: str | None = None,
         diverge_between: str = "takes",
         takes_reuse_loaded_model: bool = True,
+        own_noise_hidden: bool = False,
+        noise_probe_seconds: float = 0.0,
     ):
         self.stage_seconds = stage_seconds
         self.load_seconds = load_seconds
@@ -82,6 +85,11 @@ class FakeEngine:
         self.diverge_between = diverge_between
         self.takes = 0
         self.takes_reuse_loaded_model = takes_reuse_loaded_model
+        # Like audio.cpp: the Engine's own noise from the seed is neither exported nor the
+        # noise the harness writes, so keeping noise means probing for the Semantic token
+        # count (`noise_probe_seconds`) and supplying harness-written noise.
+        self.own_noise_hidden = own_noise_hidden
+        self.noise_probe_seconds = noise_probe_seconds
         self.precision: str | None = None
         self.cancelled_before = False
         self.usable = True
@@ -171,6 +179,8 @@ class FakeEngine:
         self._maybe_fail("synthesize")
         rng = np.random.default_rng(zlib.crc32(np.asarray(semantic).tobytes()))
         latents = rng.uniform(-1, 1, (len(semantic), LATENT_CHANNELS)).astype(np.float32)
+        if noise is not None:
+            latents += NOISE_WEIGHT * np.asarray(noise, dtype=np.float32)
         latents[0, 0] += LATENT_DIVERGENCE * self._variation(STAGES[2])
         return self._stage(STAGES[2], on_event, latents, cancelled)
 
@@ -186,12 +196,62 @@ class FakeEngine:
         pcm = np.clip(np.round(wave), -32768, 32767).astype("<i2").tobytes()
         return self._stage(STAGES[3], on_event, pcm, cancelled)
 
+    def _noise(self, request: dict, frames: int, *, own: bool = False) -> np.ndarray:
+        seed = request.get("seed", 0)
+        if own and self.own_noise_hidden:
+            seed += 1  # a generator the harness can't reproduce
+        rng = np.random.default_rng(seed)
+        return rng.standard_normal((frames, LATENT_CHANNELS), dtype=np.float32)
+
+    def _save(
+        self,
+        output_dir: Path,
+        score: str,
+        semantic: np.ndarray,
+        noise: np.ndarray,
+        latents: np.ndarray,
+        pcm: bytes,
+        *,
+        noise_path: Path | None = None,
+        export_noise: bool = True,
+        details: dict | None = None,
+    ) -> RunOutput:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        score_path = output_dir / "score.abc"
+        score_path.write_text(score)
+        semantic_path = output_dir / "semantic.npy"
+        np.save(semantic_path, semantic)
+        if export_noise and noise_path is None:
+            noise_path = output_dir / "noise.npy"
+            np.save(noise_path, noise)
+        audio_path = output_dir / "audio.wav"
+        _write_wav(audio_path, pcm)
+        latents_path = output_dir / "extra" / "latent.npy"
+        latents_path.parent.mkdir(exist_ok=True)
+        np.save(latents_path, latents)
+        return RunOutput(
+            audio_path,
+            len(pcm) / 2 / SAMPLE_RATE,
+            sorted(p for p in output_dir.rglob("*") if p.is_file()),
+            lazy_load_seconds=dict(self.lazy_load_seconds),
+            engine_peak_memory_bytes=self.peak_memory_bytes,
+            stage_outputs={
+                STAGES[0]: score_path,
+                STAGES[1]: semantic_path,
+                STAGES[2]: latents_path,
+            },
+            noise_path=noise_path,
+            details=dict(details or {}),
+        )
+
     def run(
         self,
         request: dict,
         steps: int,
         output_dir: Path,
         *,
+        noise: Path | None = None,
+        keep_noise: bool = False,
         cancelled: CancelCheck = never_cancelled,
         on_event: EventSink = ignore_event,
     ) -> RunOutput:
@@ -202,30 +262,56 @@ class FakeEngine:
             raise RuntimeError("FakeEngine is unusable after a cancel; load it again")
         self.takes += 1
         output_dir.mkdir(parents=True, exist_ok=True)
+        # Each Stage's output is on disk as soon as the Stage ends, as a cancel would find it.
         score = self.plan(request, cancelled=cancelled, on_event=on_event)
-        score_path = output_dir / "score.abc"
-        score_path.write_text(score["score"])
+        (output_dir / "score.abc").write_text(score["score"])
         semantic = self.generate_semantic(score, cancelled=cancelled, on_event=on_event)
-        semantic_path = output_dir / "semantic.npy"
-        np.save(semantic_path, semantic)
-        latents = self.synthesize(semantic, steps, cancelled=cancelled, on_event=on_event)
-        audio_path = output_dir / "audio.wav"
-        if self.audio_written_at_decoding_start:
-            _write_wav(audio_path, b"")
-        pcm = self.decode(latents, cancelled=cancelled, on_event=on_event)
-        _write_wav(audio_path, pcm)
-        latents_path = output_dir / "extra" / "latent.npy"
-        latents_path.parent.mkdir(exist_ok=True)
-        np.save(latents_path, latents)
-        return RunOutput(
-            audio_path,
-            len(pcm) / 2 / SAMPLE_RATE,
-            [audio_path, score_path, semantic_path, latents_path],
-            lazy_load_seconds=dict(self.lazy_load_seconds),
-            engine_peak_memory_bytes=self.peak_memory_bytes,
-            stage_outputs={
-                STAGES[0]: score_path,
-                STAGES[1]: semantic_path,
-                STAGES[2]: latents_path,
-            },
+        np.save(output_dir / "semantic.npy", semantic)
+        details: dict = {}
+        supplied = noise
+        if noise is None and keep_noise and self.own_noise_hidden:
+            start = time.monotonic()
+            time.sleep(self.noise_probe_seconds)
+            details["noise_probe_seconds"] = time.monotonic() - start
+            supplied = output_dir / "noise.npy"
+            np.save(supplied, self._noise(request, len(semantic)))
+        if supplied is not None:
+            noise_array = np.load(supplied)
+        else:
+            noise_array = self._noise(request, len(semantic), own=True)
+        latents = self.synthesize(
+            semantic, steps, noise_array, cancelled=cancelled, on_event=on_event
         )
+        if self.audio_written_at_decoding_start:
+            _write_wav(output_dir / "audio.wav", b"")
+        pcm = self.decode(latents, cancelled=cancelled, on_event=on_event)
+        return self._save(
+            output_dir,
+            score["score"],
+            semantic,
+            noise_array,
+            latents,
+            pcm,
+            noise_path=supplied,
+            export_noise=not self.own_noise_hidden,
+            details=details,
+        )
+
+    def render_final(
+        self,
+        draft_dir: Path,
+        steps: int,
+        output_dir: Path,
+        *,
+        cancelled: CancelCheck = never_cancelled,
+        on_event: EventSink = ignore_event,
+    ) -> RunOutput:
+        self._maybe_fail("render_final")
+        self.takes += 1
+        draft_dir = Path(draft_dir)
+        semantic = np.load(draft_dir / "semantic.npy")
+        noise = np.load(draft_dir / "noise.npy")
+        latents = self.synthesize(semantic, steps, noise, cancelled=cancelled, on_event=on_event)
+        pcm = self.decode(latents, cancelled=cancelled, on_event=on_event)
+        score = (draft_dir / "score.abc").read_text()
+        return self._save(Path(output_dir), score, semantic, noise, latents, pcm)
