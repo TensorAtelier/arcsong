@@ -1,21 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Deleted, type Job, type Setup, type Song, type SongRequest, watchJobs } from "./api";
+import { api, type Deleted, type Job, type Setup, type Song, type SongRequest, watchEvents } from "./api";
+import CompareView from "./CompareView";
 import CreateForm from "./CreateForm";
 import LibraryView from "./LibraryView";
 import QueuePanel from "./QueuePanel";
 import SetupView from "./SetupView";
 
-type View = "create" | "library" | "setup";
+type View = "create" | "library" | "setup" | "compare";
 
-const HASHES: Record<View, string> = { create: "#/", library: "#/library", setup: "#/setup" };
+const HASHES: Record<View, string> = {
+  create: "#/",
+  library: "#/library",
+  setup: "#/setup",
+  compare: "#/compare/",
+};
 
 function viewFromHash(): View {
   const hash = window.location.hash;
+  if (compareGroup(hash) !== null) return "compare";
   return hash === HASHES.library ? "library" : hash === HASHES.setup ? "setup" : "create";
+}
+
+/** The group id in `#/compare/<id>`, or null. */
+function compareGroup(hash: string): number | null {
+  const match = /^#\/compare\/(\d+)$/.exec(hash);
+  return match ? Number(match[1]) : null;
 }
 
 export default function App() {
   const [view, setView] = useState<View>(viewFromHash);
+  const [groupId, setGroupId] = useState<number | null>(() => compareGroup(window.location.hash));
   const [jobs, setJobs] = useState<Map<number, Job>>(new Map());
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [jobsError, setJobsError] = useState<string | null>(null);
@@ -31,7 +45,10 @@ export default function App() {
   const routedToSetup = useRef(false);
 
   useEffect(() => {
-    const onHash = () => setView(viewFromHash());
+    const onHash = () => {
+      setView(viewFromHash());
+      setGroupId(compareGroup(window.location.hash));
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -78,6 +95,16 @@ export default function App() {
     [reloadSongs],
   );
 
+  // Song messages carry the song without its size; keep the size the list already has.
+  const updateSong = useCallback((song: Song) => {
+    if (deletedSongs.current.has(song.id)) return;
+    setSongs((current) => current && current.map((s) => (s.id === song.id ? { ...s, ...song, bytes: s.bytes } : s)));
+    setJobs((current) => {
+      const job = current.get(song.job_id);
+      return job ? new Map(current).set(job.id, { ...job, starred: song.starred }) : current;
+    });
+  }, []);
+
   const removeDeleted = useCallback((deleted: Deleted) => {
     deletedJobs.current.add(deleted.job_id);
     deletedSongs.current.add(deleted.song_id);
@@ -118,8 +145,14 @@ export default function App() {
         })
         .catch((error) => setJobsError(String(error)));
     };
-    return watchJobs(upsert, removeDeleted, updateSetup, reload);
-  }, [upsert, removeDeleted, reloadSongs, updateSetup]);
+    return watchEvents({
+      onJob: upsert,
+      onDeleted: removeDeleted,
+      onSetup: updateSetup,
+      onSong: updateSong,
+      onConnect: reload,
+    });
+  }, [upsert, removeDeleted, reloadSongs, updateSetup, updateSong]);
 
   const ordered = [...jobs.values()].sort((a, b) => b.id - a.id);
 
@@ -150,6 +183,8 @@ export default function App() {
       </header>
       {view === "setup" ? (
         <SetupView setup={setup} error={setupError} onChanged={updateSetup} />
+      ) : view === "compare" && groupId !== null ? (
+        <CompareView groupId={groupId} jobs={ordered} songs={songs} onJob={upsert} onSong={updateSong} />
       ) : view === "create" ? (
         <div className="layout">
           <CreateForm
@@ -163,6 +198,9 @@ export default function App() {
       ) : (
         <LibraryView
           songs={songs}
+          jobs={ordered}
+          onJob={upsert}
+          onSong={updateSong}
           error={songsError}
           onDeleted={removeDeleted}
           onRerun={(job) => {

@@ -42,7 +42,8 @@ def main(argv: list[str] | None = None) -> None:
         models = FakeModels(
             data / "models", preinstalled=False, size=64 * 2**20, download_seconds=6
         )
-        kwargs = {"stage_seconds": 1.0}
+        # Long enough to hear and compare Variations in the page.
+        kwargs = {"stage_seconds": 1.0, "audio_seconds": 20.0}
     app = create_app(EngineSpec(ENGINES[args.engine], kwargs), data, models=models)
     config = uvicorn.Config(app, host=args.host, port=args.port, timeout_graceful_shutdown=5)
     Server(config, app.state.shutting_down).run()

@@ -16,6 +16,11 @@ interface Props {
 }
 
 export default function QueuePanel({ jobs, onChanged, error }: Props) {
+  // Group id -> member ids, oldest first, to label "Take 2 of 4".
+  const groups = new Map<number, number[]>();
+  for (const job of [...jobs].sort((a, b) => a.id - b.id)) {
+    if (job.group_id !== null) groups.set(job.group_id, [...(groups.get(job.group_id) ?? []), job.id]);
+  }
   return (
     <section className="panel" aria-label="Queue">
       <h2>Queue</h2>
@@ -23,14 +28,21 @@ export default function QueuePanel({ jobs, onChanged, error }: Props) {
       {jobs.length === 0 && !error && <p className="muted">No songs yet.</p>}
       <ol className="jobs">
         {jobs.map((job) => (
-          <JobCard key={job.id} job={job} onChanged={onChanged} />
+          <JobCard key={job.id} job={job} group={job.group_id !== null ? groups.get(job.group_id) : undefined} onChanged={onChanged} />
         ))}
       </ol>
     </section>
   );
 }
 
-function JobCard({ job, onChanged }: { job: Job; onChanged: (job: Job) => void }) {
+interface CardProps {
+  job: Job;
+  /** The ids of this job's Variations group, oldest first. */
+  group: number[] | undefined;
+  onChanged: (job: Job) => void;
+}
+
+function JobCard({ job, group, onChanged }: CardProps) {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const active = job.status === "queued" || job.status === "running";
 
@@ -55,6 +67,13 @@ function JobCard({ job, onChanged }: { job: Job; onChanged: (job: Job) => void }
         seed {job.request.seed} · {job.request.precision} · {job.request.steps} steps
         {job.status === "running" && job.started_at && <Elapsed since={job.started_at} />}
       </div>
+      {group && job.group_id !== null && (
+        <div className="small">
+          Take {group.indexOf(job.id) + 1} of {group.length} ·{" "}
+          <a href={`#/compare/${job.group_id}`}>Compare</a>
+        </div>
+      )}
+      {job.source_song_id !== null && <div className="small">Final of song #{job.source_song_id}</div>}
 
       {job.status === "running" && <Progress live={job.live} />}
 
@@ -84,7 +103,7 @@ function JobCard({ job, onChanged }: { job: Job; onChanged: (job: Job) => void }
   );
 }
 
-function Progress({ live }: { live: Live | null }) {
+export function Progress({ live }: { live: Live | null }) {
   const current = STAGES.findIndex((s) => s.key === live?.stage);
   return (
     <div className="progress">

@@ -30,6 +30,11 @@ export interface Job {
   song_id: number | null;
   audio_seconds: number | null;
   live: Live | null;
+  /** Variations share the id of their group's first job; null for a single job. */
+  group_id: number | null;
+  /** A Final: the Draft song it was made from. */
+  source_song_id: number | null;
+  starred: boolean | null;
   /** Grows with every snapshot the server takes; keep the job with the highest. */
   seq: number;
 }
@@ -52,7 +57,19 @@ export interface Song {
   created_at: number;
   bytes: number;
   request: SongRequest & { seed: number };
+  group_id: number | null;
+  source_song_id: number | null;
+  starred: boolean;
 }
+
+export interface Peaks {
+  duration: number;
+  min: number[];
+  max: number[];
+}
+
+/** Takes below this many Synthesis steps are Drafts and can be finalized. */
+export const FINAL_STEPS = 32;
 
 export interface LibraryUsage {
   songs: number;
@@ -128,6 +145,22 @@ export const api = {
   deleteSong: (id: number) =>
     fetch(`/api/songs/${id}`, { method: "DELETE" }).then((r) => json<{ deleted: number }>(r)),
   downloadUrl: (id: number, format: "flac" | "wav") => `/api/songs/${id}/download?format=${format}`,
+  createGroup: (request: SongRequest, count: number) =>
+    fetch("/api/groups", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...request, count }),
+    }).then((r) => json<Job[]>(r)),
+  group: (id: number) => fetch(`/api/groups/${id}`).then((r) => json<Job[]>(r)),
+  star: (songId: number, starred: boolean) =>
+    fetch(`/api/songs/${songId}/star`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ starred }),
+    }).then((r) => json<Song>(r)),
+  finalize: (songId: number) => post<Job>(`/api/songs/${songId}/finalize`),
+  peaks: (songId: number, buckets: number) =>
+    fetch(`/api/songs/${songId}/peaks?buckets=${buckets}`).then((r) => json<Peaks>(r)),
   setup: () => fetch("/api/setup").then((r) => json<Setup>(r)),
   runChecks: () => post<Setup>("/api/setup/checks"),
   acknowledgeLicence: () => post<Setup>("/api/setup/licence"),
@@ -140,21 +173,25 @@ export interface Deleted {
   song_id: number;
 }
 
-/** Subscribes to job and Setup snapshots. EventSource reconnects by itself; `onConnect` runs on
- * every (re)connection so the caller can reload anything that changed while it was disconnected. */
-export function watchJobs(
-  onJob: (job: Job) => void,
-  onDeleted: (deleted: Deleted) => void,
-  onSetup: (setup: Setup) => void,
-  onConnect: () => void,
-): () => void {
+export interface EventHandlers {
+  onJob: (job: Job) => void;
+  onDeleted: (deleted: Deleted) => void;
+  onSetup: (setup: Setup) => void;
+  onSong: (song: Song) => void;
+  /** Runs on every (re)connection, so the caller can reload what changed while disconnected. */
+  onConnect: () => void;
+}
+
+/** Subscribes to the server's events. EventSource reconnects by itself. */
+export function watchEvents(handlers: EventHandlers): () => void {
   const source = new EventSource("/api/events");
-  source.onopen = onConnect;
+  source.onopen = handlers.onConnect;
   source.onmessage = (event) => {
     const message = JSON.parse(event.data);
-    if (message.type === "job") onJob(message.job);
-    if (message.type === "deleted") onDeleted(message);
-    if (message.type === "setup") onSetup(message.setup);
+    if (message.type === "job") handlers.onJob(message.job);
+    if (message.type === "deleted") handlers.onDeleted(message);
+    if (message.type === "setup") handlers.onSetup(message.setup);
+    if (message.type === "song") handlers.onSong(message.song);
   };
   return () => source.close();
 }

@@ -28,6 +28,7 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
   const [seed, setSeed] = useState(initial?.seed != null ? String(initial.seed) : "");
   const [precision, setPrecision] = useState<Precision>(initial?.precision ?? "8bit");
   const [steps, setSteps] = useState<8 | 32>(initial?.steps ?? 32);
+  const [takes, setTakes] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,15 +37,12 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
     setSubmitting(true);
     setError(null);
     try {
-      const job = await api.create({
-        style,
-        lyrics,
-        mode,
-        seed: seed === "" ? null : Number(seed),
-        precision,
-        steps,
-      });
-      onCreated(job);
+      const request = { style, lyrics, mode, seed: seed === "" ? null : Number(seed), precision, steps };
+      if (takes > 1) {
+        (await api.createGroup(request, takes)).forEach(onCreated);
+      } else {
+        onCreated(await api.create(request));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -125,6 +123,24 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
         <p className="hint">The same seed, precision and quality reproduce the same song.</p>
       </details>
 
+      <div className="takes-row">
+        <label htmlFor="takes">Takes</label>
+        <select id="takes" value={takes} onChange={(e) => setTakes(Number(e.target.value))}>
+          <option value={1}>1</option>
+          <option value={2}>2 variations</option>
+          <option value={4}>4 variations</option>
+          <option value={8}>8 variations</option>
+        </select>
+      </div>
+      {takes > 1 && (
+        <p className="hint">
+          {takes} Takes with different seeds{seed !== "" && ` (${seed}, ${Number(seed) + 1}, …)`}, compared side by side.
+          {steps === 32
+            ? " Quick draft (8 steps) under Advanced makes them much faster; Finalize the one you like."
+            : " Finalize the one you like at full quality."}
+        </p>
+      )}
+
       {error && <p className="error" role="alert">{error}</p>}
       {!canRender && (
         <p className="notice" role="status">
@@ -132,7 +148,7 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
         </p>
       )}
       <button type="submit" className="primary" disabled={submitting || !style.trim() || !canRender}>
-        {submitting ? "Adding…" : "Generate"}
+        {submitting ? "Adding…" : takes > 1 ? `Generate ×${takes}` : "Generate"}
       </button>
     </form>
   );

@@ -30,6 +30,18 @@ _Avoid_: preview, fast mode
 A Draft's Take re-rendered with full synthesis steps (32), keeping the same music.
 _Avoid_: HQ render, full quality
 
+**Finalize**:
+Make a Draft's Final by re-synthesizing its saved Semantic tokens and noise; planning and semantic generation don't run again.
+_Avoid_: upscale, enhance, re-render
+
+**Variations**:
+Several Takes of one Song request that differ only in seed, queued together and compared side by side.
+_Avoid_: batch, candidates, alternatives
+
+**Star**:
+The user's pick among Takes; a single on/off mark on a song.
+_Avoid_: favourite, like, rating
+
 ### Inside generation
 
 **Stage**:

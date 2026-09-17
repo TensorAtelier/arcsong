@@ -118,3 +118,23 @@ button.danger { color: var(--bad); border-color: var(--bad); }
 code { font-size: 0.85em; overflow-wrap: anywhere; }
 nav .attention { color: var(--warn); font-weight: 700; }
 .notice { border: 1px solid var(--warn); border-radius: 6px; padding: 8px; font-size: 0.9rem; }
+
+.takes-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.takes-row label { margin: 0; }
+.takes-row select { width: auto; }
+.check-label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; margin: 0 0 12px; }
+.check-label input { width: auto; }
+button.star { border: none; background: none; padding: 0 4px; margin: 0; font-size: 1.25rem; line-height: 1; color: var(--muted); }
+button.star.on { color: var(--warn); }
+.song-head-right { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.labels { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+.compare { margin-top: 16px; }
+.compare-style { font-weight: 600; margin: 4px 0; overflow-wrap: anywhere; }
+.takes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.take.starred { border-color: var(--warn); }
+.take.playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.player { margin-top: 8px; }
+.waveform { min-height: 56px; cursor: pointer; }
+.player-bar { display: flex; align-items: center; gap: 10px; }
+.player-bar button { margin-top: 6px; min-width: 88px; }
+@media (max-width: 480px) { .takes { grid-template-columns: minmax(0, 1fr); } }
