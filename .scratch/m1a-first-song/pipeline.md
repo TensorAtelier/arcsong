@@ -7,4 +7,4 @@ goal: Build M1a from PLAN.md: FastAPI server, SQLite jobs/songs, mlx-Yue worker 
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review — PARTIAL; 5 defects around shutdown, restart and load failures (see REPORT.md)
