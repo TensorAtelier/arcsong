@@ -26,8 +26,8 @@ function viewFromHash(): View {
 }
 
 /** Covers need their own weights and ffmpeg; the server decides, so the two never disagree. */
-function coversReady(setup: Setup | null): boolean {
-  return setup?.parts?.find((p) => p.id === "covers")?.usable ?? false;
+function coversPart(setup: Setup | null) {
+  return setup?.parts?.find((p) => p.id === "covers");
 }
 
 /** The Score behind `#/score/job/<id>` or `#/score/song/<id>`, or null. */
@@ -214,7 +214,11 @@ export default function App() {
               onCreated={upsert}
               canRender={setup?.can_render ?? true}
             />
-            <CoverForm onCreated={upsert} ready={coversReady(setup)} />
+            <CoverForm
+              onCreated={upsert}
+              ready={coversPart(setup)?.usable ?? false}
+              checking={setup !== null && coversPart(setup)?.checked === false}
+            />
           </div>
           <QueuePanel jobs={ordered} onChanged={upsert} error={jobsError} />
         </div>

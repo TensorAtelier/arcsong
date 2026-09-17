@@ -6,10 +6,12 @@ interface Props {
   onCreated: (job: Job) => void;
   /** False until Setup has installed the covers weights and found ffmpeg. */
   ready: boolean;
+  /** Its checks are still running, so "not ready" doesn't mean anything yet. */
+  checking: boolean;
 }
 
 /** Upload a recording, transcribe it into a Score, then re-sing that melody in a new style. */
-export default function CoverForm({ onCreated, ready }: Props) {
+export default function CoverForm({ onCreated, ready, checking }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [style, setStyle] = useState("");
   const [lyrics, setLyrics] = useState("");
@@ -129,7 +131,12 @@ export default function CoverForm({ onCreated, ready }: Props) {
         You are responsible for the rights to anything you upload, and for how you use what comes back.
       </p>
 
-      {!ready && (
+      {!ready && checking && (
+        <p className="hint" role="status">
+          Checking whether covers are ready…
+        </p>
+      )}
+      {!ready && !checking && (
         <p className="notice" role="status">
           Covers need ffmpeg and the transcription weights. <a href="#/setup">Finish Setup</a> to use
           them.
@@ -143,7 +150,7 @@ export default function CoverForm({ onCreated, ready }: Props) {
       <button
         type="submit"
         className="primary"
-        disabled={submitting || !file || !style.trim() || !rights || !ready}
+        disabled={submitting || !file || !style.trim() || !rights || !ready || checking}
       >
         {submitting ? "Uploading…" : "Transcribe"}
       </button>

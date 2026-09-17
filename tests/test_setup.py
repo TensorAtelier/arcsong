@@ -424,12 +424,19 @@ def test_a_parts_progress_counts_only_its_own_files(tmp_path):
     sheet = shared / "sheetsage2"
     sheet.mkdir()
     (sheet / "config.json").write_bytes(b"y" * 2060)
-    partial = sheet / ".cache" / "huggingface" / "download"
-    partial.mkdir(parents=True)
-    (partial / "model.safetensors.incomplete").write_bytes(b"z" * 1000)
+    # The hub names a file it is still fetching by hash, so ask it where that file goes.
+    from huggingface_hub._local_folder import get_local_download_paths
+
+    in_flight = get_local_download_paths(sheet, "model.safetensors").incomplete_path("etag123")
+    in_flight.parent.mkdir(parents=True, exist_ok=True)
+    in_flight.write_bytes(b"z" * 1000)
 
     assert bytes_on_disk(covers) == 2060 + 1000
     assert bytes_on_disk(covers) < weights_state(covers)["bytes_total"]
+
+    # Half-written files never push a part past its own total.
+    in_flight.write_bytes(b"z" * (weights_state(covers)["bytes_total"] * 2))
+    assert bytes_on_disk(covers) == weights_state(covers)["bytes_total"]
 
 
 def test_the_licence_names_every_set_of_weights_songloom_downloads(tmp_path):

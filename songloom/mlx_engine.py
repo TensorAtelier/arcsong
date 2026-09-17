@@ -78,17 +78,22 @@ class MlxYueEngine:
         emit({"type": "stage", "stage": TRANSCRIBING})
         if out_dir.exists():
             shutil.rmtree(out_dir)  # transcription insists on a fresh directory
-        # mlx-Yue raises its own InterruptedError on cancel; the guard turns it into Cancelled.
-        result = _cancel_guard(cancelled)(
-            transcribe,
-            audio,
-            out_dir,
-            model=self._transcriber(cancelled),
-            offline=True,
-            task=TRANSCRIPTION_TASK,
-            cancelled=cancelled,
-            progress=_window_reporter(emit),
-        )
+
+        def run():
+            # Loading the model is inside the guard: the first cover spends minutes here, and
+            # mlx-Yue's own InterruptedError has to read as a cancel, not a failure.
+            model = self._transcriber(cancelled)
+            return transcribe(
+                audio,
+                out_dir,
+                model=model,
+                offline=True,
+                task=TRANSCRIPTION_TASK,
+                cancelled=cancelled,
+                progress=_window_reporter(emit),
+            )
+
+        result = _cancel_guard(cancelled)(run)
         abc = result.get("abc")
         if result.get("status") != "complete" or not abc:
             raise ValueError(result.get("abc_error") or "the recording produced no Score")

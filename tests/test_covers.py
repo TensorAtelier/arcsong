@@ -206,7 +206,7 @@ def test_cancelling_a_real_transcription_reads_as_cancelled_not_failed(tmp_path,
 
     monkeypatch.setattr(pipeline, "transcribe", interrupted)
     engine = MlxYueEngine(models=tmp_path)
-    engine._sheetsage = object()  # the model is not what this test is about
+    engine._sheetsage = object()  # the model is loaded already; only the call can cancel
     audio = tmp_path / "recording.wav"
     audio.write_bytes(RECORDING)
 
@@ -216,3 +216,44 @@ def test_cancelling_a_real_transcription_reads_as_cancelled_not_failed(tmp_path,
     # Without a cancel asked for, the same error is a real failure.
     with pytest.raises(InterruptedError):
         engine.transcribe(audio, {}, tmp_path / "out", lambda: False, lambda event: None)
+
+
+def test_cancelling_while_the_model_loads_also_reads_as_cancelled(tmp_path, monkeypatch):
+    """The first cover spends minutes loading 2.4 GB of weights, and mlx-Yue can cancel inside
+    that; it must not surface as a failure either."""
+    import lyra.transcription.model as model_module
+
+    from songloom.engine import Cancelled
+    from songloom.mlx_engine import MlxYueEngine
+
+    def interrupted(*args, **kwargs):
+        raise InterruptedError("Cancelled while loading SheetSage2")
+
+    monkeypatch.setattr(model_module.SheetSage2, "from_pretrained", interrupted)
+    engine = MlxYueEngine(models=tmp_path)
+    audio = tmp_path / "recording.wav"
+    audio.write_bytes(RECORDING)
+
+    with pytest.raises(Cancelled):
+        engine.transcribe(audio, {}, tmp_path / "out", lambda: True, lambda event: None)
+    assert engine._sheetsage is None  # a failed load is not cached
+
+
+def test_a_staged_upload_never_survives(client, tmp_path, monkeypatch):
+    """Anything but a clean save leaves no recording behind, and a crash mid-upload is swept."""
+    from songloom.app import STAGED_PREFIX
+
+    def explode(self, *args, **kwargs):
+        raise OSError("the disk is full")
+
+    monkeypatch.setattr("songloom.db.Store.create_job", explode)
+    with pytest.raises(OSError):
+        upload(client)
+    assert list((tmp_path / "uploads").glob("*")) == []
+
+    monkeypatch.undo()
+    leftover = tmp_path / "uploads" / f"{STAGED_PREFIX}abc.wav"
+    leftover.write_bytes(RECORDING)
+    with serve(tmp_path):  # a fresh server sweeps what the last one was still receiving
+        pass
+    assert not leftover.exists()

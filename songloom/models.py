@@ -75,30 +75,34 @@ def weights_state(models: Models) -> dict[str, Any]:
 
 
 def bytes_on_disk(models: Models) -> int:
-    """What this part's download has written so far, partly written files included. Counts only
-    the files the part declares, because two parts can share one directory (the covers weights
-    sit beside the song weights)."""
-    written = 0
+    """What this part's download has written so far, the file it is still fetching included.
+    Counts only the files the part declares, because two parts can share one directory (the
+    covers weights sit beside the song weights)."""
+    written = missing = 0
     for name, size in models.files().items():
         path = models.directory / name
         if path.is_file():
             written += min(path.stat().st_size, size)
-            continue
-        partial = _incomplete_path(models.directory, name)
-        if partial is not None and partial.is_file():
-            written += min(partial.stat().st_size, size)
-    return written
+        else:
+            missing += size
+    return written + min(_incomplete_bytes(models), missing)
 
 
-def _incomplete_path(directory: Path, name: str) -> Path | None:
-    """Where the hub writes a file it is still fetching: `<local dir>/.cache/huggingface/
-    download/<rest>.incomplete`, with the part's first path segment as the local dir."""
-    parts = Path(name).parts
-    if len(parts) < 2:
-        return None
-    root, rest = directory / parts[0], Path(*parts[1:])
-    cache = root / ".cache" / "huggingface" / "download" / rest
-    return cache.with_name(cache.name + ".incomplete")
+def _incomplete_bytes(models: Models) -> int:
+    """Bytes in the hub's part-downloaded files. It names them by hash
+    (`<local dir>/.cache/huggingface/download/…/<hash>.<etag>.incomplete`), so the only honest
+    way to count them is to look, not to rebuild the name."""
+    roots = {
+        models.directory / Path(name).parts[0]
+        for name in models.files()
+        if len(Path(name).parts) > 1
+    }
+    total = 0
+    for root in roots:
+        cache = root / ".cache" / "huggingface" / "download"
+        if cache.is_dir():
+            total += sum(f.stat().st_size for f in cache.rglob("*.incomplete") if f.is_file())
+    return total
 
 
 # --- mlx-Yue --------------------------------------------------------------------------------

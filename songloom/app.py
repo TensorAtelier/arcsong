@@ -41,6 +41,8 @@ SEED_LIMIT = 2**31
 MAX_VARIATIONS = 8
 # A few minutes of lossless audio; ffmpeg reads whatever format it is.
 MAX_UPLOAD_BYTES = 200 << 20
+# An upload being received, before it belongs to a job.
+STAGED_PREFIX = "incoming-"
 
 
 class SongRequest(BaseModel):
@@ -193,28 +195,17 @@ def create_app(
         uploads.mkdir(exist_ok=True)
         suffix = _upload_suffix(audio.filename)
         # Save the recording first: a refused upload must not leave a job behind.
-        staged = uploads / f"incoming-{uuid.uuid4().hex}{suffix}"
+        staged = uploads / f"{STAGED_PREFIX}{uuid.uuid4().hex}{suffix}"
         try:
             written = await _save_upload(audio, staged)
-        except HTTPException:
-            staged.unlink(missing_ok=True)
-            raise
-        if written == 0:
-            staged.unlink(missing_ok=True)
-            raise HTTPException(422, "That file is empty.")
-        request = {
-            "style": style,
-            "lyrics": lyrics,
-            "mode": mode,
-            "seed": seed if seed is not None else random.randrange(SEED_LIMIT),
-            "precision": precision,
-            "steps": steps,
-            "abc": None,
-            "source_name": Path(audio.filename or "recording").name,
-        }
-        job = app.state.store.create_job(request, kind="cover")
-        path = uploads / f"{job['id']}{suffix}"
-        staged.replace(path)
+            if written == 0:
+                raise HTTPException(422, "That file is empty.")
+            request = _cover_request(style, lyrics, mode, seed, precision, steps, audio.filename)
+            job = app.state.store.create_job(request, kind="cover")
+            path = uploads / f"{job['id']}{suffix}"
+            staged.replace(path)
+        finally:
+            staged.unlink(missing_ok=True)  # only still here if something went wrong
         app.state.store.set_source_audio(job["id"], str(path))
         app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
@@ -447,6 +438,28 @@ def create_app(
         app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
     return app
+
+
+def _cover_request(
+    style: str,
+    lyrics: str,
+    mode: str,
+    seed: int | None,
+    precision: str,
+    steps: int,
+    filename: str | None,
+) -> dict:
+    """The Song request a cover re-sings with, plus the name of the recording it came from."""
+    return {
+        "style": style,
+        "lyrics": lyrics,
+        "mode": mode,
+        "seed": seed if seed is not None else random.randrange(SEED_LIMIT),
+        "precision": precision,
+        "steps": steps,
+        "abc": None,
+        "source_name": Path(filename or "recording").name,
+    }
 
 
 def _upload_suffix(filename: str | None) -> str:

@@ -66,6 +66,7 @@ class JobRunner:
         self.songs_dir = songs_dir
         # A cover's transcription exports (MIDI, LAB, result.json) live beside the songs.
         self.covers_dir = songs_dir.parent / "covers"
+        self.uploads_dir = songs_dir.parent / "uploads"
         self.spec = spec
         self.cancel_grace = cancel_grace
         self.load_retry = load_retry
@@ -87,6 +88,7 @@ class JobRunner:
     # --- lifecycle -------------------------------------------------------------------------
 
     def start(self) -> None:
+        self._discard_staged_uploads()
         for job_id in self.store.recover():
             self._discard_partial_take(job_id)
             self._discard_upload(job_id)
@@ -372,6 +374,11 @@ class JobRunner:
                 self._cancel.value = NO_JOB
         self.publish(job_id)
         self.dispatch()
+
+    def _discard_staged_uploads(self) -> None:
+        """Recordings a previous server was still receiving when it died belong to no job."""
+        for path in self.uploads_dir.glob("incoming-*"):
+            path.unlink(missing_ok=True)
 
     def _discard_upload(self, job_id: int) -> None:
         """A cover's recording is the user's own audio: delete it the moment the job ends,
