@@ -6,13 +6,13 @@ Read first: `docs/m0-report.md` ("Per-Stage progress" and "Progress within a Sta
 
 **Blocked by:** None — can start immediately.
 
-**Status:** blocked
+**Status:** done
 
-- [ ] Tests through `FakeEngine` (with scripted per-Stage progress signals) cover counting, inter-arrival statistics, known-total vs running-count detection, and linearity against wall time
-- [ ] Results JSON exists for both Engines on the `song` case (8bit/q8_0, 8 steps is enough), with per-Stage signal counts, inter-arrival stats and a % bar verdict per Stage
-- [ ] The report gains a generated "Progress within a Stage" table plus a short interpretation stating, per Engine and Stage, what M1's progress bar can use and what event rate the SSE throttle must handle
-- [ ] PLAN.md's "Per-stage progress" checkbox is ticked with its note updated; no other PLAN.md change
-- [ ] `uv run pytest -q` and `uv run ruff check .` pass
+- [x] Tests through `FakeEngine` (with scripted per-Stage progress signals) cover counting, inter-arrival statistics, known-total vs running-count detection, and linearity against wall time
+- [x] Results JSON exists for both Engines on the `song` case (8bit/q8_0, 8 steps is enough), with per-Stage signal counts, inter-arrival stats and a % bar verdict per Stage
+- [x] The report gains a generated "Progress within a Stage" table plus a short interpretation stating, per Engine and Stage, what M1's progress bar can use and what event rate the SSE throttle must handle
+- [x] PLAN.md's "Per-stage progress" checkbox is ticked with its note updated; no other PLAN.md change
+- [x] `uv run pytest -q` and `uv run ruff check .` pass
 
 ## Comments
 
@@ -25,3 +25,5 @@ Read first: `docs/m0-report.md` ("Per-Stage progress" and "Progress within a Sta
 2. tests/test_progress.py:194–195 — the docstring cites `progress-mlx-song-8bit-8.json` for numbers (208.180–218.958, 8/19, 17/19) from the superseded run. The committed timeline has decoding 200.295–210.434 with updates 0, 9/19, 19/19. Fix the numbers or drop the citation.
 Non-blocking (QA): several prose numbers aren't guarded by the numbers test; "slowest signals change every 3–5 s" understates mlx synthesis (~10 s between value changes).
 QA round 2 otherwise confirmed: the analysis rebuilt from the jsonl matches both results files; round-1 fixes are real (the cancel filter test fails without the filter); the stderr tee is passive and patches no Engine source; no earlier results changed; report regeneration is byte-stable.
+
+**Resolved 2026-09-17 (user approved, no GPU):** fixed in `3fcfe84`, merged into `feat/m0-engine-spike` (`67fe51b`). A new `coarse_percent` verdict (a % signal with fewer than 5 updates) is documented next to the 0.15 cut-off. Committed verdicts were re-derived from the saved `progress-events.jsonl` timelines; only mlx-Yue decoding changed, and a script asserted all other stage data was identical. The PLAN.md note names each Engine; the test docstring was corrected, with a new test pinned to the committed decoding timeline; the "3–5 s" claim was corrected. Verified: 137 tests pass, ruff clean, report regeneration byte-stable.

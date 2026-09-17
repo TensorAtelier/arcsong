@@ -196,3 +196,19 @@
 - QA verdict: FAIL —
   1. PLAN.md:120 and docs/m0-report.md (must-have row, mlx synthesis/decoding prose, "What M1 can use", finding 9) — mlx-Yue decoding's results verdict `uneven_percent` renders as "stepped %", contradicting the note/prose that call it unusable; the PLAN.md note's token-count claim doesn't name mlx-Yue.
   2. tests/test_progress.py:194–195 — the docstring cites numbers from a superseded run as coming from the committed results file.
+
+## 10 — Progress within a Stage, both Engines (unparked)
+
+- Result: done
+- Commit: 3fcfe84 (fixes), merged in 67fe51b
+- QA rounds: 2 + fixed after the user's approval, without a third QA round
+- Verification:
+  ```
+  $ uv run pytest -q
+  137 passed in 94.77s (0:01:34)
+  $ uv run ruff check .
+  All checks passed!
+  $ uv run spike report (twice) ; cmp
+  BYTE-STABLE
+  ```
+- Note: the fixes were applied by the driver directly, with no fresh QA pass. Results were re-derived from the committed jsonl without GPU runs; only mlx-Yue decoding's verdict changed.

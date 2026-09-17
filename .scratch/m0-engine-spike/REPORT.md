@@ -16,7 +16,7 @@
 | 07 Draft→Final, both Engines | done | `0079aed` | 2 |
 | 08 Stale resource files and download checks (mlx-Yue) | done | `1b5dfbd` | 1 |
 | 09 M0 report and Engine recommendation | done (unparked 2026-09-17) | `0ec12eb`, merged `96b4882` | 2 + fixes |
-| 10 Progress within a Stage, both Engines | **blocked** | `wip/m0-engine-spike/10-within-stage-progress` (`d191ac6`) | 2 |
+| 10 Progress within a Stage, both Engines | done (unparked 2026-09-17) | `3fcfe84`, merged `67fe51b` | 2 + fixes |
 
 ## Goal review (verbatim)
 
@@ -104,7 +104,9 @@ DEFECTS:
 
 ## Ticket 10 (added 2026-09-17)
 
-Parked after two QA rounds. The measurement holds up: QA rebuilt the analysis from the raw timelines and matched both results files. What M1 can use for a progress bar:
+Unparked with the user's approval: both defects below were fixed without GPU runs (`3fcfe84`) and merged (`67fe51b`). mlx-Yue decoding is now verdict `coarse_percent` (too few updates for a bar). All M0 checkboxes in PLAN.md are ticked.
+
+It was parked after two QA rounds. The measurement holds up: QA rebuilt the analysis from the raw timelines and matched both results files. What M1 can use for a progress bar:
 - **mlx-Yue:** `on_token` in planning and semantic generation gives a steady running count with no total, up to 71 events/s, which the SSE throttle must absorb. Synthesis and decoding have no public callback; yue2's `N/total` lines on stderr give a stepped % (at most one line per 5 s through a pipe; synthesis starts 15.3 s in, and decoding has only 3 updates).
 - **audio.cpp:** nothing usable inside any Stage. Synthesis is silent for ~131 s, and the decoding chunk total only appears at the end.
 
