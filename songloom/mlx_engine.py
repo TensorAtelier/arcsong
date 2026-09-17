@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, TakeOutput
+from songloom.progress import StderrCounts
 
 MODELS_ENV = "SONGLOOM_MLX_MODELS"
 DEFAULT_MODELS_DIR = "~/projects/mlx-Yue/models"
@@ -69,12 +70,21 @@ class MlxYueEngine:
             cot=request["mode"],
             seed=request["seed"],
             cancelled=cancelled,
+            on_token=_token_counter(STAGES[0], emit),
         )
         emit({"type": "stage", "stage": STAGES[1]})
-        semantic = guard(pipe.generate_semantic, plan, cancelled=cancelled)
+        semantic = guard(
+            pipe.generate_semantic,
+            plan,
+            cancelled=cancelled,
+            on_token=_token_counter(STAGES[1], emit),
+        )
         emit({"type": "stage", "stage": STAGES[2]})
         noise = initial_noise(len(semantic.tokens), plan.request.seed)
-        latents = guard(pipe.synthesize, semantic, cancelled=cancelled, noise=noise)
+        # Synthesis exposes no progress callback; yue2's N/total lines on stderr are the only
+        # signal (M0: one line per 5 s through a pipe).
+        with StderrCounts(_step_reporter(STAGES[2], emit)):
+            latents = guard(pipe.synthesize, semantic, cancelled=cancelled, noise=noise)
         emit({"type": "stage", "stage": STAGES[3]})
         audio = guard(pipe.decode, latents, cancelled=cancelled)
         if cancelled():
@@ -92,6 +102,24 @@ class MlxYueEngine:
             shutil.rmtree(out_dir)  # leftovers of an interrupted Take; never a finished one
         result.save_artifacts(out_dir)
         return TakeOutput(out_dir / "audio.flac", len(audio) / SAMPLE_RATE)
+
+
+def _token_counter(stage: str, emit: Emit):
+    count = 0
+
+    def on_token(phase, token) -> None:
+        nonlocal count
+        count += 1
+        emit({"type": "progress", "stage": stage, "tokens": count})
+
+    return on_token
+
+
+def _step_reporter(stage: str, emit: Emit):
+    def on_count(completed: int, total: int) -> None:
+        emit({"type": "progress", "stage": stage, "completed": completed, "total": total})
+
+    return on_count
 
 
 def _cancel_guard(cancelled: CancelCheck):

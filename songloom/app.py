@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
+import queue
 import random
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from songloom.config import data_dir
@@ -51,19 +54,50 @@ def create_app(spec: EngineSpec, data: str | Path | None = None) -> FastAPI:
         if request["seed"] is None:
             request["seed"] = random.randrange(2**31)
         job = app.state.store.create_job(request)
+        app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
-        return job
+        return app.state.runner.job(job["id"])
 
     @app.get("/api/jobs")
     def list_jobs():
-        return app.state.store.list_jobs()
+        return app.state.runner.jobs()
 
     @app.get("/api/jobs/{job_id}")
     def get_job(job_id: int):
-        job = app.state.store.get_job(job_id)
+        job = app.state.runner.job(job_id)
         if job is None:
             raise HTTPException(404, "no such job")
         return job
+
+    @app.post("/api/jobs/{job_id}/cancel")
+    def cancel_job(job_id: int):
+        if app.state.runner.job(job_id) is None:
+            raise HTTPException(404, "no such job")
+        if not app.state.runner.cancel(job_id):
+            raise HTTPException(409, "job already finished")
+        return app.state.runner.job(job_id)
+
+    @app.get("/api/events")
+    async def events(request: Request):
+        """Server-sent events: a `job` message with the job's snapshot whenever a job changes
+        (created, started, Stage change, progress at most a few times a second, finished)."""
+        broadcaster = app.state.runner.broadcaster
+        subscription = broadcaster.subscribe()
+
+        async def stream():
+            try:
+                yield ": connected\n\n"
+                while not await request.is_disconnected():
+                    try:
+                        message = await asyncio.to_thread(subscription.get, True, 1.0)
+                    except queue.Empty:
+                        yield ": keep-alive\n\n"
+                        continue
+                    yield f"data: {json.dumps(message)}\n\n"
+            finally:
+                broadcaster.unsubscribe(subscription)
+
+        return StreamingResponse(stream(), media_type="text/event-stream")
 
     @app.get("/api/songs/{song_id}/audio")
     def song_audio(song_id: int):
