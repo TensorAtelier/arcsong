@@ -178,6 +178,14 @@ audio → transcribe → edit score (reuses M3) → cover render. Export ABC/MID
 SheetSage2 and MERT2 weight licences before shipping.
 
 ### M5 — NVIDIA backend (#10)
+Deferred 2026-09-17, after M4; researched but not started. What was settled:
+- **Windows means NVIDIA.** There is no CPU mode worth shipping, so the Engine is chosen by platform (macOS → mlx-Yue, Windows/Linux → CUDA), and the dependency follows: `mlx-yue` must become `sys_platform == "darwin"` only. Today it is unconditional, so `uv sync` fails on Windows before any code runs — the first thing M5 has to fix.
+- **Minimum card, from M0's numbers:** audio.cpp peaked at 6.27 GiB (q8_0) and 8.85 GiB (bf16), so 8 GB runs q8_0, 12 GB is comfortable, 24 GB roomy. audio.cpp's CUDA builds need compute capability ≥ 7.5 (Turing), and it stopped shipping Windows CUDA binaries after v0.6.1 — v0.8.0 has Windows CPU and an Ubuntu CUDA build only.
+- **Pascal is out** (a GTX 1080 Ti was on hand): no bf16, and PyTorch dropped Pascal from its CUDA 12.8+ builds, CUDA 13 from the toolkit. Testing there would validate a config no user could reproduce.
+- **Setup gains a Windows engine part:** driver present, compute capability ≥ 7.5, VRAM floor — the same "not ready" gate the Metal check uses today, so an unsupported card is told plainly instead of failing in the worker.
+- **Test hardware:** rent rather than buy — a 24 GB Ampere/Ada box is about $0.15–0.70/hr (Vast, RunPod), with the ~10 GB of weights on a persistent volume (~$0.07/GB/month) so they survive between sessions. Note RunPod and Vast are Linux containers; a *Windows* GPU box means Azure NV-series, an AWS G4/G5 Windows AMI or Paperspace.
+- **Windows bugs already known, GPU or not:** the worker's orphan guard uses `os.getppid()`, which on Windows keeps returning the dead parent's PID, so it never fires (use psutil); the ffmpeg hint says `brew`; `tests/test_shutdown.py` sends SIGTERM. A macOS/Linux/Windows CI matrix on the fake Engine would catch this class continuously.
+
 `CudaEngine` over official `yue2-infer`, or audio.cpp if it has gained Semantic-token input
 and Score export by then (re-evaluate with the spike harness); engine auto-detect; test on a
 CUDA machine; document Linux/Windows install.
