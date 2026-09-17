@@ -106,24 +106,26 @@ reliability, install experience and sustained maintenance, not on features.
 
 ### M0 — Engine spike (1–2 days) — de-risk before any UI
 Script that drives the staged `lyra` API in a subprocess and answers:
-- [ ] Engine choice: `mlx-Yue` vs `audio.cpp` (2.8k★, Metal + CUDA, used by riff). Compare
+Answered 2026-09-16 — see [`docs/m0-report.md`](docs/m0-report.md) (recommendation, numbers, flagged plan changes).
+- [x] Engine choice: `mlx-Yue` vs `audio.cpp` (2.8k★, Metal + CUDA, used by riff). Compare
       install friction, speed, memory, staged API / cancel / progress hooks. `audio.cpp` could
       also cover the NVIDIA path (M5) with one engine.
-- [ ] Per-stage timing split (plan / generate_semantic / synthesize / decode) — decides
+- [x] Per-stage timing split (plan / generate_semantic / synthesize / decode) — decides
       whether draft→final (#5) or plan-first is the real iteration lever. (Planning reportedly
       takes seconds, per yue2gen.)
-- [ ] Seed reproducibility: same seed + inputs → same audio on MLX/Metal? "Re-run with these
+- [x] Seed reproducibility: same seed + inputs → same audio on MLX/Metal? "Re-run with these
       settings" and draft→final both depend on it; if not, the UI says "similar", not "same".
-- [ ] Artifact sizes per song (`.npy` intermediates vs FLAC) — sizes the library cleanup feature.
+- [x] Artifact sizes per song (`.npy` intermediates vs FLAC) — sizes the library cleanup feature.
 - [ ] Per-stage progress: what callbacks fire, how often, and can they map to a % bar?
-- [ ] Cancellation: does `cancelled()` stop each stage promptly and leave the pipeline reusable?
-- [ ] Draft→final: render at 8 steps, then re-`synthesize` the saved semantic tokens + noise at
+      (Stage-level answered; callback rate within a Stage not measured — see report.)
+- [x] Cancellation: does `cancelled()` stop each stage promptly and leave the pipeline reusable?
+- [x] Draft→final: render at 8 steps, then re-`synthesize` the saved semantic tokens + noise at
       32 steps — same song, better quality? (Decides #5.) Already shown feasible by YuE-Studio
       and riff; confirm on our engine.
-- [ ] Timing + peak memory on this M5 Pro for a ~3-min song, bf16 vs 8bit, 8 vs 32 steps.
-- [ ] Failure hygiene: stale `<output>.resources.json[l]` blocks re-runs — confirm the API
+- [x] Timing + peak memory on this M5 Pro for a ~3-min song, bf16 vs 8bit, 8 vs 32 steps.
+- [x] Failure hygiene: stale `<output>.resources.json[l]` blocks re-runs — confirm the API
       path avoids it or the worker cleans it up.
-- [ ] Model download without the HF cache-metadata files that fail `verify_conversion`.
+- [x] Model download without the HF cache-metadata files that fail `verify_conversion`.
 
 ### M1a — First song end to end (features #1–#2)
 Backend: FastAPI, SQLite schema (jobs, songs), worker + queue + IPC, SSE progress, engine

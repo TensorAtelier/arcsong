@@ -10,7 +10,7 @@ from collections.abc import Callable
 from functools import partial
 from pathlib import Path
 
-from spike import audiocpp_setup
+from spike import audiocpp_setup, report
 from spike.audiocpp_engine import AudioCppEngine
 from spike.cases import load_case
 from spike.fake import FakeEngine
@@ -23,6 +23,7 @@ SPIKE_DIR = Path(__file__).resolve().parent
 DEFAULT_RESULTS_DIR = SPIKE_DIR / "results"
 DEFAULT_RUNS_DIR = SPIKE_DIR / "runs"
 DEFAULT_LISTEN_DIR = SPIKE_DIR / "listen"
+DEFAULT_REPORT = SPIKE_DIR.parent / "docs" / "m0-report.md"
 
 ENGINES: dict[str, Callable[[argparse.Namespace], EngineFactory]] = {
     "mlx": lambda args: partial(MlxYueEngine, models_dir=args.mlx_models),
@@ -208,6 +209,14 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_TIMEOUT_SECONDS,
         help="seconds before a run is killed and recorded as failed (default %(default)g)",
     )
+
+    run = commands.add_parser(
+        "report",
+        help="Regenerate the M0 report's tables from the results files, keeping the "
+        "hand-written interpretation around them",
+    )
+    run.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
+    run.add_argument("--out", type=Path, default=DEFAULT_REPORT)
     return parser
 
 
@@ -242,6 +251,9 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "setup":
         return _setup(args)
+    if args.command == "report":
+        print(f"report -> {report.write_report(args.results_dir, args.out)}")
+        return 0
     common = dict(
         engine_name=args.engine,
         engine_factory=ENGINES[args.engine](args),
