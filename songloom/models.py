@@ -173,9 +173,15 @@ class MlxYueModels:
             local_dir=self.directory / "vae",
             allow_patterns=sorted(VAE_FILES),
         )
-        for sub in ("converted", "vae"):
-            shutil.rmtree(self.directory / sub / ".cache", ignore_errors=True)
-        (self.directory / "converted" / ".gitattributes").unlink(missing_ok=True)
+        shutil.rmtree(self.directory / "vae" / ".cache", ignore_errors=True)
+        # Everything `verify_conversion` would reject: the hub's `.cache`, `.gitattributes`, and
+        # anything else that landed there (e.g. a Finder `.DS_Store`).
+        for name in self.stray_files():
+            path = self.directory / name
+            if path.is_dir() and not path.is_symlink():
+                shutil.rmtree(path)
+            else:
+                path.unlink(missing_ok=True)
 
         phase("verifying")
         from lyra.conversion import verify_conversion

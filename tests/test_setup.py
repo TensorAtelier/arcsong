@@ -224,3 +224,99 @@ def test_the_models_dir_defaults_into_the_data_dir(tmp_path, monkeypatch):
     assert models_dir(tmp_path, "~/weights") == (tmp_path.home() / "weights").resolve()
     monkeypatch.setenv("SONGLOOM_MLX_MODELS", str(tmp_path / "env"))
     assert models_dir(tmp_path) == tmp_path / "env"
+
+
+def test_the_mlx_download_removes_every_stray_file_before_verifying(tmp_path, monkeypatch):
+    import huggingface_hub
+    import lyra.conversion
+    import yue2.storage
+
+    write_mlx_weights(tmp_path)
+    converted = tmp_path / "converted"
+    (converted / ".DS_Store").write_text("finder")
+    (converted / ".cache" / "huggingface").mkdir(parents=True)
+    (converted / ".cache" / "huggingface" / ".gitignore").write_text("*")
+    (converted / ".gitattributes").write_text("*.safetensors filter=lfs")
+    (tmp_path / "vae" / ".cache").mkdir()
+    seen = {}
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", lambda *a, **k: None)
+    monkeypatch.setattr(
+        lyra.conversion,
+        "verify_conversion",
+        lambda path: seen.update(
+            stray=sorted(p.name for p in path.iterdir() if p.name.startswith("."))
+        ),
+    )
+    monkeypatch.setattr(yue2.storage, "model_identity", lambda path: None)
+    models = MlxYueModels(tmp_path)
+
+    models.download(lambda phase: None)
+
+    assert seen["stray"] == []
+    assert not (tmp_path / "vae" / ".cache").exists()
+    assert weights_state(models)["installed"] is True
+
+
+class LateQueue:
+    """A queue whose message arrives just after the first poll gave up."""
+
+    def __init__(self, message):
+        self.message, self.polls = message, 0
+
+    def get(self, timeout=None):
+        self.polls += 1
+        if self.polls == 1 or self.message is None:
+            raise __import__("queue").Empty
+        message, self.message = self.message, None
+        return message
+
+
+class DeadProcess:
+    exitcode = 0
+
+    def is_alive(self):
+        return False
+
+    def join(self, timeout=None):
+        pass
+
+
+def test_a_download_that_exits_right_after_saying_done_counts_as_done(tmp_path):
+    from songloom.db import Store
+    from songloom.setup import Setup
+
+    store = Store(tmp_path / "songloom.db")
+    setup = Setup(
+        FakeModels(tmp_path / "models"), store, lambda message: None, iter(range(9**9)).__next__
+    )
+    process = DeadProcess()
+    setup._process, setup._download = process, {"state": "running"}
+
+    setup._follow(process, LateQueue({"type": "done"}))
+
+    assert setup._download["state"] == "done"
+    store.close()
+
+
+def test_a_cancel_that_lands_while_the_download_finishes_is_kept(tmp_path):
+    from songloom.db import Store
+    from songloom.setup import Setup
+
+    store = Store(tmp_path / "songloom.db")
+    setup = Setup(
+        FakeModels(tmp_path / "models"), store, lambda message: None, iter(range(9**9)).__next__
+    )
+
+    class CancelledWhileJoining(DeadProcess):
+        def join(self, timeout=None):
+            setup._download = {"state": "cancelled"}
+
+    process = CancelledWhileJoining()
+    setup._process, setup._download = process, {"state": "running"}
+    queue_ = LateQueue({"type": "done"})
+    queue_.polls = 1  # the message is there on the first poll
+
+    setup._follow(process, queue_)
+
+    assert setup._download["state"] == "cancelled"
+    store.close()

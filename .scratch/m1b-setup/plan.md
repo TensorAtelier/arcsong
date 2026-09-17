@@ -20,7 +20,7 @@
 - Weights state comes from file presence and pinned byte sizes (instant); full hashing happens after a download (in the download process) and on every model load (mlx-Yue already verifies). No hash on page load.
 - The server never imports MLX: the Metal check runs `lyra.runtime.runtime_status()` in a short subprocess, cached until "Run checks again".
 - The download runs in its own spawned process (not the GPU worker, not a server thread), so cancel is a kill and the server stays responsive; hub `.incomplete` files make a retry resume.
-- Progress comes from a `tqdm_class` passed to `snapshot_download`, whose aggregate byte bar covers every file; the total comes from the pinned sizes.
+- Progress comes from polling the bytes on disk under the weights dir every 0.5 s (partial `.incomplete` files included, capped at the pinned total). A probe showed the hub writes them incrementally, and this needs no hub internals (a `tqdm_class` was the first idea).
 - All three weight files come down (8-bit AR, bf16 AR, bf16 NAR): `verify_conversion` checks every precision the manifest lists, and the page offers both precisions.
 - RAM: warn (not block) below 24 GiB — songs peak at ~11 GiB and the floor is unmeasured (PLAN open question 2). Power: warn on battery, because mlx-Yue refuses to render off AC. Disk: fail when free space is below what is left to download plus 1 GiB.
 - The licence acknowledgement gates the download, not song creation: weights that were already on disk (installed by hand) can make songs; the page still shows the licence until acknowledged. The acknowledgement lives in a new `settings` key/value table (additive, no migration).

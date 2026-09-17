@@ -42,6 +42,17 @@ def download_main(models: Models, events, parent_pid: int) -> None:
         events.put({"type": "done"})
 
 
+def _final_event(events, wait: float = 1.0) -> dict[str, Any] | None:
+    """The outcome a finished download process left in `events`, if any."""
+    while True:
+        try:
+            event = events.get(timeout=wait)
+        except queue.Empty:
+            return None
+        if event["type"] != "phase":
+            return event
+
+
 def _reason(error: BaseException) -> str:
     text = str(error).strip().splitlines()
     return f"{type(error).__name__}: {text[-1]}" if text else type(error).__name__
@@ -188,17 +199,20 @@ class Setup:
                 elif event:
                     outcome = event
                 elif not process.is_alive():
-                    code = process.exitcode
-                    reason = f"the download process exited unexpectedly (code {code})"
-                    outcome = {"type": "failed", "reason": reason, "error": reason}
+                    # Its last message can still be in the queue's pipe; read what is left.
+                    outcome = _final_event(events)
+                    if outcome is None:
+                        code = process.exitcode
+                        reason = f"the download process exited unexpectedly (code {code})"
+                        outcome = {"type": "failed", "reason": reason, "error": reason}
             if self._stopping.is_set():
                 return
             if outcome is None:
                 self.publish()
         process.join(timeout=5)
         with self._lock:
-            if self._process is not process:
-                return
+            if self._process is not process or self._download["state"] != "running":
+                return  # cancelled while it was finishing: keep what cancel reported
             if outcome["type"] == "done":
                 self._download = {"state": "done", "finished_at": time.time()}
             else:
@@ -271,7 +285,7 @@ def _weights_check(weights: dict[str, Any], download_state: str) -> Check:
         return check("weights", label, "warn", f"downloading into {where}")
     if weights["stray"]:
         stray = ", ".join(weights["stray"])
-        detail = f"{where} has files mlx-Yue rejects ({stray}); download again to clean up"
+        detail = f"{where} has files mlx-Yue rejects ({stray}); download again to remove them"
         return check("weights", label, "fail", detail)
     if weights["bytes_on_disk"]:
         have, total = weights["bytes_on_disk"] / GIB, weights["bytes_total"] / GIB
