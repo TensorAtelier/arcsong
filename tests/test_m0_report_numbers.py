@@ -85,3 +85,39 @@ def test_memory_and_planning_ranges_match_results():
         for r in load(f"timing-mlx-song-{p}-{s}.json")["runs"]
     ]
     assert_occurs(text, span(planning), 2)
+
+
+def test_progress_within_a_stage_numbers_match_results():
+    text = " ".join(interpretation().split())  # prose wraps lines anywhere
+    mlx = load("progress-mlx-song-8bit-8.json")["runs"][0]
+    audiocpp = load("progress-audiocpp-song-q8_0-8.json")["runs"][0]
+    tokens = {
+        stage: mlx["stages"][stage]["signals"]["on_token"]
+        for stage in ("planning", "semantic generation")
+    }
+    assert_occurs(text, f"fired {tokens['planning']['count']} times", 1)
+    assert_occurs(text, f"{tokens['semantic generation']['count']} times for Semantic tokens", 1)
+    peak = max(t["per_second"]["max_in_one_second"] for t in tokens.values())
+    assert_occurs(text, f"peaked at {peak} callbacks in one second", 1)
+    assert_occurs(text, f"up to {peak} token", 1)
+    assert_occurs(text, f"({mlx['progress_events']} progress events", 1)
+    assert_occurs(text, f"{mlx['total_seconds']:.1f} s (mlx-Yue 8bit)", 1)
+    assert_occurs(text, f"{audiocpp['total_seconds']:.1f} s (audio.cpp q8_0)", 1)
+    assert mlx["stderr_is_tty"] is False and audiocpp["stderr_is_tty"] is False
+    assert_occurs(text, "with stderr not a terminal", 1)
+    fits = {
+        stage: mlx["stages"][stage]["signals"][f"stderr: {label}"]
+        for stage, label in (("synthesis", "Synthesizing audio"), ("decoding", "Decoding audio"))
+    }
+    deviation = {s: f["tracks_wall_time"]["max_deviation"] for s, f in fits.items()}
+    assert_occurs(text, f"max deviation {deviation['synthesis']:.2f}", 1)
+    assert_occurs(text, f"lags wall time by up to {deviation['decoding']:.2f}", 1)
+    assert_occurs(text, f"Decoding logged {fits['decoding']['count']} lines", 1)
+    assert_occurs(text, f"Synthesis logged {fits['synthesis']['count']} such lines", 1)
+    log = {s: e["signals"]["--log line"] for s, e in audiocpp["stages"].items()}
+    assert_occurs(text, f"{log['synthesis']['inter_arrival_seconds']['max']:.3f} s", 1)
+    assert_occurs(text, f"{log['planning']['inter_arrival_seconds']['max']:.3f} s", 1)
+    assert_occurs(text, f"peaked at {log['planning']['per_second']['max_in_one_second']} lines", 1)
+    [chunk] = [v for k, v in audiocpp["stages"]["decoding"]["signals"].items() if "VAE" in k]
+    assert_occurs(text, f"logged {chunk['count']} `framework.oobleck_audio_vae", 1)
+    assert_occurs(text, f"{chunk['inter_arrival_seconds']['median']:.3f} s apart", 1)

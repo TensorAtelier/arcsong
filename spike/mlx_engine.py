@@ -9,8 +9,10 @@ from __future__ import annotations
 import dataclasses
 import fnmatch
 import json
+import re
 import subprocess
 import sys
+import threading
 import time
 from importlib import metadata
 from pathlib import Path
@@ -24,6 +26,7 @@ from spike.engine import (
     CliTake,
     EngineInfo,
     EventSink,
+    ProgressEvent,
     RunOutput,
     StageEvent,
     WeightsDownload,
@@ -84,16 +87,124 @@ def loads_since(before: dict, after: dict) -> dict[str, float]:
     return loads
 
 
+# What `YuE2Pipeline` lets a caller observe inside each Stage without patching it.
+PROGRESS_HOOKS = {
+    STAGES[0]: "on_token(phase, token) per Score token, a public argument of plan(); no total "
+    "(sampling max_tokens is a limit, not a target). yue2 Progress lines on stderr.",
+    STAGES[1]: "on_token(phase, token) per Semantic token, a public argument of "
+    "generate_semantic(); no total. yue2 Progress lines on stderr.",
+    STAGES[2]: "not exposed: synthesize() passes on_progress(completed, total) per solver step "
+    "only to its own yue2 Progress display; seen as Progress lines on stderr.",
+    STAGES[3]: "not exposed: decode() passes on_progress(completed, total) per VAE chunk only "
+    "to its own yue2 Progress display; seen as Progress lines on stderr.",
+}
+STDERR_SIGNAL = "stderr: {label}"
+TOKEN_SIGNAL = "on_token"
+
+# yue2.progress.Progress output, e.g. "[YuE2] Running Synthesizing audio: 3/8 steps (38%) |
+# elapsed 12.3s" through a pipe, or "[YuE2] | Synthesizing audio: [###-----] 3/8 steps ..."
+# on a terminal.
+_PROGRESS_LINE = re.compile(
+    r"^\[YuE2\] (?:Starting|Running|Completed|Failed|Cancelled|Limit reached|"
+    r"Finished \(generation limit reached\)|[|/\\-]) (?P<label>[^:]+): (?P<rest>.*)$"
+)
+_PROGRESS_AMOUNT = re.compile(r"^(?:\[[#-]*\] )?(?P<completed>\d+)(?:/(?P<total>\d+))? [A-Za-z]")
+
+
+def progress_line(line: str) -> tuple[str, int | None, int | None] | None:
+    """(label, completed, total) of a yue2 Progress line; None for any other text."""
+    match = _PROGRESS_LINE.match(line.strip())
+    if not match:
+        return None
+    amount = _PROGRESS_AMOUNT.match(match.group("rest"))
+    if not amount:
+        return match.group("label"), None, None
+    total = amount.group("total")
+    completed = int(amount.group("completed"))
+    return match.group("label"), completed, None if total is None else int(total)
+
+
+class _StderrTee:
+    """Passes everything through to `stream` and hands each complete line to `on_line`."""
+
+    def __init__(self, stream, on_line):
+        self._stream, self._on_line = stream, on_line
+        self._pending = ""
+        self._lock = threading.Lock()
+
+    def write(self, text: str) -> int:
+        written = self._stream.write(text)
+        with self._lock:
+            *lines, self._pending = re.split(r"[\r\n]", self._pending + text)
+        for line in lines:
+            if line.strip():
+                self._on_line(line)
+        return written
+
+    def drain(self) -> None:
+        with self._lock:
+            line, self._pending = self._pending, ""
+        if line.strip():
+            self._on_line(line)
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+class StderrProgress:
+    """While a Stage runs, turns yue2's Progress lines on stderr into progress events.
+
+    yue2 creates its Progress display per Stage on whatever `sys.stderr` is then, so the
+    lines are read on their way to the real stream, which still receives all of them.
+    """
+
+    def __init__(self, stage: str, on_event: EventSink):
+        self.stage, self.on_event = stage, on_event
+        self._stream: Any = None
+        self._tee: _StderrTee | None = None
+
+    def _line(self, line: str) -> None:
+        parsed = progress_line(line)
+        if parsed is not None:
+            label, completed, total = parsed
+            signal = STDERR_SIGNAL.format(label=label)
+            self.on_event(ProgressEvent(self.stage, signal, completed, total))
+
+    def __enter__(self):
+        self._stream = sys.stderr
+        self._tee = _StderrTee(self._stream, self._line)
+        sys.stderr = self._tee
+        return self
+
+    def __exit__(self, *exc):
+        sys.stderr = self._stream
+        if self._tee is not None:
+            self._tee.drain()
+        return False
+
+
 class _Stage:
     def __init__(self, stage: str, on_event: EventSink):
         self.stage, self.on_event = stage, on_event
+        self._stderr = StderrProgress(stage, on_event)
 
     def __enter__(self):
         self.on_event(StageEvent(self.stage, "start"))
+        self._stderr.__enter__()
 
     def __exit__(self, *exc):
+        self._stderr.__exit__(*exc)
         self.on_event(StageEvent(self.stage, "end"))
         return False
+
+
+def _token_counter(stage: str, on_event: EventSink):
+    """An `on_token` callback that reports each token as a progress event."""
+
+    def on_token(phase, token) -> None:
+        on_event(ProgressEvent(stage, TOKEN_SIGNAL))
+
+    return on_token
 
 
 class MlxYueEngine:
@@ -149,7 +260,10 @@ class MlxYueEngine:
         fields, sampling = self._split(request)
         with _Stage(STAGES[0], on_event):
             return self._loaded().plan(
-                **fields, abc_sampling=sampling["abc_sampling"], cancelled=cancelled
+                **fields,
+                abc_sampling=sampling["abc_sampling"],
+                cancelled=cancelled,
+                on_token=_token_counter(STAGES[0], on_event),
             )
 
     def generate_semantic(
@@ -165,7 +279,12 @@ class MlxYueEngine:
             sampling = score_or_request.get("semantic_sampling", sampling)
             score = self.plan(score_or_request, cancelled=cancelled, on_event=on_event)
         with _Stage(STAGES[1], on_event):
-            return self._loaded().generate_semantic(score, sampling=sampling, cancelled=cancelled)
+            return self._loaded().generate_semantic(
+                score,
+                sampling=sampling,
+                cancelled=cancelled,
+                on_token=_token_counter(STAGES[1], on_event),
+            )
 
     def synthesize(
         self,
@@ -328,6 +447,7 @@ class MlxYueEngine:
                 if (output_dir / name).is_file()
             },
             noise_path=output_dir / "noise.npy" if (output_dir / "noise.npy").is_file() else None,
+            details={"progress_hooks": dict(PROGRESS_HOOKS)},
         )
 
     def take_command(

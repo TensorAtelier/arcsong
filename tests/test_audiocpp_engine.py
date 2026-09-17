@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from spike import cli
-from spike.audiocpp_engine import AudioCppEngine, Cancelled
+from spike.audiocpp_engine import LOG_LINE_SIGNAL, VAE_CHUNK_SIGNAL, AudioCppEngine, Cancelled
 from spike.engine import STAGES
 from spike.runner import run_case
 
@@ -235,7 +235,7 @@ def test_cancel_records_kill_to_exit_latency_and_announces_the_stage(
         )
 
     assert 0 < raised.value.kill_to_exit_seconds < 2
-    assert [(e.stage, e.kind) for e in events] == [("planning", "enter")]
+    assert [(e.stage, e.kind) for e in events if e.kind != "progress"] == [("planning", "enter")]
 
 
 def test_cancel_measurement_runs_against_the_cli(tmp_path, fake_cli, monkeypatch):
@@ -424,3 +424,27 @@ def test_draft_final_records_resynthesis_as_unsupported_with_the_full_rerun_cost
     assert data["final_vs_direct"]["stages"]["decoding"]["compared"] is True
     for path in data["listening_pair"].values():
         assert Path(path).is_file()
+
+
+def test_every_log_line_arrival_is_a_progress_event_and_vae_chunks_are_named(tmp_path, fake_cli):
+    factory, _ = fake_cli
+    engine = factory()
+    engine.load("q8_0")
+    events = []
+    clip = json.loads((Path(cli.__file__).parent / "cases" / "clip.json").read_text())
+
+    output = engine.run(clip, 8, tmp_path / "take", on_event=events.append)
+
+    progress = [e for e in events if e.kind == "progress"]
+    lines = [
+        line for line in (tmp_path / "take" / "audiocpp.log").read_text().splitlines()
+        if line.strip()
+    ]
+    assert sum(e.signal == LOG_LINE_SIGNAL for e in progress) == len(lines)
+    [chunk] = [e for e in progress if e.signal == VAE_CHUNK_SIGNAL]
+    # The Engine knows which Stage it is in from the lines announcing each Stage.
+    assert chunk.stage == STAGES[3]
+    # A given Score: planning and semantic generation are announced by the same line.
+    assert {e.stage for e in progress} == {None, *STAGES[1:]}
+    assert all(a.t <= b.t for a, b in zip(progress, progress[1:], strict=False))
+    assert set(output.details["progress_hooks"]) == set(STAGES)

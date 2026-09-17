@@ -30,6 +30,7 @@ from spike.engine import (
     CancelCheck,
     EngineInfo,
     EventSink,
+    ProgressEvent,
     RunOutput,
     StageEvent,
     Unsupported,
@@ -52,6 +53,18 @@ NOISE_PROBE_DIR = "noise-probe"
 NOISE_CHANNELS = 64
 
 PLANNING, SEMANTIC, SYNTHESIS, DECODING = STAGES
+
+# Progress signals: every `--log` line as it arrives, and the line the VAE logs as it
+# finishes decoding one chunk.
+LOG_LINE_SIGNAL = "--log line"
+VAE_CHUNK_KEY = "framework.oobleck_audio_vae.decode.full_ms"
+VAE_CHUNK_SIGNAL = f"VAE chunk decoded ({VAE_CHUNK_KEY})"
+PROGRESS_HOOKS = {
+    PLANNING: "--log lines only; no per-token output while the Score is written.",
+    SEMANTIC: "--log lines only; no per-token output (a KV-cache refill logs mid-Stage).",
+    SYNTHESIS: "--log lines only; no per-step output.",
+    DECODING: f"--log lines; {VAE_CHUNK_KEY} once per VAE chunk, no chunk total up front.",
+}
 
 # e.g. "[TIMING ts=20260916-170051] yue2.semantic_ms 8084.98975"
 _SCALAR = re.compile(r"^\[(?:TIMING|TRACE)[^\]]*\]\s+(yue2\.[\w.]+)\s+(-?\d[\d.eE+-]*)\s*$")
@@ -331,7 +344,7 @@ class AudioCppEngine:
             sorted(p for p in output_dir.rglob("*") if p.is_file()),
             lazy_load_seconds=parser.load_seconds(),
             noise_path=noise,
-            details=details,
+            details={**details, "progress_hooks": dict(PROGRESS_HOOKS)},
         )
 
     def _keep_noise(
@@ -403,6 +416,7 @@ class AudioCppEngine:
         watchdog = _kill_when_parent_dies(os.getpid(), process.pid)
 
         def pump() -> None:
+            current: str | None = None
             with open(log_path, "w") as log:
                 for line in process.stdout:
                     now = time.monotonic()
@@ -411,6 +425,11 @@ class AudioCppEngine:
                     tail[:] = [*tail[-39:], line.rstrip("\n")]
                     for stage in entered_stages(line, score_given):
                         on_event(StageEvent(stage, "enter", now))
+                        current = stage
+                    if line.strip():
+                        on_event(ProgressEvent(current, LOG_LINE_SIGNAL, t=now))
+                    if VAE_CHUNK_KEY in line:
+                        on_event(ProgressEvent(current, VAE_CHUNK_SIGNAL, t=now))
                     for event in parser.feed(line, now):
                         on_event(event)
 

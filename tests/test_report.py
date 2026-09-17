@@ -44,6 +44,7 @@ def test_every_m0_question_gets_a_section(tmp_path):
         "Seed reproducibility",
         "Artifact sizes",
         "Per-Stage progress",
+        "Progress within a Stage",
         "Cancellation",
         "Draft→Final",
         "Timing and peak memory",
@@ -129,3 +130,27 @@ def test_regenerating_updates_tables_when_results_change(tmp_path):
         if "| mlx-Yue | 8bit | 8 |" in line
     )
     assert "not measured" in row
+
+
+def test_progress_within_a_stage_lists_each_signal_with_its_verdict(tmp_path):
+    report = run_report(tmp_path, fixture_results(tmp_path))
+
+    within = section(report, "Progress within a Stage")
+    lines = within.splitlines()
+    # progress-mlx-song-8bit-8.json: 4619 on_token callbacks in semantic generation, at most
+    # 71 in one second, a running count.
+    tokens = next(
+        line for line in lines
+        if "| mlx-Yue | semantic generation |" in line and "`on_token`" in line
+    )
+    assert "| 4619 |" in tokens and "| 71 |" in tokens and "running count" in tokens
+    assert "progress-mlx-song-8bit-8.json" in tokens
+    decoding = next(line for line in lines if "`stderr: Decoding audio`" in line)
+    # 3 stderr lines in 10.1 s: the bar holds 9/19 for half the Stage.
+    assert "stepped: % from a known total" in decoding and "from signal 2 (19)" in decoding
+    assert "0.53 (not linear)" in decoding
+    audiocpp = next(line for line in lines if line.startswith("| audio.cpp |"))
+    assert "not measured" in audiocpp
+    rate = next(line for line in lines if line.startswith("| mlx-Yue | 71 "))
+    assert "`on_token`, semantic generation" in rate and "6745" in rate
+    assert rate.endswith("| no | `progress-mlx-song-8bit-8.json` |")  # stderr not a terminal

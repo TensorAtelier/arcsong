@@ -1,0 +1,444 @@
+{
+  "schema_version": 1,
+  "measurement": "progress",
+  "engine": "mlx",
+  "engine_version": "0.1.0",
+  "case": "song",
+  "params": {
+    "precision": "8bit",
+    "steps": 8
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "engine": {
+      "name": "mlx-Yue",
+      "version": "0.1.0",
+      "commit": "9253ed133343406947bde7b67d43c7a63fb39d99"
+    }
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-17T09:14:31.965905+00:00",
+  "total_seconds": 217.11055933404714,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "load_seconds": 6.00200583320111,
+      "run_seconds": 210.85596437519416,
+      "total_seconds": 216.85797020839527,
+      "audio_seconds": 184.71866666666668,
+      "stage_seconds": {
+        "planning": 35.26708470797166,
+        "semantic generation": 80.11258537508547,
+        "synthesis": 84.90174175007269,
+        "decoding": 10.139668167103082
+      },
+      "stages": {
+        "planning": {
+          "seconds": 35.26708470797166,
+          "signals": {
+            "stderr: Loading 8bit AR model": {
+              "count": 2,
+              "inter_arrival_seconds": {
+                "min": 0.1287277089431882,
+                "median": 0.1287277089431882,
+                "max": 0.1287277089431882
+              },
+              "first_after_start_seconds": 0.7773476662114263,
+              "last_before_end_seconds": 34.36100933281705,
+              "per_second": {
+                "mean": 0.05671010282139726,
+                "max_in_one_second": 2
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.9743081861555228,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "stderr: Planning score": {
+              "count": 8,
+              "inter_arrival_seconds": {
+                "min": 4.3143182918429375,
+                "median": 5.006749082822353,
+                "max": 5.014243708457798
+              },
+              "first_after_start_seconds": 0.9062148327939212,
+              "last_before_end_seconds": 0.0008428748697042465,
+              "per_second": {
+                "mean": 0.22684041128558904,
+                "max_in_one_second": 1
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.16773228632872667,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.0,
+                  0.151,
+                  0.151,
+                  0.297,
+                  0.448,
+                  0.59,
+                  0.59,
+                  0.737,
+                  0.879,
+                  1.0
+                ]
+              }
+            },
+            "on_token": {
+              "count": 2072,
+              "inter_arrival_seconds": {
+                "min": 0.012254999950528145,
+                "median": 0.016664292197674513,
+                "max": 0.024495291989296675
+              },
+              "first_after_start_seconds": 1.0158638749271631,
+              "last_before_end_seconds": 0.0021832501515746117,
+              "per_second": {
+                "mean": 58.75166652296756,
+                "max_in_one_second": 70
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.028804872399831233,
+                "linear": true,
+                "curve": [
+                  0.0,
+                  0.077,
+                  0.185,
+                  0.288,
+                  0.395,
+                  0.497,
+                  0.596,
+                  0.696,
+                  0.802,
+                  0.901,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "count_only",
+            "signal": "on_token"
+          }
+        },
+        "semantic generation": {
+          "seconds": 80.11258537508547,
+          "signals": {
+            "stderr: Generating song": {
+              "count": 17,
+              "inter_arrival_seconds": {
+                "min": 4.987200625240803,
+                "median": 5.007416416425258,
+                "max": 5.015734166838229
+              },
+              "first_after_start_seconds": 0.00034679193049669266,
+              "last_before_end_seconds": 0.0008232500404119492,
+              "per_second": {
+                "mean": 0.2122013653710756,
+                "max_in_one_second": 1
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.06720297156871102,
+                "linear": true,
+                "curve": [
+                  0.0,
+                  0.058,
+                  0.194,
+                  0.261,
+                  0.388,
+                  0.452,
+                  0.579,
+                  0.704,
+                  0.764,
+                  0.883,
+                  1.0
+                ]
+              }
+            },
+            "on_token": {
+              "count": 4619,
+              "inter_arrival_seconds": {
+                "min": 0.012135874945670366,
+                "median": 0.017216458451002836,
+                "max": 0.030727500095963478
+              },
+              "first_after_start_seconds": 0.9970838339067996,
+              "last_before_end_seconds": 0.0057875001803040504,
+              "per_second": {
+                "mean": 57.656359214646955,
+                "max_in_one_second": 71
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.016868853182266497,
+                "linear": true,
+                "curve": [
+                  0.0,
+                  0.099,
+                  0.207,
+                  0.31,
+                  0.413,
+                  0.515,
+                  0.617,
+                  0.716,
+                  0.812,
+                  0.907,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "count_only",
+            "signal": "on_token"
+          }
+        },
+        "synthesis": {
+          "seconds": 84.90174175007269,
+          "signals": {
+            "stderr: Loading BF16 acoustic conditioning": {
+              "count": 2,
+              "inter_arrival_seconds": {
+                "min": 0.1791157922707498,
+                "median": 0.1791157922707498,
+                "max": 0.1791157922707498
+              },
+              "first_after_start_seconds": 0.03790995804592967,
+              "last_before_end_seconds": 84.68471599975601,
+              "per_second": {
+                "mean": 0.02355664275872512,
+                "max_in_one_second": 2
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.9974438009651728,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "stderr: Loading acoustic model": {
+              "count": 2,
+              "inter_arrival_seconds": {
+                "min": 0.10978029109537601,
+                "median": 0.10978029109537601,
+                "max": 0.10978029109537601
+              },
+              "first_after_start_seconds": 0.21715100016444921,
+              "last_before_end_seconds": 84.57481045881286,
+              "per_second": {
+                "mean": 0.02355664275872512,
+                "max_in_one_second": 2
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.9961492981825718,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "stderr: Synthesizing audio": {
+              "count": 18,
+              "inter_arrival_seconds": {
+                "min": 4.4829121246002614,
+                "median": 5.003408499993384,
+                "max": 5.010339790955186
+              },
+              "first_after_start_seconds": 0.32703600032255054,
+              "last_before_end_seconds": 0.00013741711154580116,
+              "per_second": {
+                "mean": 0.2120097848285261,
+                "max_in_one_second": 1
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": 4,
+              "running_count_only": false,
+              "total": 8,
+              "tracks_wall_time": {
+                "max_deviation": 0.18067755168367125,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.0,
+                  0.125,
+                  0.25,
+                  0.25,
+                  0.375,
+                  0.5,
+                  0.625,
+                  0.75,
+                  0.875,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "uneven_percent",
+            "signal": "stderr: Synthesizing audio"
+          }
+        },
+        "decoding": {
+          "seconds": 10.139668167103082,
+          "signals": {
+            "stderr: Loading MLX audio decoder": {
+              "count": 2,
+              "inter_arrival_seconds": {
+                "min": 0.12480441713705659,
+                "median": 0.12480441713705659,
+                "max": 0.12480441713705659
+              },
+              "first_after_start_seconds": 0.004686417058110237,
+              "last_before_end_seconds": 10.010177332907915,
+              "per_second": {
+                "mean": 0.19724511365063763,
+                "max_in_one_second": 2
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.9872292828462292,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "stderr: Decoding audio": {
+              "count": 3,
+              "inter_arrival_seconds": {
+                "min": 4.987347290851176,
+                "median": 4.998844833113253,
+                "max": 5.0103423753753304
+              },
+              "first_after_start_seconds": 0.12957545882090926,
+              "last_before_end_seconds": 0.012403042055666447,
+              "per_second": {
+                "mean": 0.29586767047595647,
+                "max_in_one_second": 1
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": 2,
+              "running_count_only": false,
+              "total": 19,
+              "tracks_wall_time": {
+                "max_deviation": 0.5250925697537425,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.474,
+                  0.474,
+                  0.474,
+                  0.474,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "uneven_percent",
+            "signal": "stderr: Decoding audio"
+          }
+        }
+      },
+      "stderr_is_tty": false,
+      "progress_events": 6745,
+      "events_path": "/Users/julian/projects/songloom/spike/runs/progress-mlx-song-8bit-8/run-1/progress-events.jsonl",
+      "child_wall_seconds": 217.1093270406127,
+      "peak_footprint_bytes": 11458517112,
+      "lifetime_peak_footprint_bytes": 11870509200,
+      "footprint_samples": 841,
+      "footprint_interval_seconds": 0.25
+    }
+  ]
+}
