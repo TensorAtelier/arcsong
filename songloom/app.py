@@ -6,6 +6,7 @@ import asyncio
 import json
 import queue
 import random
+import shutil
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -116,6 +117,27 @@ def create_app(
 
         return StreamingResponse(stream(), media_type="text/event-stream")
 
+    @app.get("/api/songs")
+    def list_songs():
+        return [_with_size(song) for song in app.state.store.list_songs()]
+
+    @app.get("/api/library")
+    def library():
+        songs = app.state.store.list_songs()
+        disk = shutil.disk_usage(root)
+        return {
+            "songs": len(songs),
+            "bytes_used": sum(_directory_bytes(Path(s["dir"])) for s in songs),
+            "bytes_free": disk.free,
+        }
+
+    @app.delete("/api/songs/{song_id}")
+    def delete_song(song_id: int):
+        song = app.state.runner.delete_song(song_id)
+        if song is None:
+            raise HTTPException(404, "no such song")
+        return {"deleted": song_id, "job_id": song["job_id"]}
+
     @app.get("/api/songs/{song_id}/audio")
     def song_audio(song_id: int):
         song = app.state.store.get_song(song_id)
@@ -130,3 +152,13 @@ def create_app(
         app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
     return app
+
+
+def _directory_bytes(directory: Path) -> int:
+    if not directory.is_dir():
+        return 0
+    return sum(f.stat().st_size for f in directory.rglob("*") if f.is_file())
+
+
+def _with_size(song: dict) -> dict:
+    return {**song, "bytes": _directory_bytes(Path(song["dir"]))}
