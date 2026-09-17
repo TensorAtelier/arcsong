@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "measurement": "draft-final",
+  "engine": "mlx",
+  "engine_version": "0.1.0",
+  "case": "song",
+  "params": {
+    "precision": "8bit",
+    "draft_steps": 8,
+    "final_steps": 32
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "mlx-Yue",
+      "version": "0.1.0",
+      "commit": "9253ed133343406947bde7b67d43c7a63fb39d99"
+    },
+    "model_servers": [
+      {
+        "server": "LM Studio",
+        "pid": 1445,
+        "rss_bytes": 427360256
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1451,
+        "rss_bytes": 6832128
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1452,
+        "rss_bytes": 43794432
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1453,
+        "rss_bytes": 19857408
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1454,
+        "rss_bytes": 16760832
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1458,
+        "rss_bytes": 61882368
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 36205,
+        "rss_bytes": 4374528
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 74446,
+        "rss_bytes": 606502912
+      }
+    ]
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-17T03:25:23.018161+00:00",
+  "total_seconds": 1083.8464362090454,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "process": "draft",
+      "pid": 16420,
+      "load_seconds": 5.952866292092949,
+      "draft": {
+        "steps": 8,
+        "seconds": 223.16483416594565,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft",
+        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/audio.flac",
+        "audio_seconds": 184.71866666666668,
+        "stage_outputs": {
+          "planning": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/score.abc",
+          "semantic generation": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/semantic.npy",
+          "synthesis": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/latent.npy"
+        },
+        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/noise.npy",
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.12889720778912306,
+          "conditioning_load_seconds": 0.19335408275946975,
+          "nar_load_seconds": 0.11403241707012057,
+          "vae_load_seconds": 0.14855074975639582
+        },
+        "details": {}
+      },
+      "final": {
+        "steps": 32,
+        "seconds": 360.7617942504585,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final",
+        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/audio.flac",
+        "audio_seconds": 184.71866666666668,
+        "stage_outputs": {
+          "planning": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/score.abc",
+          "semantic generation": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/semantic.npy",
+          "synthesis": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/latent.npy"
+        },
+        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/noise.npy",
+        "lazy_load_seconds": {},
+        "details": {},
+        "method": "re-synthesis",
+        "noise_source": null
+      },
+      "child_wall_seconds": 590.0804984588176,
+      "peak_footprint_bytes": 11452667976,
+      "lifetime_peak_footprint_bytes": 11720595576,
+      "footprint_samples": 2298,
+      "footprint_interval_seconds": 0.25
+    },
+    {
+      "run": 2,
+      "outcome": "ok",
+      "process": "direct",
+      "pid": 25896,
+      "load_seconds": 5.945795999839902,
+      "direct": {
+        "steps": 32,
+        "seconds": 485.5379410828464,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct",
+        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/audio.flac",
+        "audio_seconds": 184.71866666666668,
+        "stage_outputs": {
+          "planning": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/score.abc",
+          "semantic generation": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/semantic.npy",
+          "synthesis": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/latent.npy"
+        },
+        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/noise.npy",
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.13012712495401502,
+          "conditioning_load_seconds": 0.22058816719800234,
+          "nar_load_seconds": 0.1182213332504034,
+          "vae_load_seconds": 0.1369812092743814
+        },
+        "details": {}
+      },
+      "child_wall_seconds": 491.6948445420712,
+      "peak_footprint_bytes": 11291220064,
+      "lifetime_peak_footprint_bytes": 11861629048,
+      "footprint_samples": 1927,
+      "footprint_interval_seconds": 0.25
+    }
+  ],
+  "draft_to_final": {
+    "outcome": "ok",
+    "final_method": "re-synthesis",
+    "reused": {
+      "Semantic tokens": {
+        "equal": true,
+        "first_differing_index": null,
+        "lengths": [
+          4618,
+          4618
+        ]
+      },
+      "synthesis noise": {
+        "equal": true,
+        "files": [
+          "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/noise.npy",
+          "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/noise.npy"
+        ]
+      }
+    }
+  },
+  "timing": {
+    "draft_seconds": 223.16483416594565,
+    "final_seconds": 360.7617942504585,
+    "direct_seconds": 485.5379410828464,
+    "final_saving_seconds": 124.7761468323879,
+    "final_to_direct_ratio": 0.7430146312477409,
+    "final_lazy_load_seconds": 0,
+    "direct_model_load_seconds": 6.551713834516704
+  },
+  "final_vs_direct": {
+    "first_diverging_stage": "none",
+    "uncompared_stages_before": [],
+    "stages": {
+      "planning": {
+        "output": "Score",
+        "compared": true,
+        "equal": true
+      },
+      "semantic generation": {
+        "output": "Semantic tokens",
+        "compared": true,
+        "equal": true,
+        "first_differing_index": null,
+        "lengths": [
+          4618,
+          4618
+        ]
+      },
+      "synthesis": {
+        "output": "Latents",
+        "compared": true,
+        "equal": true,
+        "max_abs_difference": 0.0,
+        "shapes": [
+          [
+            4618,
+            64
+          ],
+          [
+            4618,
+            64
+          ]
+        ]
+      },
+      "decoding": {
+        "output": "audio",
+        "compared": true,
+        "equal": true,
+        "bit_identical": true,
+        "sample_counts": [
+          8866496,
+          8866496
+        ]
+      }
+    }
+  },
+  "draft_vs_final": {
+    "first_diverging_stage": "synthesis",
+    "uncompared_stages_before": [],
+    "stages": {
+      "planning": {
+        "output": "Score",
+        "compared": true,
+        "equal": true
+      },
+      "semantic generation": {
+        "output": "Semantic tokens",
+        "compared": true,
+        "equal": true,
+        "first_differing_index": null,
+        "lengths": [
+          4618,
+          4618
+        ]
+      },
+      "synthesis": {
+        "output": "Latents",
+        "compared": true,
+        "equal": false,
+        "max_abs_difference": 2.869140625,
+        "shapes": [
+          [
+            4618,
+            64
+          ],
+          [
+            4618,
+            64
+          ]
+        ]
+      },
+      "decoding": {
+        "output": "audio",
+        "compared": true,
+        "equal": false,
+        "bit_identical": false,
+        "sample_counts": [
+          8866496,
+          8866496
+        ],
+        "max_abs_difference": 0.6727074384689331,
+        "correlation": 0.9836578444209338
+      }
+    }
+  },
+  "listening_pair": {
+    "draft": "/Users/julian/projects/songloom/spike/listen/draft-final-mlx-song-8bit-8-32/draft-8.flac",
+    "final": "/Users/julian/projects/songloom/spike/listen/draft-final-mlx-song-8bit-8-32/final-32.flac"
+  }
+}

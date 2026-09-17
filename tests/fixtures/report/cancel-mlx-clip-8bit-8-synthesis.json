@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "measurement": "cancel",
+  "engine": "mlx",
+  "engine_version": "0.1.0",
+  "case": "clip",
+  "params": {
+    "precision": "8bit",
+    "steps": 8,
+    "stage": "synthesis"
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "mlx-Yue",
+      "version": "0.1.0",
+      "commit": "9253ed133343406947bde7b67d43c7a63fb39d99"
+    },
+    "model_servers": [
+      {
+        "server": "LM Studio",
+        "pid": 1445,
+        "rss_bytes": 389758976
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1451,
+        "rss_bytes": 6864896
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1452,
+        "rss_bytes": 42926080
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1453,
+        "rss_bytes": 19791872
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1454,
+        "rss_bytes": 16760832
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1458,
+        "rss_bytes": 61259776
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 36205,
+        "rss_bytes": 4374528
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 74446,
+        "rss_bytes": 606519296
+      }
+    ]
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-17T02:16:48.651690+00:00",
+  "total_seconds": 24.44483149982989,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "stage": "synthesis",
+      "cancel_after_seconds": 1.0,
+      "load_seconds": 5.984814124647528,
+      "stage_entered_seconds": 6.722398542333394,
+      "cancel_requested_seconds": 7.725971542298794,
+      "stage_at_request": "synthesis",
+      "cancel_latency_seconds": 0.12192608276382089,
+      "cancelled_by": "InterruptedError",
+      "cancel_message": "Cancelled during acoustic flow matching",
+      "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-mlx-clip-8bit-8-synthesis/run-1/take",
+      "leftover_files": [],
+      "leftover_looks_complete": false,
+      "reuse": {
+        "case": "clip",
+        "reloaded": false,
+        "attempts": [
+          {
+            "reloaded": false,
+            "outcome": "ok"
+          }
+        ],
+        "outcome": "ok",
+        "run_seconds": 10.409206458833069,
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.11480312515050173,
+          "conditioning_load_seconds": 0.1492403750307858,
+          "nar_load_seconds": 0.10699808271601796,
+          "vae_load_seconds": 0.15431312518194318
+        },
+        "audio_seconds": 15.998666666666667,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-mlx-clip-8bit-8-synthesis/run-1/reuse",
+        "files": [
+          {
+            "path": "abc_tokens.npy",
+            "bytes": 1036
+          },
+          {
+            "path": "audio.flac",
+            "bytes": 3084117
+          },
+          {
+            "path": "config.json",
+            "bytes": 1938
+          },
+          {
+            "path": "latent.npy",
+            "bytes": 102528
+          },
+          {
+            "path": "noise.npy",
+            "bytes": 102528
+          },
+          {
+            "path": "plan.json",
+            "bytes": 6674
+          },
+          {
+            "path": "plan_manifest.json",
+            "bytes": 341
+          },
+          {
+            "path": "prefix.npy",
+            "bytes": 1556
+          },
+          {
+            "path": "request.json",
+            "bytes": 912
+          },
+          {
+            "path": "result.json",
+            "bytes": 7756
+          },
+          {
+            "path": "score.abc",
+            "bytes": 339
+          },
+          {
+            "path": "semantic.npy",
+            "bytes": 1728
+          }
+        ]
+      },
+      "child_wall_seconds": 24.44456054130569,
+      "peak_footprint_bytes": 11095660640,
+      "lifetime_peak_footprint_bytes": 11674425440,
+      "footprint_samples": 97,
+      "footprint_interval_seconds": 0.25
+    }
+  ]
+}
