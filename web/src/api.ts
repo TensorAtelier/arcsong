@@ -128,22 +128,36 @@ export interface Download {
   error?: string;
 }
 
+export interface SetupPart {
+  id: "engine" | "covers" | string;
+  label: string;
+  summary: string;
+  weights: Weights;
+  download: Download;
+  checks: Check[];
+}
+
+export interface Weights {
+  dir: string;
+  installed: boolean;
+  bytes_total: number;
+  bytes_present: number;
+  /** Including partly downloaded files. */
+  bytes_on_disk: number;
+  missing: string[];
+  stray: string[];
+}
+
 export interface Setup {
   /** Grows with every snapshot the server takes; keep the one with the highest. */
   seq: number;
   checks: Check[];
   /** The Engine's own checks (platform, runtime) are still running. */
   checking: boolean;
-  weights: {
-    dir: string;
-    installed: boolean;
-    bytes_total: number;
-    bytes_present: number;
-    /** Including partly downloaded files. */
-    bytes_on_disk: number;
-    missing: string[];
-    stray: string[];
-  };
+  /** The Song model and the optional Covers extra. */
+  parts: SetupPart[];
+  /** The Song model part's weights, which most of the page cares about. */
+  weights: Weights;
   licence: {
     id: string;
     name: string;
@@ -218,8 +232,8 @@ export const api = {
   setup: () => fetch("/api/setup").then((r) => json<Setup>(r)),
   runChecks: () => post<Setup>("/api/setup/checks"),
   acknowledgeLicence: () => post<Setup>("/api/setup/licence"),
-  startDownload: () => post<Setup>("/api/setup/download"),
-  cancelDownload: () => post<Setup>("/api/setup/download/cancel"),
+  startDownload: (part = "engine") => post<Setup>(`/api/setup/download/${part}`),
+  cancelDownload: (part = "engine") => post<Setup>(`/api/setup/download/${part}/cancel`),
 };
 
 export interface Deleted {

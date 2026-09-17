@@ -12,6 +12,7 @@ import threading
 import time
 import traceback
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -58,67 +59,104 @@ def _reason(error: BaseException) -> str:
     return f"{type(error).__name__}: {text[-1]}" if text else type(error).__name__
 
 
+ENGINE = "engine"
+COVERS = "covers"
+
+
+@dataclass
+class Part:
+    """One set of weights the Setup page manages. `engine` is needed to make songs; the rest
+    are optional extras (`covers`)."""
+
+    id: str
+    label: str
+    models: Models
+    summary: str = ""
+
+
 class Setup:
     def __init__(
         self,
-        models: Models,
+        parts: list[Part],
         store: Store,
         publish: Callable[[dict[str, Any]], None],
         seq: Callable[[], int],
     ):
         """`publish` broadcasts a message to the page; `seq` numbers snapshots (see
         `JobRunner.next_seq`) so the page keeps the newest one."""
-        self.models = models
+        self.parts = {part.id: part for part in parts}
         self.store = store
         self._publish = publish
         self._seq = seq
         self._ctx = mp.get_context("spawn")
         self._lock = threading.RLock()
-        self._engine_checks: list[Check] | None = None
+        self._part_checks: dict[str, list[Check]] = {}
         self._checking = False
         self._process = None
-        self._download: dict[str, Any] = {"state": "idle"}
+        self._downloading: str | None = None
+        self._downloads: dict[str, dict[str, Any]] = {p.id: {"state": "idle"} for p in parts}
         self._stopping = threading.Event()
+
+    @property
+    def models(self) -> Models:
+        """The song weights; the Engine part is what rendering needs."""
+        return self.parts[ENGINE].models
 
     # --- snapshot --------------------------------------------------------------------------
 
     def snapshot(self) -> dict[str, Any]:
         seq = self._seq()
-        weights = weights_state(self.models)
         acknowledged = self.store.get_setting(LICENCE_KEY)
         with self._lock:
-            download = dict(self._download)
-            engine_checks = self._engine_checks
-            checking = self._checking
-        if download["state"] == "running":
-            download["bytes"] = bytes_on_disk(self.models)
-            download["bytes_total"] = weights["bytes_total"]
-        checks = [
-            *(engine_checks or []),
-            _ram_check(),
-            _power_check(),
-            _disk_check(self.models.directory, weights),
-            _weights_check(weights, download["state"]),
-        ]
-        can_render = self.can_render(weights, download)
+            checking = self._checking or not self._part_checks
+        parts = [self._part_snapshot(part) for part in self.parts.values()]
+        engine = next(p for p in parts if p["id"] == ENGINE)
+        can_render = _part_usable(engine)
         return {
             "seq": seq,
-            "checks": checks,
-            "checking": checking or engine_checks is None,
-            "weights": weights,
+            "checks": [_ram_check(), _power_check()],
+            "checking": checking,
+            "parts": parts,
+            # The Engine part, also at the top level: most of the page only cares about it.
+            "weights": engine["weights"],
+            "download": engine["download"],
             "licence": {**LICENCE, "acknowledged_at": (acknowledged or {}).get("at")},
-            "download": download,
             "can_render": can_render,
             "ready": can_render and acknowledged is not None,
         }
 
-    def can_render(self, weights=None, download=None) -> bool:
-        """Jobs need the weights on disk, no download rewriting them, and no failed verification
-        since the server started (sizes alone can't catch a corrupt file)."""
-        weights = weights or weights_state(self.models)
+    def _part_snapshot(self, part: Part) -> dict[str, Any]:
+        weights = weights_state(part.models)
         with self._lock:
-            download = download or self._download
-        return weights["installed"] and download["state"] not in ("running", "failed")
+            download = dict(self._downloads[part.id])
+            checks = list(self._part_checks.get(part.id, []))
+        if download["state"] == "running":
+            download["bytes"] = bytes_on_disk(part.models)
+            download["bytes_total"] = weights["bytes_total"]
+        return {
+            "id": part.id,
+            "label": part.label,
+            "summary": part.summary,
+            "weights": weights,
+            "download": download,
+            "checks": [
+                *checks,
+                _disk_check(part.models.directory, weights),
+                _weights_check(weights, download["state"], part.label),
+            ],
+        }
+
+    def part(self, part_id: str) -> dict[str, Any] | None:
+        part = self.parts.get(part_id)
+        return self._part_snapshot(part) if part else None
+
+    def usable(self, part_id: str) -> bool:
+        """This part's weights are installed, nothing is rewriting them, and its own checks pass."""
+        snapshot = self.part(part_id)
+        return snapshot is not None and _part_usable(snapshot)
+
+    def can_render(self, *_ignored) -> bool:
+        return self.usable(ENGINE)
 
     def publish(self) -> None:
         self._publish({"type": "setup", "setup": self.snapshot()})
@@ -134,12 +172,15 @@ class Setup:
         threading.Thread(target=self._check, name="songloom-checks", daemon=True).start()
 
     def _check(self) -> None:
-        try:
-            results = self.models.engine_checks()
-        except Exception as error:
-            results = [check("runtime", "Engine checks", "fail", _reason(error))]
+        results = {}
+        for part in self.parts.values():
+            try:
+                results[part.id] = part.models.engine_checks()
+            except Exception as error:
+                failed = check("runtime", f"{part.label} checks", "fail", _reason(error))
+                results[part.id] = [failed]
         with self._lock:
-            self._engine_checks, self._checking = results, False
+            self._part_checks, self._checking = results, False
         if not self._stopping.is_set():
             self.publish()
 
@@ -152,38 +193,52 @@ class Setup:
 
     # --- download --------------------------------------------------------------------------
 
-    def start_download(self) -> str | None:
-        """Start the download; returns why it can't start, or None."""
+    def start_download(self, part_id: str = ENGINE) -> str | None:
+        """Start a part's download; returns why it can't start, or None. One at a time, so two
+        parts never compete for the network or the disk."""
+        part = self.parts.get(part_id)
+        if part is None:
+            return "no such part"
         if self.store.get_setting(LICENCE_KEY) is None:
             return "acknowledge the model licence first"
         with self._lock:
-            if self._download["state"] == "running":
-                return "a download is already running"
+            if self._downloading is not None:
+                running = self.parts[self._downloading].label
+                return f"the {running} download is already running"
             events = self._ctx.Queue()
             self._process = self._ctx.Process(
-                target=download_main, args=(self.models, events, os.getpid()), daemon=True
+                target=download_main, args=(part.models, events, os.getpid()), daemon=True
             )
-            self._download = {"state": "running", "phase": "starting", "started_at": time.time()}
+            self._downloads[part_id] = {
+                "state": "running",
+                "phase": "starting",
+                "started_at": time.time(),
+            }
+            self._downloading = part_id
             self._process.start()
             process = self._process
         threading.Thread(
-            target=self._follow, args=(process, events), name="songloom-download", daemon=True
+            target=self._follow,
+            args=(process, events, part_id),
+            name="songloom-download",
+            daemon=True,
         ).start()
         self.publish()
         return None
 
-    def cancel_download(self) -> bool:
+    def cancel_download(self, part_id: str = ENGINE) -> bool:
         with self._lock:
             process = self._process
-            if process is None or self._download["state"] != "running":
+            if process is None or self._downloads.get(part_id, {}).get("state") != "running":
                 return False
-            self._download = {"state": "cancelled"}
+            self._downloads[part_id] = {"state": "cancelled"}
+            self._downloading = None
         process.kill()
         process.join()
         self.publish()
         return True
 
-    def _follow(self, process, events) -> None:
+    def _follow(self, process, events, part_id: str) -> None:
         """Relay the download's phases and bytes until its process ends."""
         outcome = None
         while outcome is None:
@@ -192,10 +247,10 @@ class Setup:
             except queue.Empty:
                 event = None
             with self._lock:
-                if self._process is not process or self._download["state"] != "running":
+                if self._process is not process or self._downloads[part_id]["state"] != "running":
                     return  # cancelled or stopped
                 if event and event["type"] == "phase":
-                    self._download["phase"] = event["phase"]
+                    self._downloads[part_id]["phase"] = event["phase"]
                 elif event:
                     outcome = event
                 elif not process.is_alive():
@@ -211,12 +266,13 @@ class Setup:
                 self.publish()
         process.join(timeout=5)
         with self._lock:
-            if self._process is not process or self._download["state"] != "running":
+            if self._process is not process or self._downloads[part_id]["state"] != "running":
                 return  # cancelled while it was finishing: keep what cancel reported
+            self._downloading = None
             if outcome["type"] == "done":
-                self._download = {"state": "done", "finished_at": time.time()}
+                self._downloads[part_id] = {"state": "done", "finished_at": time.time()}
             else:
-                self._download = {
+                self._downloads[part_id] = {
                     "state": "failed",
                     "reason": outcome["reason"],
                     "error": outcome["error"],
@@ -226,7 +282,7 @@ class Setup:
     def stop(self) -> None:
         self._stopping.set()
         with self._lock:
-            process, self._process = self._process, None
+            process, self._process, self._downloading = self._process, None, None
         if process is not None and process.is_alive():
             process.kill()
             process.join()
@@ -276,8 +332,18 @@ def _disk_check(directory: Path, weights: dict[str, Any]) -> Check:
     return check("disk", label, "ok", f"{free_text}; a 3-minute song takes about 40 MiB")
 
 
-def _weights_check(weights: dict[str, Any], download_state: str) -> Check:
-    label = "Model weights"
+def _part_usable(snapshot: dict[str, Any]) -> bool:
+    """Installed, no download rewriting or failing on it, and its own checks (Metal, ffmpeg)
+    all pass — sizes alone can't catch a corrupt file, so a failed verification blocks too."""
+    return (
+        snapshot["weights"]["installed"]
+        and snapshot["download"]["state"] not in ("running", "failed")
+        and all(c["status"] != "fail" for c in snapshot["checks"] if c["id"] != "weights")
+    )
+
+
+def _weights_check(weights: dict[str, Any], download_state: str, label: str = "Model") -> Check:
+    label = f"{label} weights"
     where = weights["dir"]
     if weights["installed"]:
         return check("weights", label, "ok", f"installed in {where}")

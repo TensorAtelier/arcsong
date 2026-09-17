@@ -28,6 +28,14 @@ def serve(tmp_path, models):
     return TestClient(create_app(FAKE, tmp_path, models=models))
 
 
+def fake_setup(tmp_path, store):
+    """A Setup with only the part a unit test needs."""
+    from songloom.setup import ENGINE, Part, Setup
+
+    parts = [Part(ENGINE, "Song model", FakeModels(tmp_path / "models"))]
+    return Setup(parts, store, lambda message: None, iter(range(9**9)).__next__)
+
+
 def wait_setup(client, done, timeout=30):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -38,8 +46,10 @@ def wait_setup(client, done, timeout=30):
     raise AssertionError(f"setup never got there: {setup}")
 
 
-def checks_by_id(setup):
-    return {c["id"]: c for c in setup["checks"]}
+def checks_by_id(setup, part="engine"):
+    """Every check the page shows for a part: its own, plus the machine-wide ones."""
+    found = next(p for p in setup["parts"] if p["id"] == part)
+    return {c["id"]: c for c in [*setup["checks"], *found["checks"]]}
 
 
 def test_a_fresh_data_dir_is_not_ready_and_lists_the_checks(tmp_path):
@@ -68,7 +78,7 @@ def test_jobs_are_refused_until_the_weights_are_installed(tmp_path):
 
 def test_the_download_needs_the_licence_acknowledged_first(tmp_path):
     with serve(tmp_path, fake_models(tmp_path)) as client:
-        refused = client.post("/api/setup/download")
+        refused = client.post("/api/setup/download/engine")
         acknowledged = client.post("/api/setup/licence").json()
 
     assert refused.status_code == 409
@@ -90,10 +100,10 @@ def test_a_download_reports_progress_verifies_and_makes_setup_ready(tmp_path):
     with serve(tmp_path, models) as client:
         subscription = client.app.state.runner.broadcaster.subscribe()
         client.post("/api/setup/licence")
-        started = client.post("/api/setup/download")
+        started = client.post("/api/setup/download/engine")
         assert started.status_code == 200
         assert started.json()["download"]["state"] == "running"
-        assert client.post("/api/setup/download").status_code == 409  # one at a time
+        assert client.post("/api/setup/download/engine").status_code == 409  # one at a time
         assert client.post("/api/jobs", json={"style": "pop"}).status_code == 409
 
         setup = wait_setup(client, lambda s: s["download"]["state"] != "running")
@@ -119,14 +129,14 @@ def test_a_cancelled_download_resumes_where_it_stopped(tmp_path):
     models = fake_models(tmp_path, download_seconds=4.0)
     with serve(tmp_path, models) as client:
         client.post("/api/setup/licence")
-        client.post("/api/setup/download")
+        client.post("/api/setup/download/engine")
         wait_setup(client, lambda s: s["download"].get("bytes", 0) > 0)
 
-        cancelled = client.post("/api/setup/download/cancel").json()
+        cancelled = client.post("/api/setup/download/engine/cancel").json()
         partial = (tmp_path / "models" / "weights.bin").stat().st_size
-        assert client.post("/api/setup/download/cancel").status_code == 409
+        assert client.post("/api/setup/download/engine/cancel").status_code == 409
 
-        client.post("/api/setup/download")
+        client.post("/api/setup/download/engine")
         # The first poll after a restart already counts what the cancelled run left.
         resumed = client.get("/api/setup").json()["download"]["bytes"]
         setup = wait_setup(client, lambda s: s["download"]["state"] != "running")
@@ -148,9 +158,9 @@ def test_a_failed_download_says_why_and_can_be_retried(tmp_path, option, reason)
     message = reason.split(": ", 1)[1]
     with serve(tmp_path, fake_models(tmp_path, **{option: message})) as client:
         client.post("/api/setup/licence")
-        client.post("/api/setup/download")
+        client.post("/api/setup/download/engine")
         setup = wait_setup(client, lambda s: s["download"]["state"] != "running")
-        retried = client.post("/api/setup/download")
+        retried = client.post("/api/setup/download/engine")
 
     assert setup["download"]["state"] == "failed"
     assert setup["download"]["reason"] == reason
@@ -283,40 +293,117 @@ class DeadProcess:
 
 def test_a_download_that_exits_right_after_saying_done_counts_as_done(tmp_path):
     from songloom.db import Store
-    from songloom.setup import Setup
 
     store = Store(tmp_path / "songloom.db")
-    setup = Setup(
-        FakeModels(tmp_path / "models"), store, lambda message: None, iter(range(9**9)).__next__
-    )
+    setup = fake_setup(tmp_path, store)
     process = DeadProcess()
-    setup._process, setup._download = process, {"state": "running"}
+    setup._process, setup._downloads["engine"] = process, {"state": "running"}
 
-    setup._follow(process, LateQueue({"type": "done"}))
+    setup._follow(process, LateQueue({"type": "done"}), "engine")
 
-    assert setup._download["state"] == "done"
+    assert setup._downloads["engine"]["state"] == "done"
     store.close()
 
 
 def test_a_cancel_that_lands_while_the_download_finishes_is_kept(tmp_path):
     from songloom.db import Store
-    from songloom.setup import Setup
 
     store = Store(tmp_path / "songloom.db")
-    setup = Setup(
-        FakeModels(tmp_path / "models"), store, lambda message: None, iter(range(9**9)).__next__
-    )
+    setup = fake_setup(tmp_path, store)
 
     class CancelledWhileJoining(DeadProcess):
         def join(self, timeout=None):
-            setup._download = {"state": "cancelled"}
+            setup._downloads["engine"] = {"state": "cancelled"}
 
     process = CancelledWhileJoining()
-    setup._process, setup._download = process, {"state": "running"}
+    setup._process, setup._downloads["engine"] = process, {"state": "running"}
     queue_ = LateQueue({"type": "done"})
     queue_.polls = 1  # the message is there on the first poll
 
-    setup._follow(process, queue_)
+    setup._follow(process, queue_, "engine")
 
-    assert setup._download["state"] == "cancelled"
+    assert setup._downloads["engine"]["state"] == "cancelled"
     store.close()
+
+
+# --- parts ------------------------------------------------------------------------------------
+
+
+def serve_parts(tmp_path, **kwargs):
+    return TestClient(create_app(FAKE, tmp_path, **kwargs))
+
+
+def part(setup, part_id):
+    return next(p for p in setup["parts"] if p["id"] == part_id)
+
+
+def test_the_covers_part_downloads_on_its_own_and_never_gates_songs(tmp_path):
+    covers = FakeModels(tmp_path / "covers", preinstalled=False, download_seconds=0.5)
+    with serve_parts(tmp_path, covers=covers) as client:
+        setup = client.get("/api/setup").json()
+        assert [p["id"] for p in setup["parts"]] == ["engine", "covers"]
+        assert part(setup, "covers")["weights"]["installed"] is False
+        # The engine part is installed, so songs run even though covers are missing.
+        assert setup["can_render"] is True
+        assert client.post("/api/jobs", json={"style": "pop"}).status_code == 201
+
+        client.post("/api/setup/licence")
+        assert client.post("/api/setup/download/covers").status_code == 200
+        done = wait_setup(client, lambda s: part(s, "covers")["download"]["state"] != "running")
+
+    assert part(done, "covers")["download"]["state"] == "done"
+    assert part(done, "covers")["weights"]["installed"] is True
+    assert part(done, "engine")["download"]["state"] == "idle"
+
+
+def test_only_one_part_downloads_at_a_time(tmp_path):
+    slow = FakeModels(tmp_path / "models", preinstalled=False, download_seconds=3.0)
+    covers = FakeModels(tmp_path / "covers", preinstalled=False)
+    with serve_parts(tmp_path, models=slow, covers=covers) as client:
+        client.post("/api/setup/licence")
+        assert client.post("/api/setup/download/engine").status_code == 200
+        refused = client.post("/api/setup/download/covers")
+        client.post("/api/setup/download/engine/cancel")
+
+    assert refused.status_code == 409 and "Song model" in refused.json()["detail"]
+
+
+def test_an_unknown_part_is_a_404(tmp_path):
+    with serve_parts(tmp_path) as client:
+        client.post("/api/setup/licence")
+        assert client.post("/api/setup/download/nope").status_code == 404
+
+
+def test_a_part_whose_own_check_fails_is_not_usable(tmp_path):
+    broken = FakeModels(
+        tmp_path / "covers", checks=[check("ffmpeg", "ffmpeg", "fail", "not found")]
+    )
+    with serve_parts(tmp_path, covers=broken) as client:
+        setup = wait_setup(client, lambda s: not s["checking"])
+        usable = client.app.state.setup.usable("covers")
+
+    assert part(setup, "covers")["weights"]["installed"] is True
+    assert usable is False  # installed, but ffmpeg is missing
+    assert client_app_can_render(setup) is True
+
+
+def client_app_can_render(setup):
+    return setup["can_render"]
+
+
+def test_the_real_transcription_weights_are_described(tmp_path):
+    from songloom.models import TranscriptionModels
+
+    models = TranscriptionModels(tmp_path)
+    state = weights_state(models)
+
+    assert state["installed"] is False
+    assert 2.5 * 2**30 < state["bytes_total"] < 2.8 * 2**30
+    assert set(models.files()) == {
+        "sheetsage2/config.json",
+        "sheetsage2/model.safetensors",
+        "mert2/config.json",
+        "mert2/model.safetensors",
+    }
+    [ffmpeg] = models.engine_checks()
+    assert ffmpeg["id"] == "ffmpeg" and ffmpeg["status"] in ("ok", "fail")

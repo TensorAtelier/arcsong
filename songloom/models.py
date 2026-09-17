@@ -228,6 +228,85 @@ def _engine_version_check() -> Check:
     return check("engine", label, "ok", f"{dist.version}" + (f" @ {commit[:7]}" if commit else ""))
 
 
+# --- transcription (covers) -------------------------------------------------------------------
+
+# The SheetSage2 adapter and its MERT-v2 parent, at the revisions mlx-Yue pins
+# (`lyra.transcription.model`). Both are CC BY-NC 4.0, like the song weights.
+SHEETSAGE_REPO = "m-a-p/SheetSage2"
+SHEETSAGE_REVISION = "eab522a8168e8b8b8c4856bf8609cd86198f01fe"
+MERT_REPO = "m-a-p/MERT-v2-FullSong"
+MERT_REVISION = "d8ba1c745e733b3908ce6ad16ebeb17ac7600a42"
+# Sizes at those revisions (Hugging Face file metadata, 2026-09-17). Only these two files are
+# fetched, which is what mlx-Yue's `resolve_models` asks the hub for.
+TRANSCRIPTION_FILES = {
+    "sheetsage2/config.json": 2060,
+    "sheetsage2/model.safetensors": 228738564,
+    "mert2/config.json": 882,
+    "mert2/model.safetensors": 2529812848,
+}
+FFMPEG_HINT = "install it with `brew install ffmpeg`"
+
+
+@dataclass
+class TranscriptionModels:
+    """The weights a cover needs: SheetSage2 and the MERT2 it adapts."""
+
+    directory: Path
+
+    def files(self) -> dict[str, int]:
+        return dict(TRANSCRIPTION_FILES)
+
+    def stray_files(self) -> list[str]:
+        return []  # nothing here rejects extra files, unlike the converted song weights
+
+    def engine_checks(self) -> list[Check]:
+        return [_ffmpeg_check()]
+
+    def download(self, phase: Phase) -> None:
+        from huggingface_hub import snapshot_download
+
+        phase("downloading")
+        for repo, revision, local in (
+            (SHEETSAGE_REPO, SHEETSAGE_REVISION, "sheetsage2"),
+            (MERT_REPO, MERT_REVISION, "mert2"),
+        ):
+            snapshot_download(
+                repo,
+                revision=revision,
+                local_dir=self.directory / local,
+                allow_patterns=["config.json", "model.safetensors"],
+            )
+            shutil.rmtree(self.directory / local / ".cache", ignore_errors=True)
+
+        phase("verifying")
+        self.verify()
+
+    def verify(self) -> None:
+        """What `SheetSage2.from_pretrained` checks before it loads: that the MERT2 file is the
+        parent SheetSage2 was trained against. Hashing only, so no MLX import."""
+        from yue2.storage import sha256_file
+
+        config = json.loads((self.directory / "sheetsage2" / "config.json").read_text())
+        expected = config["base_model_sha256"]
+        digest = sha256_file(self.directory / "mert2" / "model.safetensors")
+        if digest != expected:
+            raise ValueError("the MERT2 weights do not match the SheetSage2 checkpoint")
+
+
+def _ffmpeg_check() -> Check:
+    """ffmpeg decodes the upload. It is a separate program with its own licence, so songloom
+    looks for it rather than shipping it."""
+    label = "ffmpeg"
+    try:
+        out = subprocess.run(
+            ["ffmpeg", "-version"], capture_output=True, text=True, timeout=20, check=True
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return check("ffmpeg", label, "fail", f"not found; covers need it — {FFMPEG_HINT}")
+    version = out.splitlines()[0] if out.strip() else "installed"
+    return check("ffmpeg", label, "ok", version)
+
+
 # --- fake -----------------------------------------------------------------------------------
 
 

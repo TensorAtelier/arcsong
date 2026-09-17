@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, type Check, type Setup } from "./api";
+import { api, type Check, type Setup, type SetupPart } from "./api";
 import { formatBytes, formatDate } from "./format";
 
 interface Props {
@@ -36,9 +36,8 @@ export default function SetupView({ setup, error, onChanged }: Props) {
     );
   }
 
-  const { checks, licence, weights, download } = setup;
+  const { checks, licence } = setup;
   const acknowledged = licence.acknowledged_at !== null;
-  const running = download.state === "running";
 
   return (
     <section className="panel setup" aria-label="Setup">
@@ -58,7 +57,7 @@ export default function SetupView({ setup, error, onChanged }: Props) {
 
       <div className="setup-section">
         <div className="label-row">
-          <h3>Checks</h3>
+          <h3>This Mac</h3>
           <button
             type="button"
             className="link"
@@ -79,12 +78,7 @@ export default function SetupView({ setup, error, onChanged }: Props) {
               </span>
             </li>
           ))}
-          {setup.checking && checks.every((c) => c.id !== "runtime") && (
-            <li className="check muted">
-              <span className="mark">…</span>
-              <span>Checking Apple Silicon and Metal…</span>
-            </li>
-          )}
+
         </ul>
       </div>
 
@@ -118,68 +112,115 @@ export default function SetupView({ setup, error, onChanged }: Props) {
         )}
       </div>
 
-      <div className="setup-section">
-        <h3>Model weights</h3>
-        {weights.installed && !running ? (
-          <p className="small">
-            <span className="ok-text">✓ Installed</span>{" "}
-            <span className="muted">
-              {formatBytes(weights.bytes_total)} in <code>{weights.dir}</code>
-            </span>
-          </p>
-        ) : (
-          <p className="small muted">
-            {formatBytes(weights.bytes_total)} from Hugging Face into <code>{weights.dir}</code>
-            {weights.bytes_on_disk > 0 && !running && ` (${formatBytes(weights.bytes_on_disk)} already here)`}
-          </p>
-        )}
+      {setup.parts.map((part) => (
+        <PartSection
+          key={part.id}
+          part={part}
+          acknowledged={acknowledged}
+          busy={busy}
+          checking={setup.checking}
+          onAct={act}
+        />
+      ))}
 
-        {running && (
-          <div className="progress" aria-live="polite">
-            <progress
-              value={download.phase === "verifying" ? undefined : (download.bytes ?? 0)}
-              max={download.bytes_total || 1}
-            />
-            <p className="small muted">
-              {download.phase === "verifying"
-                ? "Verifying the weights — hashing about 10 GB takes a minute…"
-                : `Downloading ${formatBytes(download.bytes ?? 0)} of ${formatBytes(download.bytes_total ?? 0)}`}
-            </p>
-            <button type="button" disabled={busy} onClick={() => void act(api.cancelDownload)}>
-              Cancel download
-            </button>
-          </div>
-        )}
-
-        {download.state === "cancelled" && (
-          <p className="small muted">Download cancelled. Download again to resume where it stopped.</p>
-        )}
-        {download.state === "failed" && (
-          <div className="error-details">
-            <p className="error">The download failed: {download.reason}</p>
-            <details>
-              <summary>Details</summary>
-              <pre>{download.error}</pre>
-            </details>
-          </div>
-        )}
-
-        {!running && (!weights.installed || download.state === "failed") && (
-          <>
-            <button
-              type="button"
-              className="primary"
-              disabled={busy || !acknowledged}
-              onClick={() => void act(api.startDownload)}
-            >
-              {download.state === "failed" || download.state === "cancelled" || weights.bytes_on_disk > 0
-                ? "Download again"
-                : `Download the weights (${formatBytes(weights.bytes_total)})`}
-            </button>
-            {!acknowledged && <p className="hint">Acknowledge the licence above to download.</p>}
-          </>
-        )}
-      </div>
     </section>
+  );
+}
+
+
+interface PartProps {
+  part: SetupPart;
+  acknowledged: boolean;
+  busy: boolean;
+  checking: boolean;
+  onAct: (action: () => Promise<Setup>) => Promise<void>;
+}
+
+/** One set of weights: the Song model, or the optional Covers extra. */
+function PartSection({ part, acknowledged, busy, checking, onAct }: PartProps) {
+  const { weights, download, checks } = part;
+  const running = download.state === "running";
+  const blocked = checks.some((c) => c.status === "fail" && c.id !== "weights");
+
+  return (
+    <div className="setup-section">
+      <h3>{part.label}</h3>
+      {part.summary && <p className="small muted">{part.summary}</p>}
+      <ul className="checks">
+        {checks.map((check) => (
+          <li key={check.id} className={`check ${check.status}`}>
+            <span className="mark" aria-label={STATUS_WORDS[check.status]}>
+              {MARKS[check.status]}
+            </span>
+            <span>
+              <strong>{check.label}</strong> <span className="muted">{check.detail}</span>
+            </span>
+          </li>
+        ))}
+        {checking && (
+          <li className="check muted">
+            <span className="mark">…</span>
+            <span>Checking…</span>
+          </li>
+        )}
+      </ul>
+
+      {running && (
+        <div className="progress" aria-live="polite">
+          <progress
+            value={download.phase === "verifying" ? undefined : (download.bytes ?? 0)}
+            max={download.bytes_total || 1}
+          />
+          <p className="small muted">
+            {download.phase === "verifying"
+              ? "Verifying the weights…"
+              : `Downloading ${formatBytes(download.bytes ?? 0)} of ${formatBytes(download.bytes_total ?? 0)}`}
+          </p>
+          <button type="button" disabled={busy} onClick={() => void onAct(() => api.cancelDownload(part.id))}>
+            Cancel download
+          </button>
+        </div>
+      )}
+
+      {download.state === "cancelled" && (
+        <p className="small muted">Download cancelled. Download again to resume where it stopped.</p>
+      )}
+      {download.state === "failed" && (
+        <div className="error-details">
+          <p className="error">The download failed: {download.reason}</p>
+          <details>
+            <summary>Details</summary>
+            <pre>{download.error}</pre>
+          </details>
+        </div>
+      )}
+
+      {!running && (!weights.installed || download.state === "failed") && (
+        <>
+          <button
+            type="button"
+            className={part.id === "engine" ? "primary" : undefined}
+            disabled={busy || !acknowledged}
+            onClick={() => void onAct(() => api.startDownload(part.id))}
+          >
+            {download.state === "failed" || download.state === "cancelled" || weights.bytes_on_disk > 0
+              ? "Download again"
+              : `Download (${formatBytes(weights.bytes_total)})`}
+          </button>
+          {!acknowledged && <p className="hint">Acknowledge the licence above to download.</p>}
+          {blocked && weights.installed && (
+            <p className="hint">The weights are here, but the check above has to pass first.</p>
+          )}
+        </>
+      )}
+      {!running && weights.installed && !blocked && download.state !== "failed" && (
+        <p className="small">
+          <span className="ok-text">✓ Ready</span>{" "}
+          <span className="muted">
+            {formatBytes(weights.bytes_total)} in <code>{weights.dir}</code>
+          </span>
+        </p>
+      )}
+    </div>
   );
 }

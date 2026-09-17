@@ -30,21 +30,25 @@ def main(argv: list[str] | None = None) -> None:
 
     from songloom.app import create_app
     from songloom.config import data_dir
-    from songloom.models import FakeModels, MlxYueModels, models_dir
+    from songloom.models import FakeModels, MlxYueModels, TranscriptionModels, models_dir
 
     data = data_dir(args.data)
     if args.engine == "mlx":
         directory = models_dir(data, args.mlx_models)
         models = MlxYueModels(directory)
+        covers = TranscriptionModels(directory)
         kwargs = {"models": str(directory)}
     else:
         # Fake weights to download, so the Setup page can be tried without a GPU or network.
         models = FakeModels(
             data / "models", preinstalled=False, size=64 * 2**20, download_seconds=6
         )
+        covers = FakeModels(
+            data / "covers-models", preinstalled=False, size=16 * 2**20, download_seconds=3
+        )
         # Long enough to hear and compare Variations in the page.
         kwargs = {"stage_seconds": 1.0, "audio_seconds": 20.0}
-    app = create_app(EngineSpec(ENGINES[args.engine], kwargs), data, models=models)
+    app = create_app(EngineSpec(ENGINES[args.engine], kwargs), data, models=models, covers=covers)
     config = uvicorn.Config(app, host=args.host, port=args.port, timeout_graceful_shutdown=5)
     Server(config, app.state.shutting_down).run()
 

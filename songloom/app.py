@@ -26,7 +26,7 @@ from songloom.db import Store
 from songloom.engine import EngineSpec
 from songloom.models import FakeModels, Models
 from songloom.runner import JobRunner
-from songloom.setup import Setup
+from songloom.setup import COVERS, ENGINE, Part, Setup
 
 STATIC_DIR = Path(__file__).parent / "static"
 # The vendored piano the Score view plays, inside the package so a clone or a wheel has it
@@ -104,13 +104,25 @@ def create_app(
     cancel_grace: float | None = None,
     load_retry: float | None = None,
     models: Models | None = None,
+    covers: Models | None = None,
 ) -> FastAPI:
-    """`models` are the weights the Engine needs; by default, fake weights that are already
-    installed, so tests of other features never meet the Setup gate."""
+    """`models` are the weights the Engine needs and `covers` the optional transcription ones;
+    by default both are fake weights that are already installed, so tests of other features
+    never meet the Setup gate."""
     root = data_dir(data)
     songs_dir = root / "songs"
     songs_dir.mkdir(exist_ok=True)
     models = models or FakeModels(root / "models")
+    covers = covers or FakeModels(root / "covers-models")
+    parts = [
+        Part(ENGINE, "Song model", models, "Writes and sings songs. Needed to make anything."),
+        Part(
+            COVERS,
+            "Covers",
+            covers,
+            "Optional: transcribes a recording you upload into a Score you can re-sing.",
+        ),
+    ]
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -118,7 +130,7 @@ def create_app(
         options = {"cancel_grace": cancel_grace, "load_retry": load_retry}
         kwargs = {k: v for k, v in options.items() if v is not None}
         runner = JobRunner(store, songs_dir, spec, **kwargs)
-        setup = Setup(models, store, runner.publish_message, runner.next_seq)
+        setup = Setup(parts, store, runner.publish_message, runner.next_seq)
         app.state.store, app.state.runner, app.state.setup = store, runner, setup
         setup.run_checks()
         runner.start()
@@ -272,17 +284,17 @@ def create_app(
         app.state.setup.acknowledge()
         return app.state.setup.snapshot()
 
-    @app.post("/api/setup/download")
-    def start_download():
-        refused = app.state.setup.start_download()
+    @app.post("/api/setup/download/{part}")
+    def start_download(part: str = ENGINE):
+        refused = app.state.setup.start_download(part)
         if refused:
-            raise HTTPException(409, refused)
+            raise HTTPException(404 if refused == "no such part" else 409, refused)
         return app.state.setup.snapshot()
 
-    @app.post("/api/setup/download/cancel")
-    def cancel_download():
-        if not app.state.setup.cancel_download():
-            raise HTTPException(409, "no download is running")
+    @app.post("/api/setup/download/{part}/cancel")
+    def cancel_download(part: str = ENGINE):
+        if not app.state.setup.cancel_download(part):
+            raise HTTPException(409, "no download is running for this part")
         return app.state.setup.snapshot()
 
     @app.get("/api/songs")
