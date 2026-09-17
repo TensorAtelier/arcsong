@@ -100,8 +100,13 @@ def _incomplete_bytes(models: Models) -> int:
     total = 0
     for root in roots:
         cache = root / ".cache" / "huggingface" / "download"
-        if cache.is_dir():
-            total += sum(f.stat().st_size for f in cache.rglob("*.incomplete") if f.is_file())
+        if not cache.is_dir():
+            continue
+        for path in cache.rglob("*.incomplete"):
+            try:
+                total += path.stat().st_size
+            except OSError:
+                continue  # the hub renames a file the moment it is complete
     return total
 
 

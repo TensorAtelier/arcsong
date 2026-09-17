@@ -1,6 +1,7 @@
 """The Setup API through fake weights: checks, the licence, the download and the jobs gate."""
 
 import time
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -446,3 +447,25 @@ def test_the_licence_names_every_set_of_weights_songloom_downloads(tmp_path):
     assert licence["id"] == "CC-BY-NC-4.0"
     assert any("SheetSage2" in url for url in licence["models"])
     assert any("MERT-v2-FullSong" in url for url in licence["models"])
+
+
+def test_progress_survives_a_file_the_hub_renames_underneath_it(tmp_path, monkeypatch):
+    """The hub renames each file as it completes; a snapshot taken mid-rename must not raise,
+    or the thread following the download dies with the part stuck on "running"."""
+    from songloom.models import TranscriptionModels, bytes_on_disk
+
+    models = TranscriptionModels(tmp_path)
+    cache = tmp_path / "mert2" / ".cache" / "huggingface" / "download"
+    cache.mkdir(parents=True)
+    vanishing = cache / "abc.etag.incomplete"
+    vanishing.write_bytes(b"x" * 10)
+    real_stat = Path.stat
+
+    def stat_but_gone(self, *args, **kwargs):
+        if self == vanishing:
+            raise FileNotFoundError(self)
+        return real_stat(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", stat_but_gone)
+
+    assert bytes_on_disk(models) == 0
