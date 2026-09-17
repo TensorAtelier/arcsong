@@ -29,7 +29,9 @@ class SongRequest(BaseModel):
     steps: Literal[8, 32] = 32
 
 
-def create_app(spec: EngineSpec, data: str | Path | None = None) -> FastAPI:
+def create_app(
+    spec: EngineSpec, data: str | Path | None = None, cancel_grace: float | None = None
+) -> FastAPI:
     root = data_dir(data)
     songs_dir = root / "songs"
     songs_dir.mkdir(exist_ok=True)
@@ -37,7 +39,8 @@ def create_app(spec: EngineSpec, data: str | Path | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         store = Store(root / "songloom.db")
-        runner = JobRunner(store, songs_dir, spec)
+        kwargs = {} if cancel_grace is None else {"cancel_grace": cancel_grace}
+        runner = JobRunner(store, songs_dir, spec, **kwargs)
         app.state.store, app.state.runner = store, runner
         runner.start()
         try:

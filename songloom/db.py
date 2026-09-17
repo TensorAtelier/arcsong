@@ -99,6 +99,18 @@ class Store:
             )
             return cur.lastrowid
 
+    def recover(self) -> list[int]:
+        """On server start: jobs left `running` by a previous server can never finish."""
+        with self._lock, self._conn:
+            rows = self._conn.execute("SELECT id FROM jobs WHERE status = 'running'").fetchall()
+            ids = [r["id"] for r in rows]
+            self._conn.execute(
+                "UPDATE jobs SET status = 'failed', finished_at = ?, "
+                "error = 'the server stopped while this job was running' WHERE status = 'running'",
+                (time.time(),),
+            )
+        return ids
+
     def get_song(self, song_id: int) -> dict[str, Any] | None:
         with self._lock:
             row = self._conn.execute("SELECT * FROM songs WHERE id = ?", (song_id,)).fetchone()

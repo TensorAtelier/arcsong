@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import os
 import struct
 import time
 import wave
@@ -25,11 +26,15 @@ class FakeEngine:
         audio_seconds: float = 1.0,
         tokens_per_stage: int = 20,
         fail_in: str | None = None,
+        crash_in: str | None = None,
+        ignore_cancel: bool = False,
     ):
         self.stage_seconds = stage_seconds
         self.audio_seconds = audio_seconds
         self.tokens_per_stage = tokens_per_stage
         self.fail_in = fail_in
+        self.crash_in = crash_in  # the worker process dies abruptly, like an OOM kill
+        self.ignore_cancel = ignore_cancel
 
     def load(self) -> None:
         pass
@@ -39,11 +44,13 @@ class FakeEngine:
     ) -> TakeOutput:
         steps = request.get("steps", 8)
         for stage in STAGES:
-            if cancelled():
+            if cancelled() and not self.ignore_cancel:
                 raise Cancelled(stage)
             emit({"type": "stage", "stage": stage})
             if self.fail_in == stage:
                 raise RuntimeError(f"fake failure in {stage}")
+            if self.crash_in == stage:
+                os._exit(137)
             updates = {STAGES[0]: self.tokens_per_stage, STAGES[1]: self.tokens_per_stage}
             count = updates.get(stage, steps if stage == STAGES[2] else 0)
             self._run_stage(stage, count, steps, cancelled, emit)
@@ -56,7 +63,7 @@ class FakeEngine:
         deadline = time.monotonic() + self.stage_seconds
         done = 0
         while (now := time.monotonic()) < deadline:
-            if cancelled():
+            if cancelled() and not self.ignore_cancel:
                 raise Cancelled(stage)
             elapsed = 1 - (deadline - now) / self.stage_seconds
             while count and done < int(elapsed * count):
