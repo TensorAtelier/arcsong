@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -23,8 +23,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     song_id INTEGER,
     group_id INTEGER,                -- Variations: the id of the group's first job
     source_song_id INTEGER,          -- a Final: the Draft it was made from
-    kind TEXT NOT NULL DEFAULT 'take',  -- take | score (planning only, no song)
-    score TEXT                       -- a Score job's ABC
+    kind TEXT NOT NULL DEFAULT 'take',  -- take | score (planning only) | cover (transcription)
+    score TEXT,                      -- a Score job's ABC
+    source_audio TEXT                -- a cover job's upload, deleted when the job ends
 );
 CREATE TABLE IF NOT EXISTS songs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,6 +56,9 @@ MIGRATE_2_TO_3 = [
 ]
 
 
+MIGRATE_3_TO_4 = ["ALTER TABLE jobs ADD COLUMN source_audio TEXT"]
+
+
 class Store:
     def __init__(self, path: Path):
         self._conn = sqlite3.connect(path, check_same_thread=False)
@@ -67,6 +71,9 @@ class Store:
                 version = 2
             if 0 < version < 3:
                 self._migrate(MIGRATE_2_TO_3, 3)
+                version = 3
+            if 0 < version < 4:
+                self._migrate(MIGRATE_3_TO_4, 4)
             with self._conn:
                 self._conn.executescript(SCHEMA)
                 self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
@@ -92,15 +99,23 @@ class Store:
         request: dict[str, Any],
         source_song_id: int | None = None,
         kind: str = "take",
+        source_audio: str | None = None,
     ) -> dict[str, Any]:
         with self._lock, self._conn:
             cur = self._conn.execute(
-                "INSERT INTO jobs (status, request_json, created_at, source_song_id, kind) "
-                "VALUES ('queued', ?, ?, ?, ?)",
-                (json.dumps(request), time.time(), source_song_id, kind),
+                "INSERT INTO jobs (status, request_json, created_at, source_song_id, kind, "
+                "source_audio) VALUES ('queued', ?, ?, ?, ?, ?)",
+                (json.dumps(request), time.time(), source_song_id, kind, source_audio),
             )
             job_id = cur.lastrowid
         return self.get_job(job_id)
+
+    def set_source_audio(self, job_id: int, path: str) -> None:
+        self._update(job_id, "source_audio = ?", path)
+
+    def clear_source_audio(self, job_id: int) -> None:
+        """The upload is gone from disk; forget where it was."""
+        self._update(job_id, "source_audio = NULL")
 
     def finish_score(self, job_id: int, abc: str) -> None:
         """A Score job is done when its ABC is stored; it never makes a song."""

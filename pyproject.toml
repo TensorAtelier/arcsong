@@ -5,11 +5,13 @@ description = "Local app for generating full songs with YuE2"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   # mlx-Yue Engine, pinned by commit (D-006). Weights are read from a configurable path.
-  "mlx-yue @ git+https://github.com/vanch007/mlx-Yue.git@9253ed133343406947bde7b67d43c7a63fb39d99",
+  # The transcription extra (mido, mir-eval, pretty-midi, scipy) is what covers need (M4).
+  "mlx-yue[transcription] @ git+https://github.com/vanch007/mlx-Yue.git@9253ed133343406947bde7b67d43c7a63fb39d99",
   "fastapi>=0.115",
   "uvicorn>=0.30",
   "platformdirs>=4",
   "psutil>=5",
+  "python-multipart>=0.0.9",
 ]
 
 [project.scripts]
@@ -38,3 +40,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's parameter markers are called in defaults by design.
+extend-immutable-calls = ["fastapi.File", "fastapi.Form", "fastapi.Query"]

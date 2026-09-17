@@ -10,7 +10,15 @@ import wave
 from pathlib import Path
 from typing import Any
 
-from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, ScoreOutput, TakeOutput
+from songloom.engine import (
+    STAGES,
+    TRANSCRIBING,
+    CancelCheck,
+    Cancelled,
+    Emit,
+    ScoreOutput,
+    TakeOutput,
+)
 
 SAMPLE_RATE = 48_000
 TICK = 0.005
@@ -29,6 +37,7 @@ class FakeEngine:
         crash_in: str | None = None,
         ignore_cancel: bool = False,
         fail_load: str | None = None,
+        fail_transcribe: str | None = None,
     ):
         self.stage_seconds = stage_seconds
         self.audio_seconds = audio_seconds
@@ -37,10 +46,42 @@ class FakeEngine:
         self.crash_in = crash_in  # the worker process dies abruptly, like an OOM kill
         self.ignore_cancel = ignore_cancel
         self.fail_load = fail_load  # load() raises this, like missing weights or a held GPU
+        self.fail_transcribe = fail_transcribe
 
     def load(self) -> None:
         if self.fail_load:
             raise RuntimeError(self.fail_load)
+
+    def transcribe(
+        self,
+        audio: Path,
+        request: dict[str, Any],
+        out_dir: Path,
+        cancelled: CancelCheck,
+        emit: Emit,
+    ) -> ScoreOutput:
+        """Reads the upload (so a missing file fails like the real one), reports windows, and
+        writes a Score whose seed comes from the recording's size."""
+        if not audio.is_file():
+            raise FileNotFoundError(f"no recording at {audio}")
+        if self.fail_transcribe:
+            raise ValueError(self.fail_transcribe)
+        emit({"type": "stage", "stage": TRANSCRIBING})
+        windows = 3
+        deadline = time.monotonic() + self.stage_seconds
+        for window in range(1, windows + 1):
+            if cancelled():
+                raise Cancelled(TRANSCRIBING)
+            emit({"type": "progress", "stage": TRANSCRIBING, "completed": window, "total": windows})
+            while time.monotonic() < deadline * window / windows:
+                if cancelled():
+                    raise Cancelled(TRANSCRIBING)
+                time.sleep(TICK)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "melody.mid").write_bytes(b"MThd fake")
+        abc = fake_score({"seed": audio.stat().st_size})
+        (out_dir / "score.abc").write_text(abc)
+        return ScoreOutput(abc)
 
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         if cancelled():

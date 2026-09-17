@@ -64,6 +64,9 @@ class JobRunner:
     ):
         self.store = store
         self.songs_dir = songs_dir
+        # A cover's transcription exports (MIDI, LAB, result.json) live beside the songs.
+        self.covers_dir = songs_dir.parent / "covers"
+        self.uploads_dir = songs_dir.parent / "uploads"
         self.spec = spec
         self.cancel_grace = cancel_grace
         self.load_retry = load_retry
@@ -87,6 +90,7 @@ class JobRunner:
     def start(self) -> None:
         for job_id in self.store.recover():
             self._discard_partial_take(job_id)
+            self._discard_upload(job_id)
         self._start_worker()
         self._thread = threading.Thread(target=self._pump, name="songloom-events", daemon=True)
         self._thread.start()
@@ -140,6 +144,7 @@ class JobRunner:
             if job_id is not None:
                 self.store.mark_finished(job_id, outcome, error)
                 self._discard_partial_take(job_id)
+                self._discard_upload(job_id)
                 self._running, self._live, self._cancel_asked_at = None, {}, None
             if restart:
                 self._start_worker()
@@ -210,13 +215,17 @@ class JobRunner:
                 self._start_worker()
             self._running, self._live = job["id"], {"stage": None}
             self.store.mark_running(job["id"])
+            out_dir = self.songs_dir / str(job["id"])
+            if job["kind"] == "cover":
+                out_dir = self.covers_dir / str(job["id"])
             self._jobs.put(
                 {
                     "job_id": job["id"],
                     "request": job["request"],
                     "kind": job["kind"],
-                    "out_dir": str(self.songs_dir / str(job["id"])),
+                    "out_dir": str(out_dir),
                     "source_dir": source_dir,
+                    "source_audio": job["source_audio"],
                 }
             )
         self.publish(job["id"])
@@ -229,6 +238,7 @@ class JobRunner:
                 return False
             if job["status"] == "queued":
                 self.store.mark_finished(job_id, "cancelled")
+                self._discard_upload(job_id)
             else:
                 self._cancel.value = job_id
                 self._cancel_asked_at = self._cancel_asked_at or time.monotonic()
@@ -349,18 +359,29 @@ class JobRunner:
             return
         if kind == "done" and "score" in event:
             self.store.finish_score(job_id, event["score"])
+            self._discard_upload(job_id)
         elif kind == "done":
             audio = Path(event["audio_path"])
             self.store.add_song(job_id, audio.parent, audio, event["audio_seconds"])
         else:
             self.store.mark_finished(job_id, kind, event.get("error"))
             self._discard_partial_take(job_id)
+            self._discard_upload(job_id)
         with self._lock:
             if self._running == job_id:
                 self._running, self._live, self._cancel_asked_at = None, {}, None
                 self._cancel.value = NO_JOB
         self.publish(job_id)
         self.dispatch()
+
+    def _discard_upload(self, job_id: int) -> None:
+        """A cover's recording is the user's own audio: delete it the moment the job ends,
+        however it ends."""
+        job = self.store.get_job(job_id)
+        if job is None or job["kind"] != "cover" or not job["source_audio"]:
+            return
+        Path(job["source_audio"]).unlink(missing_ok=True)
+        self.store.clear_source_audio(job_id)
 
     def _discard_partial_take(self, job_id: int) -> None:
         """Remove whatever an unfinished job left in its song directory; it was never indexed."""

@@ -10,7 +10,7 @@ import soundfile
 from fastapi.testclient import TestClient
 
 from songloom.app import create_app
-from songloom.db import Store
+from songloom.db import SCHEMA_VERSION, Store
 from songloom.engine import EngineSpec
 from tests.test_app import FAKE, wait_for
 
@@ -132,7 +132,7 @@ def test_a_v1_database_migrates_with_its_rows_intact(tmp_path):
     store.close()
     Store(path).close()  # opening a v2 database again is a no-op
 
-    assert version == 3  # v1 migrates through v2 to the current schema
+    assert version == SCHEMA_VERSION  # v1 migrates step by step to the current schema
     assert song["request"]["seed"] == 5 and song["audio_seconds"] == 2.5
     assert song["starred"] is False and song["group_id"] is None
     assert job["status"] == "done" and job["source_song_id"] is None

@@ -13,7 +13,7 @@
 ## Tickets
 
 - [x] 01 — Setup parts: `Setup` holds named parts (`engine`, `covers`), `GET /api/setup` returns them, `POST /api/setup/download/{part}` and its cancel, an ffmpeg check with an install hint, and `TranscriptionModels` (pinned SheetSage2 and MERT revisions, sizes, verification by the same file-size rule); check: API tests with fake parts (a part downloads independently, jobs still gate on the engine part only, ffmpeg missing shows as a warning not a failure).
-- [ ] 02 — Cover jobs: schema v4, `POST /api/covers` (multipart upload with size and rights checks), Engine `transcribe()` for mlx-Yue and the fake, worker dispatch by kind, window progress, cancel, and deleting the upload when the job ends; check: API tests through the fake (a cover job produces a Score, the upload is gone, cancel and failure also delete it, a refused upload never queues), and one real transcription of a songloom Take behind `SONGLOOM_REAL_ENGINE=1`.
+- [x] 02 — Cover jobs: schema v4, `POST /api/covers` (multipart upload with size and rights checks), Engine `transcribe()` for mlx-Yue and the fake, worker dispatch by kind, window progress, cancel, and deleting the upload when the job ends; check: API tests through the fake (a cover job produces a Score, the upload is gone, cancel and failure also delete it, a refused upload never queues), and one real transcription of a songloom Take behind `SONGLOOM_REAL_ENGINE=1`.
 - [ ] 03 — Cover page: the Create panel (file picker, style, lyrics, rights confirmation, copyright note), queue progress for transcription, the Score view's ABC and MIDI download, and rendering a cover from the transcribed Score; check: in the browser against a fake-engine server, and a real cover render if the real transcription ticket passed.
 
 ## Notes
@@ -30,3 +30,7 @@
 - One download runs at a time across parts, so they never compete for the network.
 - The transcription weights live beside the song weights (`<models>/sheetsage2`, `<models>/mert2`), and mlx-Yue's `resolve_models` takes those directories straight.
 - Verification for the covers part is mlx-Yue's own rule: the MERT2 file's sha256 must match the `base_model_sha256` SheetSage2 records. Hashing only, so the server never imports MLX.
+- Covers need mlx-Yue's `transcription` extra (mido, mir-eval, pretty-midi, scipy). It is part of songloom's own dependency now, so a cover needs no second install — only ffmpeg and the weights.
+- Form fields arrive as text, so `steps` is taken as an `int` and checked by hand; `Literal[8, 32]` refused `"8"` and would have broken the page too (caught by the real run, now covered by a test).
+- `GET /api/scores/{job}` serves a cover's transcription as well as a planned Score, so the Score view needs no special case.
+- Real cover check (`SONGLOOM_REAL_ENGINE=1`, 2026-09-17, on AC): the covers weights downloaded and verified in 42 s (218 MB + 2.4 GB), then a rendered Take was transcribed and re-sung in a new style in 47 s, with the upload gone from disk afterwards.

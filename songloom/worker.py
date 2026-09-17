@@ -54,7 +54,12 @@ def worker_main(spec: EngineSpec, jobs, events, cancel_job, parent_pid: int | No
         emit({"type": "started"})
         try:
             cancelled = partial(_is_cancelled, cancel_job, job_id)
-            if job["kind"] == "score":
+            if job["kind"] == "cover":
+                score = engine.transcribe(
+                    Path(job["source_audio"]), request, Path(job["out_dir"]), cancelled, emit
+                )
+                done = {"type": "done", "score": score.abc}
+            elif job["kind"] == "score":
                 done = {"type": "done", "score": engine.plan_only(request, cancelled, emit).abc}
             else:
                 out_dir, source = Path(job["out_dir"]), job.get("source_dir")

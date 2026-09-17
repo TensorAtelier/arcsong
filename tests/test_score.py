@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from songloom.app import create_app
-from songloom.db import Store
+from songloom.db import SCHEMA_VERSION, Store
 from songloom.engine import EngineSpec
 from songloom.fake_engine import fake_score
 from tests.test_app import FAKE, wait_for
@@ -183,7 +183,7 @@ def test_a_score_needs_a_planning_mode_and_some_text(client):
     assert client.post("/api/jobs", json={**REQUEST, "abc": abc}).status_code == 201
 
 
-def test_a_v1_database_migrates_all_the_way_to_v3(tmp_path):
+def test_a_v1_database_migrates_all_the_way_to_the_current_schema(tmp_path):
     path = tmp_path / "songloom.db"
     conn = sqlite3.connect(path)
     conn.executescript(V1_SCHEMA)
@@ -196,8 +196,9 @@ def test_a_v1_database_migrates_all_the_way_to_v3(tmp_path):
     version = store._conn.execute("PRAGMA user_version").fetchone()[0]
     store.close()
 
-    assert version == 3
+    assert version == SCHEMA_VERSION == 4
     assert job["kind"] == "take" and job["score"] is None
+    assert job["source_audio"] is None
 
 
 # --- Review fixes -----------------------------------------------------------------------------

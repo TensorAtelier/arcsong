@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any, Protocol
 
 STAGES = ("planning", "semantic generation", "synthesis", "decoding")
+# A cover's own Stage, before any of those: the upload becomes a Score.
+TRANSCRIBING = "transcribing"
 
 CancelCheck = Callable[[], bool]
 # An Engine reports what it is doing as plain dicts, e.g. {"type": "stage", "stage": "planning"}.
@@ -45,6 +47,17 @@ class Engine(Protocol):
 
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         """Run the planning Stage alone and return its Score; nothing is written to disk."""
+
+    def transcribe(
+        self,
+        audio: Path,
+        request: dict[str, Any],
+        out_dir: Path,
+        cancelled: CancelCheck,
+        emit: Emit,
+    ) -> ScoreOutput:
+        """Turn a recording into a Score: mlx-Yue's SheetSage2 transcription, whose other
+        exports (MIDI, LAB, result.json) land in `out_dir`."""
 
     def finalize(
         self,

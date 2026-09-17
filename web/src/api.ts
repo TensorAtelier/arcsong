@@ -3,6 +3,16 @@ export type Precision = "8bit" | "bf16";
 export type Status = "queued" | "running" | "done" | "failed" | "cancelled";
 export type Stage = "planning" | "semantic generation" | "synthesis" | "decoding";
 
+export interface CoverRequest {
+  audio: File;
+  style: string;
+  lyrics: string;
+  mode: Mode;
+  precision: Precision;
+  steps: 8 | 32;
+  rights_confirmed: boolean;
+}
+
 export interface SongRequest {
   style: string;
   lyrics: string;
@@ -12,6 +22,8 @@ export interface SongRequest {
   steps: 8 | 32;
   /** An edited Score to render instead of writing one. */
   abc?: string | null;
+  /** A cover: the name of the recording it was transcribed from. */
+  source_name?: string | null;
 }
 
 export interface ScoreReport {
@@ -47,7 +59,7 @@ export interface Live {
   total?: number;
 }
 
-export type JobKind = "take" | "score";
+export type JobKind = "take" | "score" | "cover";
 
 export interface Job {
   id: number;
@@ -208,6 +220,17 @@ export const api = {
   finalize: (songId: number) => post<Job>(`/api/songs/${songId}/finalize`),
   peaks: (songId: number, buckets: number) =>
     fetch(`/api/songs/${songId}/peaks?buckets=${buckets}`).then((r) => json<Peaks>(r)),
+  createCover: (request: CoverRequest) => {
+    const body = new FormData();
+    body.append("audio", request.audio);
+    body.append("style", request.style);
+    body.append("lyrics", request.lyrics);
+    body.append("mode", request.mode);
+    body.append("precision", request.precision);
+    body.append("steps", String(request.steps));
+    body.append("rights_confirmed", String(request.rights_confirmed));
+    return fetch("/api/covers", { method: "POST", body }).then((r) => json<Job>(r));
+  },
   createScore: (request: Omit<SongRequest, "abc">) =>
     fetch("/api/scores", {
       method: "POST",

@@ -13,10 +13,10 @@ import shutil
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 import soundfile
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
@@ -38,6 +38,8 @@ AUDIO_TYPES = {".flac": "audio/flac", ".wav": "audio/wav"}
 
 SEED_LIMIT = 2**31
 MAX_VARIATIONS = 8
+# A few minutes of lossless audio; ffmpeg reads whatever format it is.
+MAX_UPLOAD_BYTES = 200 << 20
 
 
 class SongRequest(BaseModel):
@@ -159,6 +161,51 @@ def create_app(
         app.state.runner.dispatch()
         return app.state.runner.job(job["id"])
 
+    @app.post("/api/covers", status_code=201)
+    async def create_cover(
+        audio: Annotated[UploadFile, File(description="the recording to transcribe")],
+        style: Annotated[str, Form(min_length=1)],
+        lyrics: Annotated[str, Form()] = "",
+        mode: Annotated[Literal["full", "melody"], Form()] = "full",
+        precision: Annotated[Literal["8bit", "bf16"], Form()] = "8bit",
+        # A form field arrives as text, and Literal[8, 32] refuses "8"; check it by hand.
+        steps: Annotated[int, Form()] = 32,
+        seed: Annotated[int | None, Form(ge=0, lt=SEED_LIMIT)] = None,
+        rights_confirmed: Annotated[bool, Form()] = False,
+    ):
+        """Queue a cover: transcribe the upload into a Score to re-sing. The recording is kept
+        only while the job runs."""
+        if not app.state.setup.usable(COVERS):
+            raise HTTPException(409, "Covers aren't set up yet; finish the Covers part of Setup.")
+        if not rights_confirmed:
+            raise HTTPException(422, "Confirm you have the rights to this recording.")
+        if steps not in (8, 32):
+            raise HTTPException(422, "Synthesis steps must be 8 or 32.")
+        uploads = root / "uploads"
+        uploads.mkdir(exist_ok=True)
+        suffix = Path(audio.filename or "").suffix[:16] or ".audio"
+        request = {
+            "style": style,
+            "lyrics": lyrics,
+            "mode": mode,
+            "seed": seed if seed is not None else random.randrange(SEED_LIMIT),
+            "precision": precision,
+            "steps": steps,
+            "abc": None,
+            "source_name": Path(audio.filename or "recording").name,
+        }
+        job = app.state.store.create_job(request, kind="cover")
+        path = uploads / f"{job['id']}{suffix}"
+        written = await _save_upload(audio, path)
+        if written == 0:
+            path.unlink(missing_ok=True)
+            app.state.store.mark_finished(job["id"], "failed", "the upload was empty")
+            raise HTTPException(422, "That file is empty.")
+        app.state.store.set_source_audio(job["id"], str(path))
+        app.state.runner.publish(job["id"])
+        app.state.runner.dispatch()
+        return app.state.runner.job(job["id"])
+
     @app.post("/api/scores", status_code=201)
     def create_score(body: ScoreRequest):
         """Queue a Score-only run: planning alone, no audio."""
@@ -172,11 +219,13 @@ def create_app(
         app.state.runner.dispatch()
         return app.state.runner.job(job["id"])
 
+    SCORE_KINDS = ("score", "cover")
+
     @app.get("/api/scores/{job_id}")
     def get_score(job_id: int):
-        """A Score job with its ABC and, once written, its report."""
+        """A Score job (or a cover's transcription) with its ABC and, once written, its report."""
         job = app.state.runner.job(job_id)
-        if job is None or job["kind"] != "score":
+        if job is None or job["kind"] not in SCORE_KINDS:
             raise HTTPException(404, "no such Score")
         return {"job": job, "abc": job["score"], "report": score_report(job["score"])}
 
@@ -384,6 +433,20 @@ def create_app(
         app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
     return app
+
+
+async def _save_upload(upload: UploadFile, path: Path) -> int:
+    """Stream the upload to disk, refusing anything over the limit."""
+    written = 0
+    with path.open("wb") as out:
+        while chunk := await upload.read(1 << 20):
+            written += len(chunk)
+            if written > MAX_UPLOAD_BYTES:
+                out.close()
+                path.unlink(missing_ok=True)
+                raise HTTPException(413, f"Recordings must be under {MAX_UPLOAD_BYTES >> 20} MB.")
+            out.write(chunk)
+    return written
 
 
 def score_report(abc: str | None) -> dict | None:

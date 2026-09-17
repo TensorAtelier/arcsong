@@ -107,3 +107,66 @@ def test_a_real_take_renders_from_an_edited_score(tmp_path):
     assert done["status"] == "done", done["error"]
     # mlx-Yue uses the supplied Score as the plan, so the Take carries it back unchanged.
     assert saved == edited
+
+
+def test_the_real_transcription_weights_download_and_verify(tmp_path):
+    """Fetches SheetSage2 and MERT2 into the user's models directory (once; later runs are a
+    no-op) and checks them the way mlx-Yue does."""
+    from songloom.models import TranscriptionModels, weights_state
+
+    models = TranscriptionModels(MODELS)
+    if not weights_state(models)["installed"]:
+        models.download(lambda phase: None)
+
+    state = weights_state(models)
+    assert state["installed"] is True
+    models.verify()
+
+
+def test_a_real_cover_transcribes_a_take_and_re_sings_it(tmp_path):
+    """Renders a short Take, transcribes it back into a Score, and renders a cover from that."""
+    from songloom.models import TranscriptionModels, weights_state
+
+    if not weights_state(TranscriptionModels(MODELS))["installed"]:
+        pytest.skip("the covers weights are not installed")
+    engine = EngineSpec(
+        "songloom.mlx_engine:MlxYueEngine",
+        {"models": str(MODELS), "transcription_models": str(MODELS)},
+    )
+    app = create_app(
+        engine, tmp_path, models=MlxYueModels(MODELS), covers=TranscriptionModels(MODELS)
+    )
+    with TestClient(app) as client:
+        take = wait_done(client, client.post("/api/jobs", json=SHORT).json()["id"])
+        assert take["status"] == "done", take["error"]
+        audio = Path(take_dir(tmp_path, take) / "audio.flac")
+
+        with audio.open("rb") as recording:
+            created = client.post(
+                "/api/covers",
+                files={"audio": ("take.flac", recording, "audio/flac")},
+                data={"style": "slow jazz trio, brushed drums", "rights_confirmed": "true",
+                      "steps": "8"},
+            )
+        assert created.status_code == 201, created.text
+        cover = wait_done(client, created.json()["id"], limit=1800)
+        assert cover["status"] == "done", cover["error"]
+        score = client.get(f"/api/scores/{cover['id']}").json()
+
+        assert score["report"]["voices"]["Vocal"]["sounding_notes"] > 0
+        assert not list((tmp_path / "uploads").glob("*"))  # the recording is gone
+
+        sung = client.post("/api/jobs", json={**cover["request"], "abc": score["abc"]})
+        assert sung.status_code == 201, sung.text
+        done = wait_done(client, sung.json()["id"])
+
+    assert done["status"] == "done", done["error"]
+    assert client_score_matches(tmp_path, done, score["abc"])
+
+
+def take_dir(tmp_path, job):
+    return tmp_path / "songs" / str(job["id"])
+
+
+def client_score_matches(tmp_path, job, abc):
+    return (take_dir(tmp_path, job) / "score.abc").read_text() == abc

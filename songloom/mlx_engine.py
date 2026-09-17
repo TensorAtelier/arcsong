@@ -10,18 +10,36 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, ScoreOutput, TakeOutput
+from songloom.engine import (
+    STAGES,
+    TRANSCRIBING,
+    CancelCheck,
+    Cancelled,
+    Emit,
+    ScoreOutput,
+    TakeOutput,
+)
 from songloom.progress import StderrCounts
 
 SAMPLE_RATE = 48_000
+# Both melody voices, no chords: what a cover re-sings (mlx-Yue's other tasks add chord symbols
+# the render ignores).
+TRANSCRIPTION_TASK = "melody-full"
 
 
 class MlxYueEngine:
     """Keeps one pipeline loaded and reuses it across Takes; a Take asking for the other
     precision reloads it."""
 
-    def __init__(self, models: str | Path, require_ac: bool = True):
+    def __init__(
+        self,
+        models: str | Path,
+        require_ac: bool = True,
+        transcription_models: str | Path | None = None,
+    ):
         self.models = Path(models).expanduser()
+        # The covers weights sit beside the song weights unless told otherwise.
+        self.transcription_models = Path(transcription_models or models).expanduser()
         self.require_ac = require_ac
         self._pipe: Any = None
         self._generation_config: Any = None
@@ -43,6 +61,36 @@ class MlxYueEngine:
         # The weights' own settings; a Final swaps in its Draft's, so renders start from these.
         self._generation_config = self._pipe.generation_config
         self._precision = precision
+
+    def transcribe(
+        self,
+        audio: Path,
+        request: dict[str, Any],
+        out_dir: Path,
+        cancelled: CancelCheck,
+        emit: Emit,
+    ) -> ScoreOutput:
+        """SheetSage2 over the upload: the Score comes back as the same native two-voice ABC a
+        planned Score uses, so it renders and edits like any other."""
+        from lyra.transcription.pipeline import transcribe
+
+        emit({"type": "stage", "stage": TRANSCRIBING})
+        if out_dir.exists():
+            shutil.rmtree(out_dir)  # transcription insists on a fresh directory
+        result = transcribe(
+            audio,
+            out_dir,
+            model_path=str(self.transcription_models / "sheetsage2"),
+            base_model=str(self.transcription_models / "mert2"),
+            offline=True,
+            task=TRANSCRIPTION_TASK,
+            cancelled=cancelled,
+            progress=_window_reporter(emit),
+        )
+        abc = result.get("abc")
+        if result.get("status") != "complete" or not abc:
+            raise ValueError(result.get("abc_error") or "the recording produced no Score")
+        return ScoreOutput(abc)
 
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         """The planning Stage alone: seconds, and nothing is written to disk."""
@@ -159,6 +207,23 @@ class MlxYueEngine:
             shutil.rmtree(out_dir)  # leftovers of an interrupted Take; never a finished one
         result.save_artifacts(out_dir)
         return TakeOutput(out_dir / "audio.flac", len(audio) / SAMPLE_RATE)
+
+
+def _window_reporter(emit: Emit):
+    """Transcription works window by window; report them as the Stage's progress."""
+
+    def on_progress(event: dict[str, Any]) -> None:
+        if "windows" in event:
+            emit(
+                {
+                    "type": "progress",
+                    "stage": TRANSCRIBING,
+                    "completed": event["window"],
+                    "total": event["windows"],
+                }
+            )
+
+    return on_progress
 
 
 def _token_counter(stage: str, emit: Emit):
