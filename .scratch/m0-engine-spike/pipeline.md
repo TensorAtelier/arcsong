@@ -8,4 +8,4 @@ goal: Answer the M0 questions in PLAN.md: pick the engine (mlx-Yue vs audio.cpp)
 - [x] grill — D-019 (proof of done); no escalations
 - [x] spec
 - [x] tickets
-- [ ] run
+- [x] run — REPORT.md written; goal review PARTIAL (09 parked)
