@@ -138,3 +138,16 @@ button.star.on { color: var(--warn); }
 .player-bar { display: flex; align-items: center; gap: 10px; }
 .player-bar button { margin-top: 6px; min-width: 88px; }
 @media (max-width: 480px) { .takes { grid-template-columns: minmax(0, 1fr); } }
+
+.score { margin-top: 16px; }
+.score-panes { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; margin-top: 12px; }
+.score-side { min-width: 0; }
+textarea.abc { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+.notation { border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-top: 8px; background: var(--panel); }
+.paper { overflow-x: auto; }
+.paper.stale { opacity: 0.5; }
+.paper svg { max-width: 100%; }
+.paper path, .paper text, .paper rect.abcjs-top-line { fill: var(--text); }
+.paper path.abcjs-staff, .paper path.abcjs-bar { stroke: var(--text); }
+ul.diff { margin: 4px 0 0; padding-left: 18px; }
+@media (max-width: 720px) { .score-panes { grid-template-columns: minmax(0, 1fr); } }

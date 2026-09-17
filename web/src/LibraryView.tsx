@@ -147,6 +147,8 @@ function SongCard({ song, final, draftDeleted, onJob, onSong, onDeleted, onRerun
           </span>
         )}
         {song.group_id !== null && <a href={`#/compare/${song.group_id}`}>Compare Variations</a>}
+        {request.mode !== "off" && <a href={`#/score/song/${song.id}`}>Score</a>}
+        {request.abc && <span className="muted">From an edited Score</span>}
         {final?.status === "done" && final.song_id !== null && <span className="muted">Finalized as #{final.song_id}</span>}
         {final && (final.status === "queued" || final.status === "running") && (
           <span className="muted">Final {final.status}…</span>

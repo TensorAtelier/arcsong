@@ -1,24 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Deleted, type Job, type Setup, type Song, type SongRequest, watchEvents } from "./api";
 import CompareView from "./CompareView";
+import ScoreView from "./ScoreView";
 import CreateForm from "./CreateForm";
 import LibraryView from "./LibraryView";
 import QueuePanel from "./QueuePanel";
 import SetupView from "./SetupView";
 
-type View = "create" | "library" | "setup" | "compare";
+type View = "create" | "library" | "setup" | "compare" | "score";
 
 const HASHES: Record<View, string> = {
   create: "#/",
   library: "#/library",
   setup: "#/setup",
   compare: "#/compare/",
+  score: "#/score/",
 };
 
 function viewFromHash(): View {
   const hash = window.location.hash;
+  if (scoreSource(hash) !== null) return "score";
   if (compareGroup(hash) !== null) return "compare";
   return hash === HASHES.library ? "library" : hash === HASHES.setup ? "setup" : "create";
+}
+
+/** The Score behind `#/score/job/<id>` or `#/score/song/<id>`, or null. */
+function scoreSource(hash: string): { kind: "job" | "song"; id: number } | null {
+  const match = /^#\/score\/(job|song)\/(\d+)$/.exec(hash);
+  return match ? { kind: match[1] as "job" | "song", id: Number(match[2]) } : null;
 }
 
 /** The group id in `#/compare/<id>`, or null. */
@@ -30,6 +39,7 @@ function compareGroup(hash: string): number | null {
 export default function App() {
   const [view, setView] = useState<View>(viewFromHash);
   const [groupId, setGroupId] = useState<number | null>(() => compareGroup(window.location.hash));
+  const [score, setScore] = useState(() => scoreSource(window.location.hash));
   const [jobs, setJobs] = useState<Map<number, Job>>(new Map());
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [jobsError, setJobsError] = useState<string | null>(null);
@@ -48,6 +58,7 @@ export default function App() {
     const onHash = () => {
       setView(viewFromHash());
       setGroupId(compareGroup(window.location.hash));
+      setScore(scoreSource(window.location.hash));
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
@@ -183,6 +194,8 @@ export default function App() {
       </header>
       {view === "setup" ? (
         <SetupView setup={setup} error={setupError} onChanged={updateSetup} />
+      ) : view === "score" && score !== null ? (
+        <ScoreView source={score} onJob={upsert} />
       ) : view === "compare" && groupId !== null ? (
         <CompareView groupId={groupId} jobs={ordered} songs={songs} onJob={upsert} onSong={updateSong} />
       ) : view === "create" ? (

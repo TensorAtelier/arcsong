@@ -10,6 +10,34 @@ export interface SongRequest {
   seed: number | null;
   precision: Precision;
   steps: 8 | 32;
+  /** An edited Score to render instead of writing one. */
+  abc?: string | null;
+}
+
+export interface ScoreReport {
+  bpm: number;
+  duration_seconds: number;
+  voices: Record<"Vocal" | "Ins", { sounding_notes: number; measures: number; chords: number }>;
+}
+
+export interface ScoreCheck {
+  ok: boolean;
+  error: string | null;
+  report: ScoreReport | null;
+  diff: { match: boolean; differences: string[] } | null;
+}
+
+export interface ScoreJob {
+  job: Job;
+  abc: string | null;
+  report: ScoreReport | null;
+}
+
+export interface SongScore {
+  song_id: number;
+  abc: string;
+  report: ScoreReport | null;
+  request: SongRequest & { seed: number };
 }
 
 export interface Live {
@@ -18,6 +46,8 @@ export interface Live {
   completed?: number;
   total?: number;
 }
+
+export type JobKind = "take" | "score";
 
 export interface Job {
   id: number;
@@ -31,6 +61,9 @@ export interface Job {
   audio_seconds: number | null;
   live: Live | null;
   /** Variations share the id of their group's first job; null for a single job. */
+  kind: JobKind;
+  /** A Score job's ABC, once planning has finished. */
+  score: string | null;
   group_id: number | null;
   /** A Final: the Draft song it was made from. */
   source_song_id: number | null;
@@ -57,6 +90,9 @@ export interface Song {
   created_at: number;
   bytes: number;
   request: SongRequest & { seed: number };
+  kind: JobKind;
+  /** A Score job's ABC, once planning has finished. */
+  score: string | null;
   group_id: number | null;
   source_song_id: number | null;
   starred: boolean;
@@ -161,6 +197,27 @@ export const api = {
   finalize: (songId: number) => post<Job>(`/api/songs/${songId}/finalize`),
   peaks: (songId: number, buckets: number) =>
     fetch(`/api/songs/${songId}/peaks?buckets=${buckets}`).then((r) => json<Peaks>(r)),
+  createScore: (request: Omit<SongRequest, "steps" | "abc">) =>
+    fetch("/api/scores", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request),
+    }).then((r) => json<Job>(r)),
+  score: (jobId: number) => fetch(`/api/scores/${jobId}`).then((r) => json<ScoreJob>(r)),
+  songScore: (songId: number) =>
+    fetch(`/api/songs/${songId}/score`).then((r) => json<SongScore>(r)),
+  checkScore: (abc: string, original: string | null) =>
+    fetch("/api/score/check", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ abc, original }),
+    }).then((r) => json<ScoreCheck>(r)),
+  stripChords: (abc: string) =>
+    fetch("/api/score/strip-chords", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ abc }),
+    }).then((r) => json<{ abc: string }>(r)),
   setup: () => fetch("/api/setup").then((r) => json<Setup>(r)),
   runChecks: () => post<Setup>("/api/setup/checks"),
   acknowledgeLicence: () => post<Setup>("/api/setup/licence"),

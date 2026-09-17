@@ -29,6 +29,9 @@ from songloom.runner import JobRunner
 from songloom.setup import Setup
 
 STATIC_DIR = Path(__file__).parent / "static"
+# The vendored piano the Score view plays, inside the package so a clone or a wheel has it
+# and nothing is fetched from a CDN (THIRD_PARTY_NOTICES.md).
+SOUNDFONT_DIR = Path(__file__).parent / "soundfont"
 # Browsers reject the `audio/x-flac` that mimetypes guesses for .flac (Chrome plays audio/flac).
 AUDIO_TYPES = {".flac": "audio/flac", ".wav": "audio/wav"}
 
@@ -356,6 +359,9 @@ def create_app(
         path = Path(song["audio_path"])
         media_type = AUDIO_TYPES.get(path.suffix, "application/octet-stream")
         return FileResponse(path, media_type=media_type)
+
+    if SOUNDFONT_DIR.is_dir():
+        app.mount("/soundfont", StaticFiles(directory=SOUNDFONT_DIR), name="soundfont")
 
     # The built web app (web/ -> songloom/static); mounted last so /api routes win.
     if (STATIC_DIR / "index.html").exists():

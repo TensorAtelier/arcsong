@@ -31,6 +31,7 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
   const [takes, setTakes] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [planning, setPlanning] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -47,6 +48,26 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function planOnly() {
+    setPlanning(true);
+    setError(null);
+    try {
+      const job = await api.createScore({
+        style,
+        lyrics,
+        mode: mode === "off" ? "full" : mode,
+        seed: seed === "" ? null : Number(seed),
+        precision,
+      });
+      onCreated(job);
+      window.location.hash = `#/score/job/${job.id}`;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPlanning(false);
     }
   }
 
@@ -150,6 +171,16 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
       <button type="submit" className="primary" disabled={submitting || !style.trim() || !canRender}>
         {submitting ? "Adding…" : takes > 1 ? `Generate ×${takes}` : "Generate"}
       </button>
+      <button
+        type="button"
+        disabled={submitting || planning || !style.trim() || !canRender}
+        onClick={() => void planOnly()}
+      >
+        {planning ? "Planning…" : "Score only"}
+      </button>
+      <p className="hint">
+        Score only writes the melody in seconds, to read, edit and render from — no audio yet.
+      </p>
     </form>
   );
 }

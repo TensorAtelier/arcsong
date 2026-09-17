@@ -59,12 +59,14 @@ function JobCard({ job, group, onChanged }: CardProps) {
     <li className={`job ${job.status}`}>
       <div className="job-head">
         <span className="job-title" title={job.request.style}>
-          #{job.id} · {job.request.style}
+          #{job.id} · {job.kind === "score" ? "Score · " : ""}
+          {job.request.style}
         </span>
         <span className={`badge ${job.status}`}>{job.status}</span>
       </div>
       <div className="muted small">
-        seed {job.request.seed} · {job.request.precision} · {job.request.steps} steps
+        seed {job.request.seed} · {job.request.precision}
+        {job.kind === "take" && <> · {job.request.steps} steps</>}
         {job.status === "running" && job.started_at && <Elapsed since={job.started_at} />}
       </div>
       {group && job.group_id !== null && (
@@ -77,6 +79,12 @@ function JobCard({ job, group, onChanged }: CardProps) {
 
       {job.status === "running" && <Progress live={job.live} />}
 
+      {job.kind === "score" && job.status === "done" && (
+        <div className="small">
+          <a href={`#/score/job/${job.id}`}>Open the Score</a>
+        </div>
+      )}
+      {job.request.abc && <div className="small">From an edited Score</div>}
       {job.status === "done" && job.song_id !== null && (
         <>
           <audio controls preload="none" src={api.audioUrl(job.song_id)} />
