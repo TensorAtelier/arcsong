@@ -7,4 +7,4 @@ goal: Build M4 from PLAN.md: an optional covers install (ffmpeg + transcription 
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review — PARTIAL twice, then MET; 6 defects, 3 nits and all drift fixed (see REPORT.md)
