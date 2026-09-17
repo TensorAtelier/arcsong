@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Deleted, type Job, type Song, type SongRequest, watchJobs } from "./api";
 import CreateForm from "./CreateForm";
 import LibraryView from "./LibraryView";
@@ -14,7 +14,12 @@ export default function App() {
   const [view, setView] = useState<View>(viewFromHash);
   const [jobs, setJobs] = useState<Map<number, Job>>(new Map());
   const [songs, setSongs] = useState<Song[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [songsError, setSongsError] = useState<string | null>(null);
+  // Deleted ids, remembered so a list request already in flight when a delete lands can't
+  // bring the song or its job back.
+  const deletedJobs = useRef(new Set<number>());
+  const deletedSongs = useRef(new Set<number>());
   const [draft, setDraft] = useState<{ request: SongRequest; version: number } | null>(null);
 
   useEffect(() => {
@@ -31,14 +36,18 @@ export default function App() {
     () =>
       api
         .songs()
-        .then(setSongs)
-        .catch((error) => setLoadError(String(error))),
+        .then((list) => {
+          setSongsError(null);
+          setSongs(list.filter((song) => !deletedSongs.current.has(song.id)));
+        })
+        .catch((error) => setSongsError(String(error))),
     [],
   );
 
   // REST responses and SSE messages can arrive out of order; keep the newest snapshot.
   const upsert = useCallback(
     (job: Job) => {
+      if (deletedJobs.current.has(job.id)) return;
       setJobs((current) => {
         const known = current.get(job.id);
         if (known && known.seq > job.seq) return current;
@@ -50,6 +59,8 @@ export default function App() {
   );
 
   const removeDeleted = useCallback((deleted: Deleted) => {
+    deletedJobs.current.add(deleted.job_id);
+    deletedSongs.current.add(deleted.song_id);
     setJobs((current) => {
       if (!current.has(deleted.job_id)) return current;
       const next = new Map(current);
@@ -67,9 +78,10 @@ export default function App() {
       api
         .jobs()
         .then((list) => {
-          setLoadError(null);
+          setJobsError(null);
           setJobs((current) => {
-            const next = new Map(list.map((job) => [job.id, job]));
+            const kept = list.filter((job) => !deletedJobs.current.has(job.id));
+            const next = new Map(kept.map((job) => [job.id, job]));
             for (const [id, job] of current) {
               const listed = next.get(id);
               if (listed && listed.seq < job.seq) next.set(id, job);
@@ -77,7 +89,7 @@ export default function App() {
             return next;
           });
         })
-        .catch((error) => setLoadError(String(error)));
+        .catch((error) => setJobsError(String(error)));
     };
     return watchJobs(upsert, removeDeleted, reload);
   }, [upsert, removeDeleted, reloadSongs]);
@@ -107,12 +119,12 @@ export default function App() {
             initial={draft?.request}
             onCreated={upsert}
           />
-          <QueuePanel jobs={ordered} onChanged={upsert} error={loadError} />
+          <QueuePanel jobs={ordered} onChanged={upsert} error={jobsError} />
         </div>
       ) : (
         <LibraryView
           songs={songs}
-          error={loadError}
+          error={songsError}
           onDeleted={removeDeleted}
           onRerun={(job) => {
             upsert(job);

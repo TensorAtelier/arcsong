@@ -152,9 +152,13 @@ def create_app(
         disposition = {"Content-Disposition": f'attachment; filename="{name}"'}
         if path.suffix == f".{format}":
             return FileResponse(path, media_type=AUDIO_TYPES[path.suffix], headers=disposition)
-        audio, rate = soundfile.read(path, always_2d=True)
+        # Keep the source bit depth (mlx-Yue saves 24-bit FLAC); read as int32 so no float
+        # round trip or silent truncation happens on the way.
+        subtype = soundfile.info(path).subtype
+        if subtype not in ("PCM_16", "PCM_24"):
+            subtype = "PCM_24"
+        audio, rate = soundfile.read(path, always_2d=True, dtype="int32")
         buffer = io.BytesIO()
-        subtype = "PCM_24" if format == "flac" else "PCM_16"
         soundfile.write(buffer, audio, rate, format=format.upper(), subtype=subtype)
         media_type = AUDIO_TYPES[f".{format}"]
         return Response(buffer.getvalue(), media_type=media_type, headers=disposition)

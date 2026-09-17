@@ -109,8 +109,11 @@ def test_a_flac_take_downloads_as_flac_unchanged_and_as_wav_converted(client):
     as_wav = client.get(f"/api/songs/{song['song_id']}/download?format=wav")
 
     assert as_flac.content == open(flac, "rb").read()
-    wav, wav_rate = soundfile.read(io.BytesIO(as_wav.content), always_2d=True)
+    wav, wav_rate = soundfile.read(io.BytesIO(as_wav.content), always_2d=True, dtype="int32")
     assert wav_rate == rate and wav.shape == (48_000, 2)
+    assert soundfile.info(io.BytesIO(as_wav.content)).subtype == "PCM_24"
+    source, _ = soundfile.read(flac, always_2d=True, dtype="int32")
+    assert np.array_equal(wav, source)  # lossless: sample for sample
 
 
 def test_an_unknown_song_or_format_is_refused(client):
