@@ -5,6 +5,11 @@ import { Progress } from "./QueuePanel";
 
 const BUCKETS = 600;
 
+/** A move of the shared playhead, e.g. from a waveform click. */
+interface Seek {
+  seconds: number;
+}
+
 interface Props {
   groupId: number;
   jobs: Job[];
@@ -18,7 +23,8 @@ interface Props {
 export default function CompareView({ groupId, jobs, songs, onJob, onSong }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
-  const [sharedTime, setSharedTime] = useState(0);
+  // A new object on every click, so clicking the same spot twice still moves every Take.
+  const [sharedTime, setSharedTime] = useState<Seek>({ seconds: 0 });
   // The latest shared time without re-rendering every card on every audio tick.
   const time = useRef(0);
 
@@ -35,7 +41,7 @@ export default function CompareView({ groupId, jobs, songs, onJob, onSong }: Pro
   const members = jobs.filter((job) => job.group_id === groupId).sort((a, b) => a.id - b.id);
   const moveTime = useCallback((seconds: number) => {
     time.current = seconds;
-    setSharedTime(seconds);
+    setSharedTime({ seconds });
   }, []);
   // Stable, so a card's play effect only runs when `playing` really changes.
   const stop = useCallback(() => setPlaying(null), []);
@@ -105,7 +111,7 @@ interface CardProps {
   song: Song | undefined;
   final: Job | undefined;
   playing: boolean;
-  sharedTime: number;
+  sharedTime: Seek;
   time: React.MutableRefObject<number>;
   onPlay: (songId: number) => void;
   onStop: () => void;
@@ -253,9 +259,9 @@ function Player({
   // A click on any waveform moves every Take there, the playing one included.
   useEffect(() => {
     const element = audio.current;
-    if (element && Math.abs(element.currentTime - sharedTime) > 0.05) {
-      element.currentTime = sharedTime;
-      setPosition(sharedTime);
+    if (element && Math.abs(element.currentTime - sharedTime.seconds) > 0.05) {
+      element.currentTime = sharedTime.seconds;
+      setPosition(sharedTime.seconds);
     }
   }, [sharedTime]);
 

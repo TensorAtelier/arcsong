@@ -24,6 +24,7 @@ class MlxYueEngine:
         self.models = Path(models).expanduser()
         self.require_ac = require_ac
         self._pipe: Any = None
+        self._generation_config: Any = None
         self._precision: str | None = None
 
     def load(self, precision: str = "8bit") -> None:
@@ -39,6 +40,8 @@ class MlxYueEngine:
             local_files_only=True,
             require_ac=self.require_ac,
         )
+        # The weights' own settings; a Final swaps in its Draft's, so renders start from these.
+        self._generation_config = self._pipe.generation_config
         self._precision = precision
 
     def render(
@@ -49,7 +52,7 @@ class MlxYueEngine:
         self.load(request["precision"])
         pipe = self._pipe
         pipe.generation_config = dataclasses.replace(
-            pipe.generation_config, ode_steps=request["steps"]
+            self._generation_config, ode_steps=request["steps"]
         )
         guard = _cancel_guard(cancelled)
 
@@ -92,9 +95,17 @@ class MlxYueEngine:
         from lyra.artifacts import load_artifacts
         from yue2.protocol import GenerationConfig
 
+        # Read the Draft before a possibly slow model load, and say plainly if it is gone.
+        if not source_dir.is_dir():
+            raise FileNotFoundError("its Draft was deleted")
+        try:
+            saved = load_artifacts(source_dir)
+        except FileNotFoundError:
+            if not source_dir.is_dir():
+                raise FileNotFoundError("its Draft was deleted") from None
+            raise
         self.load(request["precision"])
         pipe = self._pipe
-        saved = load_artifacts(source_dir)
         if saved.noise is None:
             raise ValueError(f"the Draft in {source_dir} kept no synthesis noise")
         pipe.generation_config = dataclasses.replace(

@@ -263,6 +263,8 @@ class JobRunner:
         if not self.store.set_starred(song_id, starred):
             return None
         song = self.store.get_song(song_id)
+        if song is None:
+            return None  # deleted between the update and this read
         self.publish_message({"type": "song", "song": song, "seq": self.next_seq()})
         # The job snapshot carries the star too.
         self.publish(song["job_id"])

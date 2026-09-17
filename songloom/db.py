@@ -39,11 +39,12 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 """
 
-MIGRATE_1_TO_2 = """
-ALTER TABLE jobs ADD COLUMN group_id INTEGER;
-ALTER TABLE jobs ADD COLUMN source_song_id INTEGER;
-ALTER TABLE songs ADD COLUMN starred INTEGER NOT NULL DEFAULT 0;
-"""
+# A v1 database's tables need the v2 columns (CREATE TABLE IF NOT EXISTS won't add them).
+MIGRATE_1_TO_2 = [
+    "ALTER TABLE jobs ADD COLUMN group_id INTEGER",
+    "ALTER TABLE jobs ADD COLUMN source_song_id INTEGER",
+    "ALTER TABLE songs ADD COLUMN starred INTEGER NOT NULL DEFAULT 0",
+]
 
 
 class Store:
@@ -51,13 +52,26 @@ class Store:
         self._conn = sqlite3.connect(path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._lock = threading.Lock()
-        with self._lock, self._conn:
+        with self._lock:
             version = self._conn.execute("PRAGMA user_version").fetchone()[0]
-            self._conn.executescript(SCHEMA)
             if 0 < version < 2:
-                # CREATE TABLE IF NOT EXISTS leaves a v1 table without the v2 columns.
-                self._conn.executescript(MIGRATE_1_TO_2)
-            self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+                self._migrate(MIGRATE_1_TO_2, 2)
+            with self._conn:
+                self._conn.executescript(SCHEMA)
+                self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+    def _migrate(self, statements: list[str], version: int) -> None:
+        """Run a migration and set the schema version in one transaction: SQLite rolls back DDL
+        too, so an interrupted migration leaves the old schema, never half of the new one."""
+        self._conn.execute("BEGIN")
+        try:
+            for statement in statements:
+                self._conn.execute(statement)
+            self._conn.execute(f"PRAGMA user_version = {version}")
+        except BaseException:
+            self._conn.execute("ROLLBACK")
+            raise
+        self._conn.execute("COMMIT")
 
     def close(self) -> None:
         self._conn.close()
