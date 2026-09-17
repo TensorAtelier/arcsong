@@ -35,7 +35,7 @@ def test_a_group_queues_count_jobs_that_differ_only_in_seed(client):
     assert len({j["request"]["seed"] for j in jobs}) == 4
     for job in jobs:
         request = {k: v for k, v in job["request"].items() if k != "seed"}
-        assert request == {**REQUEST, "mode": "full", "precision": "8bit"}
+        assert request == {**REQUEST, "mode": "full", "precision": "8bit", "abc": None}
 
     done = [wait_for(client, i) for i in ids]
     assert [j["status"] for j in done] == ["done"] * 4
@@ -132,7 +132,7 @@ def test_a_v1_database_migrates_with_its_rows_intact(tmp_path):
     store.close()
     Store(path).close()  # opening a v2 database again is a no-op
 
-    assert version == 2
+    assert version == 3  # v1 migrates through v2 to the current schema
     assert song["request"]["seed"] == 5 and song["audio_seconds"] == 2.5
     assert song["starred"] is False and song["group_id"] is None
     assert job["status"] == "done" and job["source_song_id"] is None

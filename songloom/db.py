@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -22,7 +22,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     error TEXT,
     song_id INTEGER,
     group_id INTEGER,                -- Variations: the id of the group's first job
-    source_song_id INTEGER           -- a Final: the Draft it was made from
+    source_song_id INTEGER,          -- a Final: the Draft it was made from
+    kind TEXT NOT NULL DEFAULT 'take',  -- take | score (planning only, no song)
+    score TEXT                       -- a Score job's ABC
 );
 CREATE TABLE IF NOT EXISTS songs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +49,12 @@ MIGRATE_1_TO_2 = [
 ]
 
 
+MIGRATE_2_TO_3 = [
+    "ALTER TABLE jobs ADD COLUMN kind TEXT NOT NULL DEFAULT 'take'",
+    "ALTER TABLE jobs ADD COLUMN score TEXT",
+]
+
+
 class Store:
     def __init__(self, path: Path):
         self._conn = sqlite3.connect(path, check_same_thread=False)
@@ -56,6 +64,9 @@ class Store:
             version = self._conn.execute("PRAGMA user_version").fetchone()[0]
             if 0 < version < 2:
                 self._migrate(MIGRATE_1_TO_2, 2)
+                version = 2
+            if 0 < version < 3:
+                self._migrate(MIGRATE_2_TO_3, 3)
             with self._conn:
                 self._conn.executescript(SCHEMA)
                 self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
@@ -77,16 +88,23 @@ class Store:
         self._conn.close()
 
     def create_job(
-        self, request: dict[str, Any], source_song_id: int | None = None
+        self,
+        request: dict[str, Any],
+        source_song_id: int | None = None,
+        kind: str = "take",
     ) -> dict[str, Any]:
         with self._lock, self._conn:
             cur = self._conn.execute(
-                "INSERT INTO jobs (status, request_json, created_at, source_song_id) "
-                "VALUES ('queued', ?, ?, ?)",
-                (json.dumps(request), time.time(), source_song_id),
+                "INSERT INTO jobs (status, request_json, created_at, source_song_id, kind) "
+                "VALUES ('queued', ?, ?, ?, ?)",
+                (json.dumps(request), time.time(), source_song_id, kind),
             )
             job_id = cur.lastrowid
         return self.get_job(job_id)
+
+    def finish_score(self, job_id: int, abc: str) -> None:
+        """A Score job is done when its ABC is stored; it never makes a song."""
+        self._update(job_id, "status = 'done', finished_at = ?, score = ?", time.time(), abc)
 
     def create_group(self, requests: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Queue Variations in one transaction; every member's `group_id` is the first job's id."""

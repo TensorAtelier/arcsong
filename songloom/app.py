@@ -19,7 +19,7 @@ import soundfile
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from songloom.config import data_dir
 from songloom.db import Store
@@ -44,6 +44,36 @@ class SongRequest(BaseModel):
     seed: int | None = Field(default=None, ge=0, lt=SEED_LIMIT)
     precision: Literal["8bit", "bf16"] = "8bit"
     steps: Literal[8, 32] = 32
+    # An edited Score to render instead of writing one; upstream needs a planning mode for it.
+    abc: str | None = None
+
+    @model_validator(mode="after")
+    def _score_needs_a_planning_mode(self):
+        if self.abc is not None and self.mode == "off":
+            raise ValueError("a Score needs planning mode full or melody, not off")
+        if self.abc is not None and not self.abc.strip():
+            raise ValueError("the Score is empty")
+        return self
+
+
+class ScoreRequest(BaseModel):
+    """A Score-only run: the same Song request, but only the planning Stage runs."""
+
+    style: str = Field(min_length=1)
+    lyrics: str = ""
+    mode: Literal["full", "melody"] = "full"  # "off" writes no Score
+    seed: int | None = Field(default=None, ge=0, lt=SEED_LIMIT)
+    precision: Literal["8bit", "bf16"] = "8bit"
+
+
+class CheckScore(BaseModel):
+    abc: str
+    # The Score this one was edited from, for the difference report.
+    original: str | None = None
+
+
+class StripChords(BaseModel):
+    abc: str
 
 
 class GroupRequest(SongRequest):
@@ -109,6 +139,53 @@ def create_app(
         app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
         return app.state.runner.job(job["id"])
+
+    @app.post("/api/scores", status_code=201)
+    def create_score(body: ScoreRequest):
+        """Queue a Score-only run: planning alone, no audio."""
+        if not app.state.setup.can_render():
+            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
+        request = {**body.model_dump(), "steps": 8, "abc": None}
+        if request["seed"] is None:
+            request["seed"] = random.randrange(SEED_LIMIT)
+        job = app.state.store.create_job(request, kind="score")
+        app.state.runner.publish(job["id"])
+        app.state.runner.dispatch()
+        return app.state.runner.job(job["id"])
+
+    @app.get("/api/scores/{job_id}")
+    def get_score(job_id: int):
+        """A Score job with its ABC and, once written, its report."""
+        job = app.state.runner.job(job_id)
+        if job is None or job["kind"] != "score":
+            raise HTTPException(404, "no such Score")
+        return {"job": job, "abc": job["score"], "report": score_report(job["score"])}
+
+    @app.post("/api/score/check")
+    def check_score(body: CheckScore):
+        """Validate a Score exactly as the Engine would, and say what an edit changed."""
+        return score_check(body.abc, body.original)
+
+    @app.post("/api/score/strip-chords")
+    def strip_score_chords(body: StripChords):
+        from lyra.music_tools.abc_tools import AbcError, strip_chords
+
+        try:
+            return {"abc": strip_chords(body.abc)}
+        except AbcError as error:
+            raise HTTPException(422, str(error)) from None
+
+    @app.get("/api/songs/{song_id}/score")
+    def song_score(song_id: int):
+        """The Score saved with a Take, if its planning mode wrote one."""
+        song = app.state.store.get_song(song_id)
+        path = Path(song["dir"]) / "score.abc" if song else None
+        if path is None or not path.exists():
+            raise HTTPException(404, "this song has no Score")
+        abc = path.read_text()
+        job = app.state.store.get_job(song["job_id"])
+        request = job["request"] if job else song["request"]
+        return {"song_id": song_id, "abc": abc, "report": score_report(abc), "request": request}
 
     @app.post("/api/groups", status_code=201)
     def create_group(body: GroupRequest):
@@ -285,6 +362,58 @@ def create_app(
         app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
     return app
+
+
+def score_report(abc: str | None) -> dict | None:
+    """mlx-Yue's own reading of a Score: bpm, notes per voice and nominal length."""
+    if abc is None:
+        return None
+    from lyra.music_tools.abc_tools import AbcError, parse_abc
+
+    try:
+        return _summary(parse_abc(abc))
+    except (AbcError, ValueError):
+        return None
+
+
+def _summary(score) -> dict:
+    """What the page shows about a Score. `report()` carries every note as Fractions, which
+    is more than a keystroke needs and not JSON, so summarize it here."""
+    from lyra.music_tools.abc_tools import report
+
+    full = report(score)
+    return {
+        "bpm": full["bpm"],
+        "duration_seconds": full["nominal_duration_seconds"],
+        "voices": {
+            name: {
+                "sounding_notes": voice["sounding_notes"],
+                "measures": voice["measures"],
+                "chords": len(voice["chords"]),
+            }
+            for name, voice in full["voices"].items()
+        },
+    }
+
+
+def score_check(abc: str, original: str | None) -> dict:
+    """What the page needs after every keystroke: is it valid, what is in it, what changed."""
+    from lyra.music_tools.abc_tools import AbcError, compare, parse_abc
+
+    try:
+        score = parse_abc(abc)
+    except AbcError as error:
+        return {"ok": False, "error": str(error), "report": None, "diff": None}
+    except ValueError as error:  # the parser's own guards, e.g. an unsupported key
+        return {"ok": False, "error": str(error), "report": None, "diff": None}
+
+    diff = None
+    if original is not None:
+        try:
+            diff = compare(parse_abc(original), score, allow_tempo_change=True)
+        except (AbcError, ValueError):
+            diff = None
+    return {"ok": True, "error": None, "report": _summary(score), "diff": diff}
 
 
 @functools.lru_cache(maxsize=64)

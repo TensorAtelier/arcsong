@@ -10,7 +10,7 @@ import wave
 from pathlib import Path
 from typing import Any
 
-from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, TakeOutput
+from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, ScoreOutput, TakeOutput
 
 SAMPLE_RATE = 48_000
 TICK = 0.005
@@ -42,10 +42,19 @@ class FakeEngine:
         if self.fail_load:
             raise RuntimeError(self.fail_load)
 
+    def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
+        if cancelled():
+            raise Cancelled(STAGES[0])
+        emit({"type": "stage", "stage": STAGES[0]})
+        self._run_stage(STAGES[0], self.tokens_per_stage, 0, cancelled, emit)
+        return ScoreOutput(fake_score(request))
+
     def render(
         self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
     ) -> TakeOutput:
-        return self._run(STAGES, request, out_dir, cancelled, emit)
+        # A supplied Score makes planning instant, as it does in mlx-Yue.
+        stages = STAGES[1:] if request.get("abc") else STAGES
+        return self._run(stages, request, out_dir, cancelled, emit)
 
     def finalize(
         self,
@@ -74,6 +83,8 @@ class FakeEngine:
             count = updates.get(stage, steps if stage == STAGES[2] else 0)
             self._run_stage(stage, count, steps, cancelled, emit)
         out_dir.mkdir(parents=True, exist_ok=True)
+        if request.get("mode", "full") != "off":  # mlx-Yue saves the Score beside the audio
+            (out_dir / "score.abc").write_text(request.get("abc") or fake_score(request))
         audio = out_dir / "audio.wav"
         _write_tone(audio, self.audio_seconds, request.get("seed", 0))
         return TakeOutput(audio_path=audio, audio_seconds=self.audio_seconds)
@@ -92,6 +103,36 @@ class FakeEngine:
                 else:
                     emit({"type": "progress", "stage": stage, "tokens": done})
             time.sleep(min(TICK, max(0.0, deadline - now)))
+
+
+# The native two-voice ABC dialect mlx-Yue writes and accepts: 4/4 in 32nd-note units, a
+# Vocal and an Ins voice, four measures each (see `lyra.music_tools.abc_tools.parse`).
+SCALE = ["C", "D", "E", "F", "G", "A", "B", "c"]
+SCORE_TEMPLATE = """X:1
+T:
+M:4/4
+L:1/32
+Q:1/4={bpm}
+V: Vocal clef=treble name="Vocal Melody" snm="Vocal"
+V: Ins clef=treble name="Ins Melody" snm="Inst."
+K:C
+V: Vocal
+{vocal}|
+V: Ins
+{ins}|
+"""
+
+
+def fake_score(request: dict[str, Any]) -> str:
+    """A Score the real parser accepts, whose notes follow the seed so Variations differ."""
+    seed = int(request.get("seed") or 0)  # a job made straight in the store may carry no seed
+    bars = []
+    for bar in range(4):
+        notes = [SCALE[(seed // (bar + 1) + i * 2) % len(SCALE)] for i in range(4)]
+        bars.append("".join(f"{note}8" for note in notes))
+    vocal = "|".join(f'"{SCALE[(seed + i) % 7]}"{bar}' for i, bar in enumerate(bars))
+    ins = "|".join(bars[::-1])
+    return SCORE_TEMPLATE.format(bpm=90 + seed % 60, vocal=vocal, ins=ins)
 
 
 def _write_tone(path: Path, seconds: float, seed: int) -> None:

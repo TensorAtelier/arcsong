@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, TakeOutput
+from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, ScoreOutput, TakeOutput
 from songloom.progress import StderrCounts
 
 SAMPLE_RATE = 48_000
@@ -44,6 +44,17 @@ class MlxYueEngine:
         self._generation_config = self._pipe.generation_config
         self._precision = precision
 
+    def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
+        """The planning Stage alone: seconds, and nothing is written to disk."""
+        self.load(request["precision"])
+        emit({"type": "stage", "stage": STAGES[0]})
+        plan = self._plan(self._pipe, request, cancelled, emit)
+        if cancelled():
+            raise Cancelled(STAGES[0])
+        if plan.abc is None:
+            raise ValueError("this planning mode writes no Score")
+        return ScoreOutput(plan.abc)
+
     def render(
         self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
     ) -> TakeOutput:
@@ -57,15 +68,7 @@ class MlxYueEngine:
         guard = _cancel_guard(cancelled)
 
         emit({"type": "stage", "stage": STAGES[0]})
-        plan = guard(
-            pipe.plan,
-            request["style"],
-            request["lyrics"],
-            cot=request["mode"],
-            seed=request["seed"],
-            cancelled=cancelled,
-            on_token=_token_counter(STAGES[0], emit),
-        )
+        plan = self._plan(pipe, request, cancelled, emit)
         emit({"type": "stage", "stage": STAGES[1]})
         semantic = guard(
             pipe.generate_semantic,
@@ -116,6 +119,20 @@ class MlxYueEngine:
         with StderrCounts(_step_reporter(STAGES[2], emit)):
             latents = guard(pipe.synthesize, saved.semantic, cancelled=cancelled, noise=saved.noise)
         return self._decode_and_save(saved.semantic, saved.noise, latents, out_dir, cancelled, emit)
+
+    def _plan(self, pipe, request: dict[str, Any], cancelled: CancelCheck, emit: Emit):
+        """Write the Score, or take the one the request carries (upstream turns a request's
+        `abc` into the plan without generating, so this Stage is instant)."""
+        return _cancel_guard(cancelled)(
+            pipe.plan,
+            request["style"],
+            request["lyrics"],
+            cot=request["mode"],
+            seed=request["seed"],
+            abc=request.get("abc"),
+            cancelled=cancelled,
+            on_token=_token_counter(STAGES[0], emit),
+        )
 
     def _decode_and_save(self, semantic, noise, latents, out_dir, cancelled, emit) -> TakeOutput:
         from lyra.pipeline import SongResult

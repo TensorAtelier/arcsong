@@ -210,8 +210,15 @@ class JobRunner:
                 self._start_worker()
             self._running, self._live = job["id"], {"stage": None}
             self.store.mark_running(job["id"])
-            out_dir = str(self.songs_dir / str(job["id"]))
-            self._jobs.put((job["id"], job["request"], out_dir, source_dir))
+            self._jobs.put(
+                {
+                    "job_id": job["id"],
+                    "request": job["request"],
+                    "kind": job["kind"],
+                    "out_dir": str(self.songs_dir / str(job["id"])),
+                    "source_dir": source_dir,
+                }
+            )
         self.publish(job["id"])
 
     def cancel(self, job_id: int) -> bool:
@@ -340,7 +347,9 @@ class JobRunner:
             return
         if kind not in ("done", "failed", "cancelled") or not current:
             return
-        if kind == "done":
+        if kind == "done" and "score" in event:
+            self.store.finish_score(job_id, event["score"])
+        elif kind == "done":
             audio = Path(event["audio_path"])
             self.store.add_song(job_id, audio.parent, audio, event["audio_seconds"])
         else:

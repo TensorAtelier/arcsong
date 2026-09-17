@@ -1,0 +1,34 @@
+# m3-score — plan
+
+**Goal:** Build M3 from PLAN.md: a "Score only" run (planning Stage alone, seconds instead of minutes), a notation view with MIDI melody preview, an ABC editor with live re-render and validation, rendering a song from an edited Score, and a diff of the edited Score against the original.
+**Not yet:** Transcription and covers (M4). Editing lyrics or style from the Score view. A Score library or naming Scores. Bar-level graphical editing (text only). Transposition helpers. Per-voice MIDI mixing beyond abcjs defaults.
+**Stack / interfaces:**
+- Engine: `plan_only(request, cancelled, emit)` beside `render` and `finalize`, returning the Score text; `render` passes a supplied Score through `pipe.plan(..., abc=...)`, which skips planning (upstream: `SymbolicPlan` from `request.abc`).
+- DB schema v3: `jobs.kind` (`take` | `score`) and `jobs.score` (the ABC a Score job produced). Score jobs make no song.
+- API: `POST /api/scores` (a Song request, planning only), `GET /api/scores/{job_id}`, `GET /api/songs/{id}/score` (the Take's `score.abc` with its report), `POST /api/score/check` (parse, report, and a diff against an original), `POST /api/score/strip-chords`; `POST /api/jobs` gains an optional `abc`, and a Take made from one is labelled.
+- Validation and reports come from mlx-Yue's own `lyra.music_tools.abc_tools` (`parse_abc`, `report`, `compare`, `strip_chords`) in the server process — pure text, no MLX import.
+- Page: a Score view on `#/score/job/<id>` and `#/score/song/<id>`, with abcjs 6 for notation and MIDI preview; an editor pane with live re-render, validation messages, a diff against the original, "Render song from this Score" and "Remove chords"; entry points from Create ("Score only"), the queue and the Library.
+**Proof of done:** In Create, press "Score only": a job finishes in seconds and opens the Score view with notation. Play it: the melody sounds through the browser's MIDI synth. Edit a note in the ABC text: the notation re-renders as you type, an invalid edit shows mlx-Yue's own message, and the diff lists which voice and note changed. Press "Render song from this Score": a Take queues that skips planning and comes back in the Library labelled as made from an edited Score. Any Library song's Score opens the same view.
+
+## Tickets
+
+- [x] 01 — Score jobs: schema v3 with migration, `POST /api/scores` and `GET /api/scores/{job_id}`, Engine `plan_only` for mlx-Yue and the fake (whose Score is a valid native two-voice ABC that varies with the seed), worker and runner dispatch by job kind; check: API tests through the fake (a Score job finishes with ABC and no song, the queue moves on, cancel works), and one real Score-only run behind `SONGLOOM_REAL_ENGINE=1`.
+- [x] 02 — Score checking: `POST /api/score/check` (parse errors as mlx-Yue words them, report with bpm, notes and duration, and `compare` against an original), `POST /api/score/strip-chords`, `GET /api/songs/{id}/score`; check: unit tests over the fake's ABC (valid, edited, invalid, chords removed).
+- [x] 03 — Render from a Score: `POST /api/jobs` accepts `abc` (with `mode` not `off`), the request carries it into `pipe.plan`, planning is skipped, and the Take is labelled "from an edited Score" in the queue and Library; check: API tests through the fake (the job runs without the planning Stage, the song keeps the Score) and a real render from an edited Score behind the flag.
+- [ ] 04 — Score view: notation and MIDI preview with abcjs, editor with live re-render, validation and diff, "Render song from this Score", "Remove chords", links from Create, the queue and the Library; check: in the browser against a fake-engine server, and MIDI playback in the debug Chrome on port 9222.
+
+## Notes
+
+- A Score job is a job with `kind = "score"`: it occupies the same serial queue and the same worker (planning needs the model), reports the planning Stage, and can be cancelled, but produces no song. Its ABC lives in `jobs.score`, not on disk, because nothing else in a Take directory is produced.
+- The Score view reads a job (`#/score/job/<id>`) or a finished song (`#/score/song/<id>`, from the Take's `score.abc`). Editing never writes back: rendering makes a new job, so the original Score and its Take stay untouched.
+- Validation is mlx-Yue's own `parse_abc`, so the page rejects exactly what the Engine would; its `AbcError` message is shown verbatim. `report` gives bpm, sounding notes per voice and nominal duration; `compare` gives the first differing note per voice.
+- `mode: "off"` (no Score) can't take an `abc`, and a Score-only run needs `mode` to be `full` or `melody` — upstream rejects both combinations, and the API answers 422 before queueing.
+- Rendering from a Score keeps the same seed field, but the Take is not bit-identical to the original: the Score is now a prefix rather than generated, so "Re-run" of such a Take resends the same ABC.
+- Chords: `strip_chords` is offered as a button, since chord symbols are the part users most often want gone; it fails closed if removal would change the melody.
+- abcjs 6 is loaded from the bundle (no CDN); its synth needs a user gesture and soundfont files, which it fetches from its own package assets shipped in the build.
+- MIDI preview soundfont (asked, 2026-09-17): vendor the FluidR3 GM acoustic piano file (2.6 MB, MIT, from Benjamin Gleitzman's midi-js-soundfonts) into the repo and serve it locally, with attribution in the licence notices. The alternatives were an oscillator preview (no assets, thin sound) and abcjs's CDN default (breaks "no CDN at runtime").
+- Tickets 01–03 share one commit: the Score endpoints, the Engine seam and the request's `abc` are one change through `app.py`, `runner.py`, `worker.py` and both Engines.
+- The worker's job message is now a dict (`job_id`, `request`, `kind`, `out_dir`, `source_dir`), which reads better than a 4-tuple once Score jobs joined.
+- `POST /api/score/check` returns a compact summary (bpm, duration, per-voice notes, measures and chord count), not mlx-Yue's full `report()`: that carries every note as `Fraction`s, which FastAPI can't encode and a keystroke doesn't need.
+- The fake Engine writes a real native two-voice ABC (four 4/4 bars per voice, pitches and tempo from the seed, chord symbols on Vocal) that `parse_abc` accepts, and saves `score.abc` beside its audio like mlx-Yue.
+- Real checks (`SONGLOOM_REAL_ENGINE=1`, 2026-09-17, on AC): a Score-only run finished with ABC the parser accepts and wrote nothing to disk; a Take rendered from a chord-stripped Score came back carrying that Score (38 s for both).

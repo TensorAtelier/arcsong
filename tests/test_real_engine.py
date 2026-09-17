@@ -75,3 +75,35 @@ def test_a_real_draft_is_finalized_from_its_saved_take(tmp_path):
             assert (final_dir / name).read_bytes() == (draft_dir / name).read_bytes(), name
         assert (final_dir / "latent.npy").read_bytes() != (draft_dir / "latent.npy").read_bytes()
         assert final["audio_seconds"] == pytest.approx(draft["audio_seconds"])
+
+
+def test_a_real_score_only_run_writes_abc_the_parser_accepts(tmp_path):
+    from lyra.music_tools.abc_tools import parse_abc, report
+
+    with TestClient(create_app(MLX, tmp_path, models=MlxYueModels(MODELS))) as client:
+        job = client.post("/api/scores", json={**SHORT, "mode": "full"}).json()
+        done = wait_done(client, job["id"], limit=300)
+        score = client.get(f"/api/scores/{job['id']}").json()
+
+    assert done["status"] == "done", done["error"]
+    assert done["song_id"] is None
+    assert not (tmp_path / "songs" / str(job["id"])).exists()  # planning writes nothing
+    assert report(parse_abc(score["abc"]))["bpm"] > 0
+    assert score["report"]["voices"]["Vocal"]["sounding_notes"] > 0
+
+
+def test_a_real_take_renders_from_an_edited_score(tmp_path):
+    with TestClient(create_app(MLX, tmp_path, models=MlxYueModels(MODELS))) as client:
+        score_job = client.post("/api/scores", json={**SHORT, "mode": "full"}).json()
+        wait_done(client, score_job["id"], 300)
+        abc = client.get(f"/api/scores/{score_job['id']}").json()["abc"]
+        edited = client.post("/api/score/strip-chords", json={"abc": abc}).json()["abc"]
+        assert edited != abc
+
+        job = client.post("/api/jobs", json={**SHORT, "abc": edited}).json()
+        done = wait_done(client, job["id"])
+        saved = client.get(f"/api/songs/{done['song_id']}/score").json()["abc"]
+
+    assert done["status"] == "done", done["error"]
+    # mlx-Yue uses the supplied Score as the plan, so the Take carries it back unchanged.
+    assert saved == edited

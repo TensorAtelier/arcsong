@@ -20,6 +20,13 @@ class Cancelled(Exception):  # noqa: N818 - a normal outcome, not an error
 
 
 @dataclass
+class ScoreOutput:
+    """What a Score-only run produced: the ABC the model wrote."""
+
+    abc: str
+
+
+@dataclass
 class TakeOutput:
     """What a finished Take left on disk."""
 
@@ -35,6 +42,9 @@ class Engine(Protocol):
         self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
     ) -> TakeOutput:
         """Render one Take into `out_dir`, which must be complete when this returns."""
+
+    def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
+        """Run the planning Stage alone and return its Score; nothing is written to disk."""
 
     def finalize(
         self,
