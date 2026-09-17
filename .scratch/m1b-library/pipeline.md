@@ -7,4 +7,4 @@ goal: Build the M1b Library from PLAN.md: list and filter past songs, play and d
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review — MET; 3 small defects fixed after review (see REPORT.md)
