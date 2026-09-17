@@ -3,17 +3,20 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import queue
 import random
+import re
 import shutil
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
+import soundfile
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -138,6 +141,24 @@ def create_app(
             raise HTTPException(404, "no such song")
         return {"deleted": song_id, "job_id": song["job_id"]}
 
+    @app.get("/api/songs/{song_id}/download")
+    def download_song(song_id: int, format: Literal["flac", "wav"] = "flac"):
+        song = app.state.store.get_song(song_id)
+        path = Path(song["audio_path"]) if song else None
+        if path is None or not path.exists():
+            raise HTTPException(404, "no such song")
+        job = app.state.store.get_job(song["job_id"])
+        name = download_name(song_id, job["request"]["style"] if job else "", format)
+        disposition = {"Content-Disposition": f'attachment; filename="{name}"'}
+        if path.suffix == f".{format}":
+            return FileResponse(path, media_type=AUDIO_TYPES[path.suffix], headers=disposition)
+        audio, rate = soundfile.read(path, always_2d=True)
+        buffer = io.BytesIO()
+        subtype = "PCM_24" if format == "flac" else "PCM_16"
+        soundfile.write(buffer, audio, rate, format=format.upper(), subtype=subtype)
+        media_type = AUDIO_TYPES[f".{format}"]
+        return Response(buffer.getvalue(), media_type=media_type, headers=disposition)
+
     @app.get("/api/songs/{song_id}/audio")
     def song_audio(song_id: int):
         song = app.state.store.get_song(song_id)
@@ -162,3 +183,10 @@ def _directory_bytes(directory: Path) -> int:
 
 def _with_size(song: dict) -> dict:
     return {**song, "bytes": _directory_bytes(Path(song["dir"]))}
+
+
+def download_name(song_id: int, style: str, extension: str) -> str:
+    """e.g. songloom-12-english-city-pop-groovy-bass.flac (ASCII, at most 6 style words)."""
+    words = re.findall(r"[a-z0-9]+", style.lower())[:6]
+    slug = "-".join(words)
+    return f"songloom-{song_id}{'-' + slug if slug else ''}.{extension}"

@@ -1,7 +1,10 @@
 """The Library API: listing songs, disk usage, deleting and downloading Takes."""
 
+import io
 
+import numpy as np
 import pytest
+import soundfile
 from fastapi.testclient import TestClient
 
 from songloom.app import create_app
@@ -75,3 +78,42 @@ def test_a_job_that_is_still_running_has_no_song_to_delete(tmp_path):
         assert client.get("/api/songs").json() == []
         assert client.delete("/api/songs/1").status_code == 404
         client.post(f"/api/jobs/{job['id']}/cancel")
+
+
+@pytest.mark.parametrize("fmt", ["flac", "wav"])
+def test_a_song_downloads_as_flac_or_wav_named_after_its_style(client, fmt):
+    song = make_song(client, style="English, City Pop, groovy bass!")
+
+    response = client.get(f"/api/songs/{song['song_id']}/download", params={"format": fmt})
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == f"audio/{fmt}"
+    disposition = response.headers["content-disposition"]
+    name = f"songloom-{song['song_id']}-english-city-pop-groovy-bass.{fmt}"
+    assert f'filename="{name}"' in disposition
+    audio, rate = soundfile.read(io.BytesIO(response.content))
+    assert rate == 48_000 and len(audio) == 48_000
+
+
+def test_a_flac_take_downloads_as_flac_unchanged_and_as_wav_converted(client):
+    song = make_song(client)
+    stored = client.app.state.store.get_song(song["song_id"])
+    # Make the Take a stereo FLAC, as mlx-Yue saves it.
+    flac = stored["audio_path"].replace(".wav", ".flac")
+    tone, rate = soundfile.read(stored["audio_path"], always_2d=True)
+    soundfile.write(flac, np.hstack([tone, tone]), rate, subtype="PCM_24")
+    with client.app.state.store._lock, client.app.state.store._conn as conn:
+        conn.execute("UPDATE songs SET audio_path = ? WHERE id = ?", (flac, song["song_id"]))
+
+    as_flac = client.get(f"/api/songs/{song['song_id']}/download?format=flac")
+    as_wav = client.get(f"/api/songs/{song['song_id']}/download?format=wav")
+
+    assert as_flac.content == open(flac, "rb").read()
+    wav, wav_rate = soundfile.read(io.BytesIO(as_wav.content), always_2d=True)
+    assert wav_rate == rate and wav.shape == (48_000, 2)
+
+
+def test_an_unknown_song_or_format_is_refused(client):
+    song = make_song(client)
+    assert client.get("/api/songs/999/download").status_code == 404
+    assert client.get(f"/api/songs/{song['song_id']}/download?format=mp3").status_code == 422
