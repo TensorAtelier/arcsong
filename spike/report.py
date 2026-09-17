@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from spike.engine import STAGES
-from spike.measurements import cancel, draft_final, repro, timing
+from spike.measurements import cancel, draft_final, progress, repro, timing
 
 NOT_MEASURED = "not measured"
 MISSING = "—"
@@ -397,7 +397,7 @@ def artifact_sizes(results: Results) -> str:
     return "\n\n".join(parts)
 
 
-def progress(results: Results) -> str:
+def stage_progress(results: Results) -> str:
     headers = ["Engine", "Stage", "Stage start seen (s into the Take)", "Cancel landed in it",
                "Source"]  # fmt: skip
     rows = []
@@ -421,11 +421,124 @@ def progress(results: Results) -> str:
                     cite(found[0]),
                 ]
             )
-    note = (
-        "Progress within a Stage (how often callbacks fire, whether they map to a % bar): "
-        f"{NOT_MEASURED} — no results file records callback counts or rates."
-    )
-    return table(headers, rows) + "\n\n" + note
+    return table(headers, rows)
+
+
+PERCENT_BAR = {
+    "percent": "yes: % from a known total",
+    "uneven_percent": "stepped: % from a known total, not tracking wall time",
+    "count_only": "running count only (tracks wall time)",
+    "coarse_percent": "no: % from a known total, too few updates for a bar",
+    "uneven_count": "no: running count, not tracking wall time",
+    "none": "none: fewer than 2 signals",
+    "not_run": "Stage not run",
+}
+
+
+def gaps(stats: dict) -> str:
+    found = stats.get("inter_arrival_seconds")
+    if not found:
+        return MISSING
+    return " / ".join(f"{found[key]:.3f}" for key in ("min", "median", "max"))
+
+
+def total_cell(stats: dict) -> str:
+    if stats.get("running_count_only"):
+        return "running count"
+    if stats.get("total_known_up_front"):
+        return f"up front ({stats.get('total')})"
+    return f"from signal {stats.get('total_known_from_signal')} ({stats.get('total')})"
+
+
+def tracking(stats: dict) -> str:
+    fit = stats.get("tracks_wall_time") or {}
+    if fit.get("max_deviation") is None:
+        return MISSING
+    return f"{fit['max_deviation']:.2f} ({'linear' if fit.get('linear') else 'not linear'})"
+
+
+def progress_within_stage(results: Results) -> str:
+    headers = [
+        "Engine", "Stage", "Stage (s)", "Signal", "Count", "Gap min / median / max (s)",
+        "First / last gap to Stage edge (s)", "Mean per s", "Most in 1 s", "Total",
+        "Max deviation from wall time", "% bar (Stage verdict)", "Source",
+    ]  # fmt: skip
+    rows = []
+    rates = []
+    for engine in ENGINES:
+        found = results.first(progress.MEASUREMENT, engine, precision=progress.PRECISIONS[engine])
+        runs = ok_runs(found[1]) if found else []
+        if not runs:
+            row = not_measured_row([label(engine), MISSING], len(headers))
+            if found:
+                row[2], row[-1] = outcome_cell(found[1]), cite(found[0])
+            rows.append(row)
+            continue
+        name, data = found
+        run = runs[0]
+        params = data.get("params") or {}
+        source = f"{cite(name)} ({params.get('precision')}, {params.get('steps')} steps)"
+        busiest = None
+        for stage, entry in (run.get("stages") or {}).items():
+            bar = entry.get("percent_bar") or {}
+            signals = entry.get("signals") or {}
+            prefix = [label(engine), stage, seconds(entry.get("seconds"))]
+            if not signals:
+                verdict = PERCENT_BAR.get(bar.get("verdict"), str(bar.get("verdict")))
+                rows.append([*prefix, "nothing fired", "0", *[MISSING] * 6, verdict, source])
+            for signal, stats in signals.items():
+                rate = stats.get("per_second") or {}
+                chosen = bar.get("signal") == signal
+                verdict = PERCENT_BAR.get(bar.get("verdict"), MISSING) if chosen else MISSING
+                edges = (
+                    f"{seconds(stats.get('first_after_start_seconds'))} / "
+                    f"{seconds(stats.get('last_before_end_seconds'))}"
+                )
+                rows.append(
+                    [
+                        *prefix,
+                        f"`{signal}`",
+                        str(stats.get("count")),
+                        gaps(stats),
+                        edges,
+                        seconds(rate.get("mean"), 2),
+                        str(rate.get("max_in_one_second")),
+                        total_cell(stats),
+                        tracking(stats),
+                        verdict,
+                        source,
+                    ]
+                )
+                most = rate.get("max_in_one_second") or 0
+                if busiest is None or most > busiest[0]:
+                    busiest = (most, signal, stage)
+        if busiest:
+            events, run_seconds = run.get("progress_events"), run.get("run_seconds")
+            mean = events / run_seconds if events is not None and run_seconds else None
+            tty = run.get("stderr_is_tty")
+            rates.append(
+                [
+                    label(engine),
+                    f"{busiest[0]} (`{busiest[1]}`, {busiest[2]})",
+                    str(events) if events is not None else MISSING,
+                    seconds(mean, 2),
+                    MISSING if tty is None else ("yes" if tty else "no"),
+                    cite(name),
+                ]
+            )
+    parts = [table(headers, rows)]
+    if rates:
+        parts.append("Event rate a progress stream must handle, whole Take:")
+        parts.append(
+            table(
+                [
+                    "Engine", "Most signals in 1 s", "Progress events", "Mean per s",
+                    "stderr a terminal", "Source",
+                ],  # fmt: skip
+                rates,
+            )
+        )
+    return "\n\n".join(parts)
 
 
 def cancellation(results: Results) -> str:
@@ -790,6 +903,7 @@ QUESTIONS: list[tuple[str, str]] = [
     ("reproducibility", "Seed reproducibility"),
     ("artifact-sizes", "Artifact sizes"),
     ("progress", "Per-Stage progress"),
+    ("progress-within-stage", "Progress within a Stage"),
     ("cancellation", "Cancellation"),
     ("draft-final", "Draft→Final"),
     ("timing-memory", "Timing and peak memory"),
@@ -803,7 +917,8 @@ RENDERERS: dict[str, Callable[[Results], str]] = {
     "stage-timing": stage_timing,
     "reproducibility": reproducibility,
     "artifact-sizes": artifact_sizes,
-    "progress": progress,
+    "progress": stage_progress,
+    "progress-within-stage": progress_within_stage,
     "cancellation": cancellation,
     "draft-final": draft_to_final,
     "timing-memory": timing_memory,

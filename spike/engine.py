@@ -30,7 +30,27 @@ class StageEvent:
         return asdict(self)
 
 
-EventSink = Callable[[StageEvent], None]
+@dataclass(frozen=True)
+class ProgressEvent:
+    """A progress signal that fired at time `t`, e.g. a token callback or a log line.
+
+    `stage` is the Stage the Engine believes it is in (None if it cannot tell); `completed`
+    and `total` are the counts the signal itself carries, None when it carries none.
+    Consumers that only want Stage transitions skip it by its `kind`.
+    """
+
+    stage: str | None
+    signal: str
+    completed: int | None = None
+    total: int | None = None
+    t: float = field(default_factory=time.monotonic)
+    kind: Literal["progress"] = "progress"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+EventSink = Callable[[StageEvent | ProgressEvent], None]
 
 
 @dataclass(frozen=True)
@@ -92,7 +112,7 @@ def never_cancelled() -> bool:
     return False
 
 
-def ignore_event(event: StageEvent) -> None:
+def ignore_event(event: StageEvent | ProgressEvent) -> None:
     return None
 
 

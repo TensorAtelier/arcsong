@@ -23,6 +23,7 @@ from spike.engine import (
     CliTake,
     EngineInfo,
     EventSink,
+    ProgressEvent,
     RunOutput,
     StageEvent,
     Unsupported,
@@ -71,6 +72,7 @@ class FakeEngine:
         noise_probe_seconds: float = 0.0,
         take_cli: bool = True,
         download_metadata: bool = True,
+        progress_signals: dict[str, list[dict]] | None = None,
     ):
         # The options this Engine was made with, so its command line can make the same one.
         self.options = {k: v for k, v in locals().items() if k != "self"}
@@ -106,6 +108,10 @@ class FakeEngine:
         self.take_cli = take_cli
         # Like a Hugging Face `local_dir` download: `.cache/huggingface/...` metadata.
         self.download_metadata = download_metadata
+        # Scripted progress inside a Stage: per Stage, signals `{"signal": name, "at": [...]}`
+        # firing at those fractions of the Stage's duration; `"total": True` makes each carry
+        # its count and the total, otherwise it is a bare callback like `on_token`.
+        self.progress_signals = {s: list(v) for s, v in (progress_signals or {}).items()}
         self.precision: str | None = None
         self.cancelled_before = False
         self.usable = True
@@ -138,20 +144,46 @@ class FakeEngine:
     def _stage(
         self, stage: str, on_event: EventSink, value: Any, cancelled: CancelCheck = never_cancelled
     ) -> Any:
-        on_event(StageEvent(stage, "start"))
+        started = time.monotonic()
+        on_event(StageEvent(stage, "start", started))
         seconds = self.stage_seconds
         duration = seconds.get(stage, 0.0) if isinstance(seconds, dict) else seconds
         check_every = self.cancel_check_seconds.get(stage, 0.01)
-        deadline = time.monotonic() + duration
+        deadline = started + duration
+        pending = self._scheduled_progress(stage, started, duration)
         while (remaining := deadline - time.monotonic()) > 0:
+            while pending and pending[0].t <= time.monotonic():
+                due = pending.pop(0)
+                on_event(ProgressEvent(due.stage, due.signal, due.completed, due.total))
             if cancelled():
                 self.cancelled_before = True
                 if self.unusable_after_cancel:
                     self.usable = False
                 raise InterruptedError(f"FakeEngine cancelled during {stage}")
-            time.sleep(min(check_every, remaining))
+            wait = min(check_every, remaining)
+            if pending:
+                wait = min(wait, max(0.0, pending[0].t - time.monotonic()))
+            time.sleep(wait)
         on_event(StageEvent(stage, "end"))
         return value
+
+    def _scheduled_progress(self, stage: str, started: float, duration: float):
+        """This Stage's scripted progress signals, in firing order (`t` is when each is due)."""
+        scheduled = []
+        for script in self.progress_signals.get(stage, []):
+            at = list(script["at"])
+            counted = bool(script.get("total"))
+            for index, fraction in enumerate(at, start=1):
+                scheduled.append(
+                    ProgressEvent(
+                        stage,
+                        script["signal"],
+                        index if counted else None,
+                        len(at) if counted else None,
+                        started + fraction * duration,
+                    )
+                )
+        return sorted(scheduled, key=lambda event: event.t)
 
     def load(self, precision: str) -> None:
         self._maybe_fail("load")

@@ -47,6 +47,10 @@ def params(precision: str, steps: int, stage: str, cancel_after: float) -> dict:
     return case_params
 
 
+# Stage transitions; progress signals inside a Stage are the `progress` measurement's.
+STAGE_EVENT_KINDS = ("enter", "start", "end")
+
+
 def stage_at(events: list[StageEvent], t: float) -> str | None:
     """The Stage running at time `t`: the latest one begun by then and not yet ended."""
     begun: dict[str, float] = {}
@@ -194,6 +198,7 @@ def measure(engine: SpikeEngine, request: dict, params: dict, run_dir: Path) -> 
         "stage_events": [
             {"stage": e.stage, "kind": e.kind, "seconds": e.t - run_start}
             for e in sorted(trigger.events, key=lambda e: e.t)
+            if e.kind in STAGE_EVENT_KINDS
         ],
     }
     if kill_to_exit is not None:

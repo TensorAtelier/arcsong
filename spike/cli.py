@@ -14,7 +14,16 @@ from spike import audiocpp_setup, report
 from spike.audiocpp_engine import AudioCppEngine
 from spike.cases import load_case
 from spike.fake import FakeEngine
-from spike.measurements import cancel, doctor, download, draft_final, hygiene, repro, timing
+from spike.measurements import (
+    cancel,
+    doctor,
+    download,
+    draft_final,
+    hygiene,
+    progress,
+    repro,
+    timing,
+)
 from spike.mlx_engine import DEFAULT_MODELS_DIR, MlxYueEngine
 from spike.results import case_stem
 from spike.runner import DEFAULT_TIMEOUT_SECONDS, EngineFactory, resummarize, run_case
@@ -89,6 +98,22 @@ def _parser() -> argparse.ArgumentParser:
         "--steps", type=int, nargs="+", default=list(timing.STEPS), help="Synthesis steps"
     )
     run.add_argument("--runs", type=int, default=timing.RUNS, help="runs per case")
+    run.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help="seconds before a run is killed and recorded as failed (default %(default)g)",
+    )
+
+    run = commands.add_parser(
+        "progress",
+        help="Progress signals inside each Stage of the song case: counts, inter-arrival "
+        "times, known total or running count, and whether they track wall time",
+    )
+    _common_arguments(run)
+    run.add_argument("--precision", help="default: 8bit for mlx, q8_0 for audio.cpp")
+    run.add_argument("--steps", type=int, default=progress.STEPS, help="Synthesis steps")
+    run.add_argument("--runs", type=int, default=progress.RUNS, help="runs per case")
     run.add_argument(
         "--timeout",
         type=float,
@@ -286,6 +311,20 @@ def main(argv: list[str] | None = None) -> int:
                     timeout=args.timeout,
                     **common,
                 )
+    elif args.command == "progress":
+        run_case(
+            measurement=progress.MEASUREMENT,
+            measure=progress.measure,
+            case=progress.CASE,
+            request=load_case(progress.CASE),
+            params={
+                "precision": args.precision or progress.PRECISIONS[args.engine],
+                "steps": args.steps,
+            },
+            repeats=args.runs,
+            timeout=args.timeout,
+            **common,
+        )
     elif args.command == "cancel":
         for stage in args.stages:
             case = cancel.STAGE_CASES[stage]

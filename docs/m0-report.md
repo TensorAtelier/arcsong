@@ -31,6 +31,8 @@ Machine: Apple M5 Pro (Mac17,9), 64 GiB, macOS 26.4.1
 | `draft-final-audiocpp-song-q8_0-8-32.json` | draft-final | audio.cpp | song | precision=q8_0, draft_steps=8, final_steps=32 | unsupported | 2026-09-17 03:43:41 |
 | `draft-final-mlx-song-8bit-8-32.json` | draft-final | mlx-Yue | song | precision=8bit, draft_steps=8, final_steps=32 | ok | 2026-09-17 03:25:23 |
 | `hygiene-mlx-clip-8bit-8.json` | hygiene | mlx-Yue | clip | precision=8bit, steps=8 | ok | 2026-09-17 04:49:14 |
+| `progress-audiocpp-song-q8_0-8.json` | progress | audio.cpp | song | precision=q8_0, steps=8 | ok | 2026-09-17 09:18:09 |
+| `progress-mlx-song-8bit-8.json` | progress | mlx-Yue | song | precision=8bit, steps=8 | ok | 2026-09-17 09:14:31 |
 | `repro-audiocpp-clip-q8_0-32-planned.json` | repro | audio.cpp | clip | precision=q8_0, steps=32, score=planned | ok | 2026-09-17 03:01:47 |
 | `repro-mlx-clip-8bit-32-planned.json` | repro | mlx-Yue | clip | precision=8bit, steps=32, score=planned | ok | 2026-09-17 03:03:24 |
 | `timing-audiocpp-song-bf16-32.json` | timing | audio.cpp | song | precision=bf16, steps=32 | ok | 2026-09-17 01:38:04 |
@@ -56,7 +58,7 @@ it before M1.
 | Must-have | mlx-Yue | audio.cpp v0.8.0 |
 |---|---|---|
 | Cancel returns within ~5 s without a process kill, or a kill-and-reload the UI can live with | **Pass, no kill.** In-process cancel returned in 0.002–0.129 s in all four Stages; the next Take ran in the same process with no reload (`cancel-mlx-*.json`). | **Pass, by kill.** Killing the CLI returned in 0.065–0.120 s; the next Take ran in 11.2–13.9 s for `clip` (`cancel-audiocpp-*.json`). There is nothing to reload because every Take is a new process that loads the model anyway (`repro-audiocpp-clip-q8_0-32-planned.json`). |
-| Per-Stage progress | **Pass.** Stage start and end come live from the staged API (`cancel-mlx-*.json`: the Stage was seen before cancel in 4 of 4 Stages). Progress within a Stage: not measured. | **Pass, Stage level only.** Stage starts are inferred from the `--log` line that ends the Stage before (4 of 4 Stages seen, `cancel-audiocpp-*.json`). In the `song` run log (`spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log`, not a results file) synthesis logs nothing until it ends and semantic generation logs at most a KV-cache refill line mid-Stage (useless for progress), so no % bar inside the two longest Stages; decoding logs one line per VAE chunk (6 lines). |
+| Per-Stage progress | **Pass.** Stage start and end come live from the staged API (`cancel-mlx-*.json`: the Stage was seen before cancel in 4 of 4 Stages). Within a Stage (`progress-mlx-song-8bit-8.json`): a public `on_token` callback per token in planning and semantic generation (a running count, no total); synthesis and decoding expose no callback, only yue2's `N/total` progress lines on stderr, one per 5 s through a pipe: a stepped % in synthesis, too coarse for a bar in decoding. | **Pass, Stage level only.** Stage starts are inferred from the `--log` line that ends the Stage before (4 of 4 Stages seen, `cancel-audiocpp-*.json`). Within a Stage (`progress-audiocpp-song-q8_0-8.json`): synthesis logs nothing between its setup lines and its end, semantic generation logs only a KV-cache refill burst, so no bar inside the two longest Stages; decoding logs one line per VAE chunk (6 lines, no total up front, too sparse to track wall time). |
 | Run planning alone (Score for #7) | **Pass.** `plan()` is a public Stage method and its Score is exported and was compared (`repro-mlx-clip-8bit-32-planned.json`), so "plan only → approve → render" stops after planning. | **Fail.** The CLI only runs a whole Take, and the Score is "not exported by the Engine" (`repro-audiocpp-clip-q8_0-32-planned.json`). audio.cpp PR #561 "Export generated Yue2 ABC plan as a score artifact" (merged 2026-09-15 23:09 UTC, after the v0.8.0 tag; source: GitHub) attaches the generated Score as `score.abc` to the result of a *full run*. That lets a UI show and edit a Score after a render and re-import it through `abc`, but it adds no way to stop after planning: plan-first is still a whole render on audio.cpp. |
 | Re-synthesize saved Semantic tokens (#5) | **Pass.** The Final re-synthesized the Draft's 4618 Semantic tokens and noise and matched a direct 32-step render bit for bit (`draft-final-mlx-song-8bit-8-32.json`). | **Fail.** `unsupported`: the CLI neither exports nor accepts Semantic tokens, so a Final is a full re-run (`draft-final-audiocpp-song-q8_0-8-32.json`). PR #561 does not change this. |
 
@@ -270,8 +272,6 @@ Take. Synthesis steps barely change the size: 8- and 32-step Takes of the same p
 | audio.cpp | semantic generation | 0.393 | yes | `cancel-audiocpp-clip-q8_0-8-semantic_generation.json` |
 | audio.cpp | synthesis | 6.210 | yes | `cancel-audiocpp-clip-q8_0-8-synthesis.json` |
 | audio.cpp | decoding | 315.235 | yes | `cancel-audiocpp-song-q8_0-8-decoding.json` |
-
-Progress within a Stage (how often callbacks fire, whether they map to a % bar): not measured — no results file records callback counts or rates.
 <!-- /generated:progress -->
 
 **Both Engines report Stage transitions live.** mlx-Yue's staged API emits a Stage's
@@ -280,18 +280,94 @@ seen before cancel was requested. audio.cpp's Stage starts are inferred from the
 that ends the previous Stage, for example decoding at 315.235 s. Its Stage *durations*
 arrive only when a Stage ends.
 
-**Progress within a Stage was not measured.** No results file records how often mlx-Yue's
-`on_token` or step callbacks fire, so whether they map to a % bar is still open.
-audio.cpp's `--log` gives no usable progress inside planning's Score writing, semantic generation or
-synthesis. In the `song` run log `spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log`
-(a run directory, not a results file), semantic generation logged only a KV-cache refill
-(lines stamped 18:11:49, about 111 s into the Stage) and synthesis logged nothing between its setup lines and
-its end, which the results file puts at 607.8 s. Decoding does log inside the Stage: that
-log has 6 `framework.oobleck_audio_vae.decode.full_ms` lines, one per VAE chunk, about 4 s
-apart, which could drive a coarse decoding bar.
+What fires *inside* each Stage, and how often, is in [Progress within a Stage](#progress-within-a-stage).
 
-**M1a should measure the callback rate** before designing the progress throttle. A
-Stage-level bar (4 segments) is supported by the evidence today.
+## Progress within a Stage
+
+<!-- generated:progress-within-stage (tables from the results files; `uv run spike report` rewrites this block) -->
+| Engine | Stage | Stage (s) | Signal | Count | Gap min / median / max (s) | First / last gap to Stage edge (s) | Mean per s | Most in 1 s | Total | Max deviation from wall time | % bar (Stage verdict) | Source |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| mlx-Yue | planning | 35.3 | `stderr: Loading 8bit AR model` | 2 | 0.129 / 0.129 / 0.129 | 0.8 / 34.4 | 0.06 | 2 | running count | 0.97 (not linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | planning | 35.3 | `stderr: Planning score` | 8 | 4.314 / 5.007 / 5.014 | 0.9 / 0.0 | 0.23 | 1 | running count | 0.17 (not linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | planning | 35.3 | `on_token` | 2072 | 0.012 / 0.017 / 0.024 | 1.0 / 0.0 | 58.75 | 70 | running count | 0.03 (linear) | running count only (tracks wall time) | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | semantic generation | 80.1 | `stderr: Generating song` | 17 | 4.987 / 5.007 / 5.016 | 0.0 / 0.0 | 0.21 | 1 | running count | 0.07 (linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | semantic generation | 80.1 | `on_token` | 4619 | 0.012 / 0.017 / 0.031 | 1.0 / 0.0 | 57.66 | 71 | running count | 0.02 (linear) | running count only (tracks wall time) | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | synthesis | 84.9 | `stderr: Loading BF16 acoustic conditioning` | 2 | 0.179 / 0.179 / 0.179 | 0.0 / 84.7 | 0.02 | 2 | running count | 1.00 (not linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | synthesis | 84.9 | `stderr: Loading acoustic model` | 2 | 0.110 / 0.110 / 0.110 | 0.2 / 84.6 | 0.02 | 2 | running count | 1.00 (not linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | synthesis | 84.9 | `stderr: Synthesizing audio` | 18 | 4.483 / 5.003 / 5.010 | 0.3 / 0.0 | 0.21 | 1 | from signal 4 (8) | 0.18 (not linear) | stepped: % from a known total, not tracking wall time | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | decoding | 10.1 | `stderr: Loading MLX audio decoder` | 2 | 0.125 / 0.125 / 0.125 | 0.0 / 10.0 | 0.20 | 2 | running count | 0.99 (not linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | decoding | 10.1 | `stderr: Decoding audio` | 3 | 4.987 / 4.999 / 5.010 | 0.1 / 0.0 | 0.30 | 1 | from signal 2 (19) | 0.53 (not linear) | no: % from a known total, too few updates for a bar | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| audio.cpp | planning | 39.1 | `--log line` | 62 | 0.000 / 0.000 / 38.495 | 0.0 / 0.0 | 1.59 | 56 | running count | 0.89 (not linear) | no: running count, not tracking wall time | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
+| audio.cpp | semantic generation | 118.8 | `--log line` | 21 | 0.000 / 0.000 / 105.031 | 0.0 / 0.0 | 0.18 | 8 | running count | 0.47 (not linear) | no: running count, not tracking wall time | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
+| audio.cpp | synthesis | 137.3 | `--log line` | 35 | 0.000 / 0.000 / 130.780 | 0.3 / 0.0 | 0.25 | 19 | running count | 0.87 (not linear) | no: running count, not tracking wall time | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
+| audio.cpp | decoding | 18.6 | `--log line` | 101 | 0.000 / 0.000 / 3.494 | 0.0 / 0.0 | 5.42 | 41 | running count | 0.40 (not linear) | — | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
+| audio.cpp | decoding | 18.6 | `VAE chunk decoded (framework.oobleck_audio_vae.decode.full_ms)` | 6 | 1.022 / 3.487 / 3.575 | 3.6 / 0.0 | 0.32 | 1 | running count | 0.28 (not linear) | no: running count, not tracking wall time | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
+
+Event rate a progress stream must handle, whole Take:
+
+| Engine | Most signals in 1 s | Progress events | Mean per s | stderr a terminal | Source |
+|---|---|---|---|---|---|
+| mlx-Yue | 71 (`on_token`, semantic generation) | 6745 | 31.99 | no | `progress-mlx-song-8bit-8.json` |
+| audio.cpp | 56 (`--log line`, planning) | 272 | 0.86 | no | `progress-audiocpp-song-q8_0-8.json` |
+<!-- /generated:progress-within-stage -->
+
+The `progress` measurement ran one `song` Take per Engine at 8 steps, counting every signal
+the Engine lets a caller see without patching it, and attributing each to the Stage whose
+span holds it. Both Takes ran with stderr not a terminal (the "stderr a terminal" column),
+as an M1 worker reading a pipe would. Counting stayed passive: the Takes took 216.9 s
+(mlx-Yue 8bit) and 314.9 s (audio.cpp q8_0) in total, no slower than the committed 8-step
+timing runs (240.5 and 267.7 s; 346.4 and 344.7 s). "Max deviation" is how far a bar driven
+by the signal strays from the elapsed share of the Stage's wall time. The bar shows count ÷
+total, or the share of the Stage's signals when there is no total. It is checked as each
+signal arrives, just before it (the value held since the previous signal, 0 before the
+first) and at the Stage's end; 0.15 or less counts as linear. So a bar with few, sparse
+steps is judged by how long it sits still, not only by where each step lands. A % signal
+with fewer than 5 updates inside its Stage is judged too coarse for a bar, whatever its
+deviation.
+
+**mlx-Yue, planning and semantic generation: a running count at token rate.** `plan()` and
+`generate_semantic()` take a public `on_token(phase, token)`; it fired 2072 times while the
+Score was written and 4619 times for Semantic tokens (the end token included), a median
+0.017 s apart and linear in wall time (max deviation 0.03 and 0.02). There is no total: the
+sampling `max_tokens` is a limit, not a target. M1's bar can show a live token count (and
+for semantic generation, song seconds written), or a % against an *estimated* total, which
+would track wall time well because the rate is steady; an honest % is not available.
+
+**mlx-Yue, synthesis and decoding: no callback, only stepped stderr lines.**
+`YuE2Pipeline.synthesize()` and `decode()` receive `on_progress(completed, total)` from the
+solver and the VAE, but pass it only to yue2's own progress display; their public
+signatures take no progress argument. That display writes `N/total` lines to stderr: through
+a pipe, as here, at most one line per 5 s (yue2 refreshes a terminal every 0.25 s instead).
+Synthesis logged 18 such lines. The 8-step total appears only with the first step, 15.3 s
+into the 84.9 s Stage (acoustic model load and prefill come first), and each later step takes
+about 10 s, so the bar holds 0 for the lead-in and then climbs in eighths: max deviation 0.18,
+a stepped %. Decoding logged 3 lines in 10.1 s: 0, then 9/19 at 5.1 s, held until 19/19 at
+the very end, so the bar lags wall time by up to 0.53. It is a % with a known total, but
+far too coarse to animate a bar; a decoding bar needs the per-chunk `on_progress` itself.
+A per-step bar in either Stage needs either an upstream `on_progress` argument on
+`synthesize()`/`decode()` (cheap: the callback exists) or parsing stderr, which for synthesis
+lands each step up to 5 s late and for decoding is little better than the Stage segment.
+
+**audio.cpp: no bar inside any Stage.** Its `--log` lines arrive in bursts (median gap
+0.000 s). Planning logged 62 lines, with a 38.495 s silence while the Score is written.
+Semantic generation logged 21 lines: prefill as it starts, one KV-cache refill burst 106.3 s
+into the 118.8 s Stage, then its end, so nothing to drive a bar. Synthesis logged 35 setup
+lines and then nothing for 130.780 s until it ended, confirming that it logs nothing. Decoding
+logged 6 `framework.oobleck_audio_vae.decode.full_ms` lines, one per VAE chunk, a median
+3.487 s apart, confirming one line per chunk. The first arrives only 3.6 s into the 18.6 s
+Stage and the chunk count is logged only when decoding ends, so as a bar it is a running
+count in sixths that holds each value for about a fifth of the Stage (max deviation 0.28); M1 could
+estimate the chunk count from the latent frame count logged as decoding starts.
+
+**What M1's progress bar can use.** On mlx-Yue: token counts in planning and semantic
+generation; a stepped `N/8` (or `N/32`) in synthesis from stderr, and in decoding
+effectively only the Stage segment, unless mlx-Yue exposes `on_progress` on `synthesize()`
+and `decode()`. On audio.cpp: Stage segments only (its decoding chunk count covers under 6 %
+of the Take). **What the SSE throttle must handle:** mlx-Yue's `on_token` peaked at 71
+callbacks in one second (6745 progress events in the Take); audio.cpp's log peaked at 56
+lines in one second. Coalescing to a few events per second, as PLAN.md proposes, drops
+nothing a bar needs: no signal a bar uses arrives more often than every 5 s outside
+mlx-Yue's token counts, and mlx-Yue's synthesis % moves one step about every 10 s.
 
 ## Cancellation
 
@@ -533,7 +609,7 @@ melody, lyrics, arrangement and timing (mlx-Yue audio correlation 0.984). Listen
 
 ## Findings that affect the plan
 
-Flags for the user. `PLAN.md` is changed only inside its M0 section: the checkboxes are ticked except per-stage progress, one pointer line to this report was added under the M0 heading, and the progress checkbox stays open with a one-line note that callback rate within a Stage was not measured.
+Flags for the user. `PLAN.md` is changed only inside its M0 section: every checkbox is ticked, one pointer line to this report was added under the M0 heading, and the per-stage progress checkbox has a one-line note pointing to [Progress within a Stage](#progress-within-a-stage).
 
 1. **Engine choice (M0, Architecture, M5).** mlx-Yue is recommended for v1 by D-017 step 1 (a proposal: confirm or override it).
    M5's NVIDIA path is still open: audio.cpp is healthier and easier to install, but it
@@ -564,8 +640,12 @@ Flags for the user. `PLAN.md` is changed only inside its M0 section: the checkbo
    no stale resource files. Still open for M1: a kill while a Take is being saved.
 8. **Setup screen download (#4).** After `snapshot_download`, delete `converted/.cache`
    and `converted/.gitattributes`, or ignore `.gitattributes` at download.
-9. **Progress (#2).** Stage-level progress is confirmed. Measure the per-token or per-step
-   callback rate in M1a before building the progress throttle or a % bar within a Stage.
+9. **Progress (#2).** Stage-level progress is confirmed, and within a Stage mlx-Yue gives
+   token counts (planning, semantic generation) and step/chunk totals (synthesis, decoding),
+   the latter only through stderr lines one per 5 s, which give a stepped % in synthesis and
+   nearly nothing in decoding; ask upstream for `on_progress` on `synthesize()`/`decode()`.
+   audio.cpp gives no usable bar inside a Stage. The throttle must absorb up to 71 token
+   callbacks a second (see [Progress within a Stage](#progress-within-a-stage)).
 10. **"Re-run with these settings" (#3).** It can promise the same Take on mlx-Yue when
     precision and Synthesis steps are part of the settings. Reproducing across precisions,
     Engine versions or machines was not measured.

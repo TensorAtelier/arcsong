@@ -185,3 +185,21 @@ def test_a_non_default_cancel_delay_is_part_of_the_case(tmp_path, monkeypatch):
         "cancel_after_seconds": 0.1,
     }
     assert result["runs"][0]["cancel_after_seconds"] == 0.1
+
+
+def test_stage_events_record_only_stage_transitions_not_progress_signals(tmp_path, monkeypatch):
+    many = [(i + 0.5) / 200 for i in range(200)]
+    use_fake(
+        monkeypatch,
+        progress_signals={"semantic generation": [{"signal": "on_token", "at": many}]},
+    )
+
+    assert run_cancel(tmp_path, "--stages", "semantic generation") == 0
+
+    run = only_run(tmp_path, "semantic generation", "clip")
+    kinds = {event["kind"] for event in run["stage_events"]}
+    assert kinds <= {"enter", "start", "end"}
+    assert ("semantic generation", "start") in {
+        (event["stage"], event["kind"]) for event in run["stage_events"]
+    }
+    assert run["stage_at_request"] == "semantic generation"
