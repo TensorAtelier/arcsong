@@ -16,7 +16,7 @@
 - [x] 02 — Real mlx-Yue worker: the worker loads mlx-Yue once, keeps it warm, renders a request through the staged API and saves the Take; a song row is written only after saving completes; check: slow test behind `SONGLOOM_REAL_ENGINE=1` rendering a short request, plus a manual curl render.
 - [x] 03 — Live progress and cancel: `GET /api/events` (SSE) streams job state, Stage changes, a throttled token count and synthesis `N/steps`; `POST /api/jobs/{id}/cancel` stops a queued or running job via a shared cancel flag; check: fake-engine tests for event order, throttling and cancel, plus one real cancel.
 - [x] 04 — Worker crash and restart recovery: if the worker process dies the running job is marked failed and the next job runs on a new worker; on server start, `running` jobs become `failed` and `queued` jobs run in order; check: fake-engine tests that kill the worker and restart the app.
-- [ ] 05 — Bare Create page: form (style, lyrics with a section-tag template, planning mode, seed, precision, Synthesis steps, advanced drawer), a queue panel with Stage + progress + cancel, and an audio player for finished jobs; built assets are served by `songloom serve`; check: drive the real page in the browser end to end (generate, watch progress, play; cancel one).
+- [x] 05 — Bare Create page: form (style, lyrics with a section-tag template, planning mode, seed, precision, Synthesis steps, advanced drawer), a queue panel with Stage + progress + cancel, and an audio player for finished jobs; built assets are served by `songloom serve`; check: drive the real page in the browser end to end (generate, watch progress, play; cancel one).
 
 ## Notes
 
@@ -29,3 +29,5 @@
 - The SQLite database lives only in the data dir; the worker never touches the database, only the server writes it.
 - Real-weight tests are opt-in (`SONGLOOM_REAL_ENGINE=1`); the default `uv run pytest -q` stays fast.
 - Register with `dev` at the end: `dev register songloom 8840 --cmd "uv run songloom serve --port 8840" --cwd ~/projects/songloom`.
+- Browser check of ticket 05 found and fixed two bugs: audio was served as `audio/x-flac`, which Chrome won't play (now `audio/flac`); and a cancel response could overwrite the later SSE "cancelled" snapshot, leaving the job shown as running (snapshots now carry an increasing `seq`, and the page keeps the newest).
+- Built web assets are committed in `songloom/static/` so `songloom serve` needs no Node; rebuild with `cd web && npm run build`.

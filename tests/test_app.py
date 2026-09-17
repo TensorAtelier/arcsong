@@ -84,3 +84,23 @@ def test_finished_songs_survive_a_restart(tmp_path):
         again = client.get(f"/api/jobs/{job['id']}").json()
         assert again["status"] == "done"
         assert client.get(f"/api/songs/{again['song_id']}/audio").status_code == 200
+
+
+def test_the_web_app_is_served_beside_the_api(client):
+    page = client.get("/")
+    assert page.status_code == 200
+    assert '<div id="root"></div>' in page.text
+    assert client.get("/api/jobs").status_code == 200
+
+
+def test_finished_audio_is_served_with_a_browser_playable_type(client):
+    done = wait_for(client, client.post("/api/jobs", json={"style": "a"}).json()["id"])
+    audio = client.get(f"/api/songs/{done['song_id']}/audio")
+    assert audio.headers["content-type"] == "audio/wav"
+
+
+def test_every_job_snapshot_is_newer_than_the_last(client):
+    job = client.post("/api/jobs", json={"style": "a"}).json()
+    later = client.get(f"/api/jobs/{job['id']}").json()
+    listed = client.get("/api/jobs").json()[0]
+    assert job["seq"] < later["seq"] < listed["seq"]

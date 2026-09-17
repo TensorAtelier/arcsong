@@ -12,12 +12,17 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from songloom.config import data_dir
 from songloom.db import Store
 from songloom.engine import EngineSpec
 from songloom.runner import JobRunner
+
+STATIC_DIR = Path(__file__).parent / "static"
+# Browsers reject the `audio/x-flac` that mimetypes guesses for .flac (Chrome plays audio/flac).
+AUDIO_TYPES = {".flac": "audio/flac", ".wav": "audio/wav"}
 
 
 class SongRequest(BaseModel):
@@ -107,6 +112,12 @@ def create_app(
         song = app.state.store.get_song(song_id)
         if song is None or not Path(song["audio_path"]).exists():
             raise HTTPException(404, "no such song")
-        return FileResponse(song["audio_path"])
+        path = Path(song["audio_path"])
+        media_type = AUDIO_TYPES.get(path.suffix, "application/octet-stream")
+        return FileResponse(path, media_type=media_type)
+
+    # The built web app (web/ -> songloom/static); mounted last so /api routes win.
+    if (STATIC_DIR / "index.html").exists():
+        app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
     return app

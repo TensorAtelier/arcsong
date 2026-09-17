@@ -4,6 +4,7 @@ the worker process when it dies."""
 
 from __future__ import annotations
 
+import itertools
 import multiprocessing as mp
 import queue
 import shutil
@@ -63,6 +64,7 @@ class JobRunner:
         self._live: dict[str, Any] = {}
         self._cancel_asked_at: float | None = None
         self._stopping = threading.Event()
+        self._seq = itertools.count(1)
         self.worker_starts = 0
 
     # --- lifecycle -------------------------------------------------------------------------
@@ -120,17 +122,22 @@ class JobRunner:
     # --- jobs ------------------------------------------------------------------------------
 
     def job(self, job_id: int) -> dict[str, Any] | None:
-        """A job from the database, with live progress while it runs."""
-        job = self.store.get_job(job_id)
-        if job is not None:
-            with self._lock:
+        """A job from the database, with live progress while it runs. `seq` grows with every
+        snapshot taken, so a client receiving snapshots by different routes (REST, SSE) can
+        keep the newest."""
+        with self._lock:
+            job = self.store.get_job(job_id)
+            if job is not None:
                 job["live"] = dict(self._live) if job_id == self._running else None
+                job["seq"] = next(self._seq)
         return job
 
     def jobs(self) -> list[dict[str, Any]]:
         with self._lock:
             running, live = self._running, dict(self._live)
-        return [{**j, "live": live if j["id"] == running else None} for j in self.store.list_jobs()]
+            seq = next(self._seq)
+            listed = self.store.list_jobs()
+        return [{**j, "live": live if j["id"] == running else None, "seq": seq} for j in listed]
 
     def dispatch(self) -> None:
         """Send the oldest queued job to the worker if it is idle."""
