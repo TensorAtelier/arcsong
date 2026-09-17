@@ -60,6 +60,58 @@ export interface LibraryUsage {
   bytes_free: number;
 }
 
+export type CheckStatus = "ok" | "warn" | "fail";
+
+export interface Check {
+  id: string;
+  label: string;
+  status: CheckStatus;
+  detail: string;
+}
+
+export interface Download {
+  state: "idle" | "running" | "done" | "failed" | "cancelled";
+  phase?: "starting" | "downloading" | "verifying";
+  bytes?: number;
+  bytes_total?: number;
+  reason?: string;
+  error?: string;
+}
+
+export interface Setup {
+  /** Grows with every snapshot the server takes; keep the one with the highest. */
+  seq: number;
+  checks: Check[];
+  /** The Engine's own checks (platform, runtime) are still running. */
+  checking: boolean;
+  weights: {
+    dir: string;
+    installed: boolean;
+    bytes_total: number;
+    bytes_present: number;
+    /** Including partly downloaded files. */
+    bytes_on_disk: number;
+    missing: string[];
+    stray: string[];
+  };
+  licence: {
+    id: string;
+    name: string;
+    url: string;
+    models: string[];
+    acknowledged_at: number | null;
+  };
+  download: Download;
+  /** Songs can be made: weights installed, no download running or failed. */
+  can_render: boolean;
+  /** `can_render` and the licence acknowledged. */
+  ready: boolean;
+}
+
+function post<T>(url: string): Promise<T> {
+  return fetch(url, { method: "POST" }).then((r) => json<T>(r));
+}
+
 export const api = {
   jobs: () => fetch("/api/jobs").then((r) => json<Job[]>(r)),
   create: (request: SongRequest) =>
@@ -76,6 +128,11 @@ export const api = {
   deleteSong: (id: number) =>
     fetch(`/api/songs/${id}`, { method: "DELETE" }).then((r) => json<{ deleted: number }>(r)),
   downloadUrl: (id: number, format: "flac" | "wav") => `/api/songs/${id}/download?format=${format}`,
+  setup: () => fetch("/api/setup").then((r) => json<Setup>(r)),
+  runChecks: () => post<Setup>("/api/setup/checks"),
+  acknowledgeLicence: () => post<Setup>("/api/setup/licence"),
+  startDownload: () => post<Setup>("/api/setup/download"),
+  cancelDownload: () => post<Setup>("/api/setup/download/cancel"),
 };
 
 export interface Deleted {
@@ -83,11 +140,12 @@ export interface Deleted {
   song_id: number;
 }
 
-/** Subscribes to job snapshots. EventSource reconnects by itself; `onConnect` runs on every
- * (re)connection so the caller can reload anything that changed while it was disconnected. */
+/** Subscribes to job and Setup snapshots. EventSource reconnects by itself; `onConnect` runs on
+ * every (re)connection so the caller can reload anything that changed while it was disconnected. */
 export function watchJobs(
   onJob: (job: Job) => void,
   onDeleted: (deleted: Deleted) => void,
+  onSetup: (setup: Setup) => void,
   onConnect: () => void,
 ): () => void {
   const source = new EventSource("/api/events");
@@ -96,6 +154,7 @@ export function watchJobs(
     const message = JSON.parse(event.data);
     if (message.type === "job") onJob(message.job);
     if (message.type === "deleted") onDeleted(message);
+    if (message.type === "setup") onSetup(message.setup);
   };
   return () => source.close();
 }

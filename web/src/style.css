@@ -102,3 +102,19 @@ button.danger { color: var(--bad); border-color: var(--bad); }
 .settings dt { color: var(--muted); }
 .settings dd { margin: 0; }
 .lyrics { white-space: pre-wrap; font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px; max-height: 240px; overflow: auto; }
+
+.setup { margin-top: 16px; max-width: 760px; }
+.setup h3 { margin: 0; font-size: 1rem; }
+.setup-section { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
+.setup-section p { margin: 8px 0; }
+.setup-done { color: var(--ok); font-weight: 600; }
+.checks { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.check { display: flex; gap: 8px; align-items: baseline; font-size: 0.9rem; }
+.check .mark { width: 1.2em; flex-shrink: 0; text-align: center; font-weight: 700; }
+.check.ok .mark { color: var(--ok); }
+.check.warn .mark { color: var(--warn); }
+.check.fail .mark { color: var(--bad); }
+.ok-text { color: var(--ok); }
+code { font-size: 0.85em; overflow-wrap: anywhere; }
+nav .attention { color: var(--warn); font-weight: 700; }
+.notice { border: 1px solid var(--warn); border-radius: 6px; padding: 8px; font-size: 0.9rem; }

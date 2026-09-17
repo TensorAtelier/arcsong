@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Deleted, type Job, type Song, type SongRequest, watchJobs } from "./api";
+import { api, type Deleted, type Job, type Setup, type Song, type SongRequest, watchJobs } from "./api";
 import CreateForm from "./CreateForm";
 import LibraryView from "./LibraryView";
 import QueuePanel from "./QueuePanel";
+import SetupView from "./SetupView";
 
-type View = "create" | "library";
+type View = "create" | "library" | "setup";
+
+const HASHES: Record<View, string> = { create: "#/", library: "#/library", setup: "#/setup" };
 
 function viewFromHash(): View {
-  return window.location.hash === "#/library" ? "library" : "create";
+  const hash = window.location.hash;
+  return hash === HASHES.library ? "library" : hash === HASHES.setup ? "setup" : "create";
 }
 
 export default function App() {
@@ -21,6 +25,10 @@ export default function App() {
   const deletedJobs = useRef(new Set<number>());
   const deletedSongs = useRef(new Set<number>());
   const [draft, setDraft] = useState<{ request: SongRequest; version: number } | null>(null);
+  const [setup, setSetup] = useState<Setup | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  // Only the first Setup load may send the page to Setup, so a user who navigates away stays.
+  const routedToSetup = useRef(false);
 
   useEffect(() => {
     const onHash = () => setView(viewFromHash());
@@ -29,8 +37,20 @@ export default function App() {
   }, []);
 
   const go = (next: View) => {
-    window.location.hash = next === "library" ? "#/library" : "#/";
+    window.location.hash = HASHES[next];
   };
+
+  // REST responses and SSE messages can arrive out of order; keep the newest snapshot.
+  const updateSetup = useCallback((next: Setup) => {
+    setSetup((current) => (current && current.seq > next.seq ? current : next));
+    if (!routedToSetup.current) {
+      routedToSetup.current = true;
+      const hash = window.location.hash;
+      if (!next.ready && (hash === "" || hash === "#" || hash === HASHES.create)) {
+        window.location.hash = HASHES.setup;
+      }
+    }
+  }, []);
 
   const reloadSongs = useCallback(
     () =>
@@ -44,7 +64,7 @@ export default function App() {
     [],
   );
 
-  // REST responses and SSE messages can arrive out of order; keep the newest snapshot.
+  // Job snapshots, like Setup's, keep the newest.
   const upsert = useCallback(
     (job: Job) => {
       if (deletedJobs.current.has(job.id)) return;
@@ -76,6 +96,13 @@ export default function App() {
     const reload = () => {
       void reloadSongs();
       api
+        .setup()
+        .then((next) => {
+          setSetupError(null);
+          updateSetup(next);
+        })
+        .catch((error) => setSetupError(String(error)));
+      api
         .jobs()
         .then((list) => {
           setJobsError(null);
@@ -91,8 +118,8 @@ export default function App() {
         })
         .catch((error) => setJobsError(String(error)));
     };
-    return watchJobs(upsert, removeDeleted, reload);
-  }, [upsert, removeDeleted, reloadSongs]);
+    return watchJobs(upsert, removeDeleted, updateSetup, reload);
+  }, [upsert, removeDeleted, reloadSongs, updateSetup]);
 
   const ordered = [...jobs.values()].sort((a, b) => b.id - a.id);
 
@@ -110,14 +137,26 @@ export default function App() {
           <a href="#/library" aria-current={view === "library" ? "page" : undefined}>
             Library{songs ? ` (${songs.length})` : ""}
           </a>
+          <a href="#/setup" aria-current={view === "setup" ? "page" : undefined}>
+            Setup
+            {setup && !setup.ready && (
+              <span className="attention" aria-label="needs attention">
+                {" "}
+                !
+              </span>
+            )}
+          </a>
         </nav>
       </header>
-      {view === "create" ? (
+      {view === "setup" ? (
+        <SetupView setup={setup} error={setupError} onChanged={updateSetup} />
+      ) : view === "create" ? (
         <div className="layout">
           <CreateForm
             key={draft?.version ?? 0}
             initial={draft?.request}
             onCreated={upsert}
+            canRender={setup?.can_render ?? true}
           />
           <QueuePanel jobs={ordered} onChanged={upsert} error={jobsError} />
         </div>

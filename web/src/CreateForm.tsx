@@ -17,9 +17,11 @@ interface Props {
   onCreated: (job: Job) => void;
   /** Values to start from, e.g. a Library song loaded to tweak. */
   initial?: SongRequest;
+  /** False until Setup has installed the model weights. */
+  canRender: boolean;
 }
 
-export default function CreateForm({ onCreated, initial }: Props) {
+export default function CreateForm({ onCreated, initial, canRender }: Props) {
   const [style, setStyle] = useState(initial?.style ?? "");
   const [lyrics, setLyrics] = useState(initial?.lyrics ?? "");
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "full");
@@ -124,7 +126,12 @@ export default function CreateForm({ onCreated, initial }: Props) {
       </details>
 
       {error && <p className="error" role="alert">{error}</p>}
-      <button type="submit" className="primary" disabled={submitting || !style.trim()}>
+      {!canRender && (
+        <p className="notice" role="status">
+          The model weights aren’t ready yet. <a href="#/setup">Finish Setup</a> to make songs.
+        </p>
+      )}
+      <button type="submit" className="primary" disabled={submitting || !style.trim() || !canRender}>
         {submitting ? "Adding…" : "Generate"}
       </button>
     </form>
