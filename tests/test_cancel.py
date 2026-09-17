@@ -134,7 +134,7 @@ def test_leftover_files_of_the_cancelled_take_are_recorded(tmp_path, monkeypatch
     take = Path(run["take_dir"])
     on_disk = {str(p.relative_to(take)): p.stat().st_size for p in take.rglob("*") if p.is_file()}
     assert {f["path"]: f["bytes"] for f in run["leftover_files"]} == on_disk
-    assert set(on_disk) == {"score.abc", "semantic.bin"}
+    assert set(on_disk) == {"score.abc", "semantic.npy"}
     assert run["leftover_looks_complete"] is False
 
 

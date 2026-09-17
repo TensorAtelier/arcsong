@@ -19,7 +19,7 @@ import sys
 import threading
 import time
 import traceback
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -31,6 +31,8 @@ from spike.results import build_result, case_stem, write_result
 
 Measure = Callable[[SpikeEngine, dict, dict, Path], dict]
 EngineFactory = Callable[[], SpikeEngine]
+# Case-level fields computed in the harness from the ok runs, given the case's stem.
+Summarize = Callable[[list[dict], str], dict]
 
 DEFAULT_TIMEOUT_SECONDS = 3600.0
 ORPHAN_CHECK_SECONDS = 0.5
@@ -134,9 +136,15 @@ def run_case(
     runs_dir: Path,
     force: bool = False,
     repeats: int = 1,
+    measures: Sequence[Measure] | None = None,
+    summarize: Summarize | None = None,
     timeout: float | None = DEFAULT_TIMEOUT_SECONDS,
     log: Callable[[str], None] = print,
 ) -> Path:
+    """Runs `measure` in `repeats` fresh children, or each of `measures` in its own child,
+    in order. Once every run is ok, `summarize` adds case-level fields to the results;
+    if it raises, that becomes the case's `failed` outcome."""
+    children = list(measures) if measures is not None else [measure] * repeats
     stem = case_stem(measurement, engine_name, case, params)
     results_path = results_dir / f"{stem}.json"
     if results_path.exists() and not force:
@@ -159,16 +167,25 @@ def run_case(
     started_at = datetime.now(UTC).isoformat()
     start = time.perf_counter()
     runs = []
-    for index in range(1, repeats + 1):
+    for index, child_measure in enumerate(children, start=1):
         run_dir = case_dir / f"run-{index}"
         run_dir.mkdir(parents=True)
-        log(f"run {stem} ({index}/{repeats})")
-        record = _run_child(measure, engine_factory, request, params, run_dir, timeout)
+        log(f"run {stem} ({index}/{len(children)})")
+        record = _run_child(child_measure, engine_factory, request, params, run_dir, timeout)
         runs.append({"run": index, **record})
         log(f"{record['outcome']} {stem} run {index} in {record['child_wall_seconds']:.1f}s")
-    total_seconds = time.perf_counter() - start
 
     failures = [run for run in runs if run["outcome"] != "ok"]
+    extra: dict[str, Any] = {}
+    outcome = failures[0]["outcome"] if failures else "ok"
+    error = failures[0].get("error") if failures else None
+    if summarize is not None and not failures:
+        try:
+            extra = summarize(runs, stem)
+        except Exception:  # noqa: BLE001 - a failed summary is the case's outcome
+            outcome, error = "failed", traceback.format_exc()
+    total_seconds = time.perf_counter() - start
+
     result = build_result(
         measurement=measurement,
         engine=engine_name,
@@ -176,11 +193,12 @@ def run_case(
         case=case,
         params=params,
         env=env,
-        outcome=failures[0]["outcome"] if failures else "ok",
+        outcome=outcome,
         started_at=started_at,
         total_seconds=total_seconds,
         runs=runs,
-        error=failures[0].get("error") if failures else None,
+        error=error,
+        extra=extra,
     )
     write_result(results_path, result)
     log(f"{result['outcome']} {stem} in {total_seconds:.1f}s -> {results_path}")

@@ -221,10 +221,16 @@ class MlxYueEngine:
         )
         result.save_artifacts(output_dir)
         files = sorted(p for p in output_dir.rglob("*") if p.is_file())
+        exported = zip(STAGES[:3], ("score.abc", "semantic.npy", "latent.npy"), strict=True)
         return RunOutput(
             output_dir / "audio.flac",
             len(audio) / SAMPLE_RATE,
             files,
             lazy_load_seconds=loads_since(load_timing_before, pipe.load_timing),
             engine_peak_memory_bytes=_mlx_peak_memory_bytes(),
+            stage_outputs={
+                stage: output_dir / name
+                for stage, name in exported
+                if (output_dir / name).is_file()
+            },
         )

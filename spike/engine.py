@@ -38,6 +38,9 @@ class EngineInfo:
     name: str
     version: str | None
     commit: str | None
+    # Whether Takes run after `load` reuse the model it loaded (a warm process); False when
+    # every Take starts a new Engine process that loads the model again.
+    takes_reuse_loaded_model: bool = True
 
 
 @dataclass
@@ -51,6 +54,9 @@ class RunOutput:
     lazy_load_seconds: dict[str, float] = field(default_factory=dict)
     # The Engine's own peak-memory figure (MLX: mx.get_peak_memory()), if it has one.
     engine_peak_memory_bytes: int | None = None
+    # The file holding each Stage's output, for the Stages whose output the Engine exports:
+    # planning -> Score, semantic generation -> Semantic tokens, synthesis -> Latents.
+    stage_outputs: dict[str, Path] = field(default_factory=dict)
 
 
 def never_cancelled() -> bool:

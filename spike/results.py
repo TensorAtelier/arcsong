@@ -30,6 +30,7 @@ def build_result(
     total_seconds: float,
     runs: list[dict[str, Any]],
     error: str | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if outcome not in OUTCOMES:
         raise ValueError(f"outcome must be one of {OUTCOMES}, got {outcome!r}")
@@ -48,6 +49,10 @@ def build_result(
     }
     if error is not None:
         result["error"] = error
+    for key, value in (extra or {}).items():
+        if key in result:
+            raise ValueError(f"extra results field {key!r} would overwrite the schema's own")
+        result[key] = value
     return result
 
 

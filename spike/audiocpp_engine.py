@@ -219,13 +219,17 @@ class AudioCppEngine:
                 [str(self.cli), "--version"], capture_output=True, text=True, timeout=30
             ).stdout
         except (OSError, subprocess.SubprocessError):
-            return EngineInfo(name=NAME, version=None, commit=None)
+            return EngineInfo(
+                name=NAME, version=None, commit=None, takes_reuse_loaded_model=False
+            )
         version = re.search(r"audio\.cpp\s+(\S+)", out)
         commit = re.search(r"git:\s*([0-9a-f]+)", out)
         return EngineInfo(
             name=NAME,
             version=version.group(1) if version else None,
             commit=commit.group(1) if commit else None,
+            # Each `run` launches `audiocpp_cli`, which loads the model again.
+            takes_reuse_loaded_model=False,
         )
 
     def load(self, precision: str) -> None:

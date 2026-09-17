@@ -76,7 +76,7 @@
 ## 05 — Cancellation per Stage, both Engines
 
 - Result: done
-- Commit: COMMIT05
+- Commit: baaf447
 - QA rounds: 2
 - Verification:
   ```
@@ -89,3 +89,20 @@
   ```
 - QA verdict: PASS — all 8 results use a 1.0 s delay (measured request gap 1.002–1.006 s). A real mlx synthesis cancel reproduced the committed result: 0.112 s latency, nothing left on disk, reuse in the same process without a reload. Reuse and reload are measured through lyra's load events.
   (Round 1: FAIL — planning cancelled at 5 s with no recorded reason; fixed by rerunning at 1 s and putting the delay into params.)
+
+## 06 — Seed reproducibility, both Engines
+
+- Result: done
+- Commit: COMMIT06
+- QA rounds: 2
+- Verification:
+  ```
+  $ uv run pytest -q
+  77 passed in 65.68s (0:01:05)
+  $ uv run ruff check .
+  All checks passed!
+  $ caffeinate -ims uv run spike repro --engine mlx --results-dir qa06r2/results --runs-dir qa06r2/runs --listen-dir qa06r2/listen
+  ok repro-mlx-clip-8bit-32-planned in 102.0s -> .../scratchpad/qa06r2/results/repro-mlx-clip-8bit-32-planned.json
+  ```
+- QA verdict: PASS — hashes of real Take files match the JSON; the warm pair shares a pid and the fresh Take has another; the comparators catch a 1-token / 1e-6 / 1-LSB change on real mlx and audio.cpp outputs; audio.cpp's uncompared Stages and its cold-per-Take nature are recorded; the listening pairs match their sources.
+  (Round 1: FAIL — audio.cpp cold runs were labelled a warm process; fixed with `takes_reuse_loaded_model` / `warm_process` plus a note.)

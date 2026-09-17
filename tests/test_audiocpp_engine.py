@@ -334,3 +334,10 @@ def test_timing_results_match_the_other_engines_field_for_field(tmp_path, fake_c
         assert {"audio.wav", "audiocpp.log"} <= files
         # The CLI subprocess's footprint is measured, not only the Python wrapper's.
         assert run["peak_footprint_bytes"] > 256 * 2**20
+
+
+def test_takes_do_not_reuse_a_loaded_model_because_each_run_launches_the_cli(tmp_path, fake_cli):
+    factory, _ = fake_cli
+
+    assert factory().info().takes_reuse_loaded_model is False
+    assert AudioCppEngine(cli=tmp_path / "missing").info().takes_reuse_loaded_model is False

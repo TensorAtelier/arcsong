@@ -12,3 +12,7 @@ Read first: spec, ledger D-012; `CONTEXT.md`.
 - [ ] Results JSON exists for both Engines, with Draft time, Final re-render time, direct-32 time and the Final vs direct-32 comparison (or `unsupported` + fallback cost)
 - [ ] Draft/Final listening pairs exist, with paths recorded in the results
 - [ ] `uv run pytest -q` and `uv run ruff check .` pass
+
+## Comments
+
+**Driver, after ticket 06:** (1) Both Engines reproduce bit-identically for the same seed at one precision: mlx-Yue warm/warm and warm/fresh (Score, Semantic tokens, Latents, audio); audio.cpp audio. So "same seed at 32 steps" is an exact fallback for Draft→Final, costing a full re-run. (2) audio.cpp v0.8.0's CLI does **not** export a generated Score: `--out-dir` writes nothing more for YuE2, and `--text-out` errors. (Correction after QA: v0.8.0's docs never promised it. Score export was added on `main` by PR #561, merged 2026-09-15 23:09 UTC, after the v0.8.0 tag, so the next release should have it.) It also exposes no Semantic tokens. (3) `RunOutput.stage_outputs` and the runner's `measures=`/`summarize=` hooks (added in 06) are the natural building blocks here.

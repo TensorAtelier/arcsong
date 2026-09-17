@@ -14,13 +14,14 @@ from spike import audiocpp_setup
 from spike.audiocpp_engine import AudioCppEngine
 from spike.cases import load_case
 from spike.fake import FakeEngine
-from spike.measurements import cancel, doctor, timing
+from spike.measurements import cancel, doctor, repro, timing
 from spike.mlx_engine import DEFAULT_MODELS_DIR, MlxYueEngine
 from spike.runner import DEFAULT_TIMEOUT_SECONDS, EngineFactory, run_case
 
 SPIKE_DIR = Path(__file__).resolve().parent
 DEFAULT_RESULTS_DIR = SPIKE_DIR / "results"
 DEFAULT_RUNS_DIR = SPIKE_DIR / "runs"
+DEFAULT_LISTEN_DIR = SPIKE_DIR / "listen"
 
 ENGINES: dict[str, Callable[[argparse.Namespace], EngineFactory]] = {
     "mlx": lambda args: partial(MlxYueEngine, models_dir=args.mlx_models),
@@ -120,6 +121,26 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_TIMEOUT_SECONDS,
         help="seconds before a run is killed and recorded as failed (default %(default)g)",
     )
+
+    run = commands.add_parser(
+        "repro",
+        help="Seed reproducibility: clip twice in a warm process and once in a fresh one",
+    )
+    _common_arguments(run)
+    run.add_argument("--precision", help="default: 8bit for mlx, q8_0 for audio.cpp")
+    run.add_argument("--steps", type=int, default=repro.STEPS, help="Synthesis steps")
+    run.add_argument(
+        "--listen-dir",
+        type=Path,
+        default=DEFAULT_LISTEN_DIR,
+        help="where the same-seed listening pair is copied (default %(default)s)",
+    )
+    run.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help="seconds before a run is killed and recorded as failed (default %(default)g)",
+    )
     return parser
 
 
@@ -203,5 +224,17 @@ def main(argv: list[str] | None = None) -> int:
                 timeout=args.timeout,
                 **common,
             )
+    elif args.command == "repro":
+        run_case(
+            measurement=repro.MEASUREMENT,
+            measure=repro.warm,
+            measures=repro.MEASURES,
+            summarize=repro.summarizer(args.listen_dir),
+            case=repro.CASE,
+            request=repro.request_without_score(load_case(repro.CASE)),
+            params=repro.params(args.precision or repro.PRECISIONS[args.engine], args.steps),
+            timeout=args.timeout,
+            **common,
+        )
     return 0
 

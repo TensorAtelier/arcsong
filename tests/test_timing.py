@@ -101,7 +101,7 @@ def test_each_run_records_the_size_of_every_file_the_take_writes(tmp_path):
         str(p.relative_to(take)): p.stat().st_size for p in take.rglob("*") if p.is_file()
     }
     assert {f["path"]: f["bytes"] for f in run["files"]} == on_disk
-    assert {"audio.wav", "score.abc", "semantic.bin", "extra/latents.bin"} <= set(on_disk)
+    assert {"audio.wav", "score.abc", "semantic.npy", "extra/latent.npy"} <= set(on_disk)
     assert run["files_total_bytes"] == sum(on_disk.values())
     assert run["audio_bytes"] == on_disk["audio.wav"]
 
