@@ -7,4 +7,4 @@ goal: Build M3 from PLAN.md: a "Score only" run, a notation view with MIDI melod
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review — PARTIAL, then MET on re-review; 9 defects, 2 drift items and 1 regression fixed (see REPORT.md)
