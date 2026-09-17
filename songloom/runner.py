@@ -26,6 +26,8 @@ CANCEL_GRACE_SECONDS = 10.0
 LOAD_RETRY_SECONDS = 5.0
 # How long stop() waits for the worker to finish a Take it is already saving.
 STOP_WAIT_SECONDS = 5.0
+# A Final re-synthesizes a Draft at full quality.
+FINAL_STEPS = 32
 
 
 class Broadcaster:
@@ -192,6 +194,15 @@ class JobRunner:
             job = self.store.next_queued()
             if job is None:
                 return
+            source_dir = None
+            if job["source_song_id"] is not None:
+                source = self.store.get_song(job["source_song_id"])
+                if source is None:
+                    self.store.mark_finished(job["id"], "failed", "its Draft was deleted")
+                    self.publish(job["id"])
+                    self.dispatch()  # the next queued job, if any
+                    return
+                source_dir = source["dir"]
             if self._process is None:
                 failed_at = self._load_failed_at
                 if failed_at is not None and time.monotonic() - failed_at < self.load_retry:
@@ -199,7 +210,8 @@ class JobRunner:
                 self._start_worker()
             self._running, self._live = job["id"], {"stage": None}
             self.store.mark_running(job["id"])
-            self._jobs.put((job["id"], job["request"], str(self.songs_dir / str(job["id"]))))
+            out_dir = str(self.songs_dir / str(job["id"]))
+            self._jobs.put((job["id"], job["request"], out_dir, source_dir))
         self.publish(job["id"])
 
     def cancel(self, job_id: int) -> bool:
@@ -228,6 +240,24 @@ class JobRunner:
 
     def next_seq(self) -> int:
         return next(self._seq)
+
+    def finalize(self, song_id: int) -> tuple[dict[str, Any] | None, str | None]:
+        """Queue a Final of a Draft: the same request at 32 Synthesis steps. Returns the job, or
+        why it can't be queued ("no such song" means 404)."""
+        with self._lock:
+            song = self.store.get_song(song_id)
+            if song is None:
+                return None, "no such song"
+            if song["request"]["steps"] >= FINAL_STEPS:
+                return None, f"this Take already has {FINAL_STEPS} Synthesis steps"
+            for final in self.store.finals_of(song_id):
+                if final["status"] in ("queued", "running", "done"):
+                    return None, f"this Draft already has a Final (job #{final['id']})"
+            request = {**song["request"], "steps": FINAL_STEPS}
+            job = self.store.create_job(request, source_song_id=song_id)
+        self.publish(job["id"])
+        self.dispatch()
+        return self.job(job["id"]), None
 
     def star_song(self, song_id: int, starred: bool) -> dict[str, Any] | None:
         if not self.store.set_starred(song_id, starred):

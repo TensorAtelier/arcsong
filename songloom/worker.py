@@ -31,7 +31,8 @@ def exit_with_parent(parent_pid: int) -> None:
 
 
 def worker_main(spec: EngineSpec, jobs, events, cancel_job, parent_pid: int | None = None) -> None:
-    """Run in a spawned process. `jobs` carries (job_id, request, out_dir) or None to stop;
+    """Run in a spawned process. `jobs` carries (job_id, request, out_dir)
+    (or (job_id, request, out_dir, source_dir) for a Final) or None to stop;
     `events` carries dicts back to the server; `cancel_job.value` holds the id of the job to
     stop, so a late cancel for a finished job can never stop the next one."""
     if parent_pid is not None:
@@ -44,7 +45,7 @@ def worker_main(spec: EngineSpec, jobs, events, cancel_job, parent_pid: int | No
         return
     events.put({"type": "ready"})
     while (job := jobs.get()) is not None:
-        job_id, request, out_dir = job
+        job_id, request, out_dir, *source = job
 
         def raw(event: dict[str, Any], job_id=job_id) -> None:
             events.put({**event, "job_id": job_id})
@@ -53,7 +54,10 @@ def worker_main(spec: EngineSpec, jobs, events, cancel_job, parent_pid: int | No
         emit({"type": "started"})
         try:
             cancelled = partial(_is_cancelled, cancel_job, job_id)
-            take = engine.render(request, Path(out_dir), cancelled, emit)
+            if source and source[0] is not None:
+                take = engine.finalize(Path(source[0]), request, Path(out_dir), cancelled, emit)
+            else:
+                take = engine.render(request, Path(out_dir), cancelled, emit)
         except Cancelled:
             emit({"type": "cancelled"})
         except Exception:

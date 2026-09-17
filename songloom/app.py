@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import io
 import json
 import queue
@@ -15,7 +16,7 @@ from pathlib import Path
 from typing import Literal
 
 import soundfile
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -221,6 +222,16 @@ def create_app(
             raise HTTPException(404, "no such song")
         return {"deleted": song_id, "job_id": song["job_id"]}
 
+    @app.post("/api/songs/{song_id}/finalize", status_code=201)
+    def finalize_song(song_id: int):
+        """Queue this Draft's Final: its saved Semantic tokens and noise at 32 Synthesis steps."""
+        if not app.state.setup.can_render():
+            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
+        job, refused = app.state.runner.finalize(song_id)
+        if job is None:
+            raise HTTPException(404 if refused == "no such song" else 409, refused)
+        return job
+
     @app.put("/api/songs/{song_id}/star")
     def star_song(song_id: int, body: Star):
         song = app.state.runner.star_song(song_id, body.starred)
@@ -250,6 +261,16 @@ def create_app(
         media_type = AUDIO_TYPES[f".{format}"]
         return Response(buffer.getvalue(), media_type=media_type, headers=disposition)
 
+    @app.get("/api/songs/{song_id}/peaks")
+    def song_peaks(song_id: int, buckets: int = Query(800, ge=16, le=4000)):
+        """The waveform of a Take for drawing: per-bucket min and max of the mixed-down audio
+        (-1..1) and its duration, so the page never decodes the whole file."""
+        song = app.state.store.get_song(song_id)
+        path = Path(song["audio_path"]) if song else None
+        if path is None or not path.exists():
+            raise HTTPException(404, "no such song")
+        return waveform_peaks(str(path), path.stat().st_mtime_ns, buckets)
+
     @app.get("/api/songs/{song_id}/audio")
     def song_audio(song_id: int):
         song = app.state.store.get_song(song_id)
@@ -264,6 +285,20 @@ def create_app(
         app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
     return app
+
+
+@functools.lru_cache(maxsize=64)
+def waveform_peaks(path: str, mtime_ns: int, buckets: int) -> dict:
+    """`mtime_ns` is only part of the cache key, so a rewritten file is read again."""
+    info = soundfile.info(path)
+    frames = info.frames
+    size = max(1, -(-frames // buckets))  # ceil, so at most `buckets` blocks
+    mins, maxs = [], []
+    for block in soundfile.blocks(path, blocksize=size, always_2d=True, dtype="float32"):
+        mono = block.mean(axis=1)
+        mins.append(round(float(mono.min()), 4))
+        maxs.append(round(float(mono.max()), 4))
+    return {"duration": frames / info.samplerate, "min": mins, "max": maxs}
 
 
 def _directory_bytes(directory: Path) -> int:

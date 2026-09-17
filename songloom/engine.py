@@ -36,6 +36,18 @@ class Engine(Protocol):
     ) -> TakeOutput:
         """Render one Take into `out_dir`, which must be complete when this returns."""
 
+    def finalize(
+        self,
+        source_dir: Path,
+        request: dict[str, Any],
+        out_dir: Path,
+        cancelled: CancelCheck,
+        emit: Emit,
+    ) -> TakeOutput:
+        """Make a Draft's Final: re-synthesize the Take saved in `source_dir` (its Semantic
+        tokens and noise) at `request["steps"]` and decode it into `out_dir`. Only the synthesis
+        and decoding Stages run."""
+
 
 @dataclass(frozen=True)
 class EngineSpec:

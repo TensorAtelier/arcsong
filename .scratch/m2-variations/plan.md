@@ -12,8 +12,8 @@
 ## Tickets
 
 - [x] 01 — Variations and stars API: schema v2 with migration, `POST /api/groups`, `GET /api/groups/{id}`, `PUT /api/songs/{id}/star` with an SSE `song` message, new fields on jobs and songs; check: API tests (distinct seeds, order, group lookup, star round trip and survival across restart, a v1 database migrates with its rows intact).
-- [ ] 02 — Finalize: `POST /api/songs/{id}/finalize` queues a Final (same request, 32 steps, `source_song_id`); refused with 409 for a Take already at 32 steps or one with a queued/running/done Final; worker and Engine `finalize` for mlx-Yue and the fake; check: API tests through the fake (Final job runs synthesis and decoding only, song indexed with its source), and a real Draft → Final render behind `SONGLOOM_REAL_ENGINE=1`.
-- [ ] 03 — Waveform peaks: `GET /api/songs/{id}/peaks?buckets=N` returns per-bucket min/max of the mixed-down audio and the duration, cached in memory; the fake's tone varies with the seed so Takes look different; check: API tests (bucket count, range, a quiet vs loud file).
+- [x] 02 — Finalize: `POST /api/songs/{id}/finalize` queues a Final (same request, 32 steps, `source_song_id`); refused with 409 for a Take already at 32 steps or one with a queued/running/done Final; worker and Engine `finalize` for mlx-Yue and the fake; check: API tests through the fake (Final job runs synthesis and decoding only, song indexed with its source), and a real Draft → Final render behind `SONGLOOM_REAL_ENGINE=1`.
+- [x] 03 — Waveform peaks: `GET /api/songs/{id}/peaks?buckets=N` returns per-bucket min/max of the mixed-down audio and the duration, cached in memory; the fake's tone varies with the seed so Takes look different; check: API tests (bucket count, range, a quiet vs loud file).
 - [ ] 04 — Create ×N, queue and Library: Takes count in Create, group label and Compare link in the queue, Library star toggle, Starred filter, Draft/Final labels, Finalize button; check: in the browser against a fake-engine server.
 - [ ] 05 — Compare view: `#/compare/<group>` with a card per Take (seed, status/progress, waveform, play, star, Finalize), shared playhead across Takes, waveform click seeks; check: in the browser against a fake-engine server (switching Takes keeps the position; star and Finalize update the Library).
 
@@ -29,3 +29,5 @@
 - Synced players = one shared playhead: only one Take plays at a time; starting another seeks it to the shared time. Clicking a waveform moves the shared time for every Take.
 - The star is a boolean on the song (the "pick"); an SSE `song` message keeps other views in step.
 - CONTEXT.md gains **Variations** (Takes of one Song request with different seeds, compared side by side) and **Finalize** (turning a Draft into its Final).
+- Tickets 02 and 03 share one commit: both touch the song routes in `app.py`. The fake Engine's tone now varies with the seed (pitch and swell), which the peaks test relies on.
+- Real Finalize check (`SONGLOOM_REAL_ENGINE=1 … -k finalized`, 2026-09-17, on AC): an 8-step Draft of the short clip was finalized in one server run (38 s total); the Final's `semantic.npy`, `noise.npy` and `score.abc` are byte-identical to the Draft's and its latents differ.

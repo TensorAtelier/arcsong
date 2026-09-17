@@ -44,8 +44,7 @@ class MlxYueEngine:
     def render(
         self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
     ) -> TakeOutput:
-        from lyra.pipeline import SongResult, initial_noise
-        from yue2.storage import identity
+        from lyra.pipeline import initial_noise
 
         self.load(request["precision"])
         pipe = self._pipe
@@ -77,11 +76,47 @@ class MlxYueEngine:
         # signal (M0: one line per 5 s through a pipe).
         with StderrCounts(_step_reporter(STAGES[2], emit)):
             latents = guard(pipe.synthesize, semantic, cancelled=cancelled, noise=noise)
+        return self._decode_and_save(semantic, noise, latents, out_dir, cancelled, emit)
+
+    def finalize(
+        self,
+        source_dir: Path,
+        request: dict[str, Any],
+        out_dir: Path,
+        cancelled: CancelCheck,
+        emit: Emit,
+    ) -> TakeOutput:
+        """The Draft's saved Semantic tokens and noise, re-synthesized at the request's steps with
+        the Draft's own generation settings (M0: the result is bit-identical to a direct render).
+        mlx-Yue's `load_artifacts` verifies the saved Take before it is used."""
+        from lyra.artifacts import load_artifacts
+        from yue2.protocol import GenerationConfig
+
+        self.load(request["precision"])
+        pipe = self._pipe
+        saved = load_artifacts(source_dir)
+        if saved.noise is None:
+            raise ValueError(f"the Draft in {source_dir} kept no synthesis noise")
+        pipe.generation_config = dataclasses.replace(
+            GenerationConfig.from_dict(saved.config["generation"]), ode_steps=request["steps"]
+        )
+        guard = _cancel_guard(cancelled)
+        emit({"type": "stage", "stage": STAGES[2]})
+        with StderrCounts(_step_reporter(STAGES[2], emit)):
+            latents = guard(pipe.synthesize, saved.semantic, cancelled=cancelled, noise=saved.noise)
+        return self._decode_and_save(saved.semantic, saved.noise, latents, out_dir, cancelled, emit)
+
+    def _decode_and_save(self, semantic, noise, latents, out_dir, cancelled, emit) -> TakeOutput:
+        from lyra.pipeline import SongResult
+        from yue2.storage import identity
+
+        pipe = self._pipe
         emit({"type": "stage", "stage": STAGES[3]})
-        audio = guard(pipe.decode, latents, cancelled=cancelled)
+        audio = _cancel_guard(cancelled)(pipe.decode, latents, cancelled=cancelled)
         if cancelled():
             raise Cancelled("decoding")
 
+        plan = semantic.plan
         config = pipe.effective_config(plan.request, None, None)
         request_id = identity(
             {"request": plan.request.to_dict(), "config": config, "weights": pipe.weights}

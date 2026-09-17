@@ -45,8 +45,24 @@ class FakeEngine:
     def render(
         self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
     ) -> TakeOutput:
+        return self._run(STAGES, request, out_dir, cancelled, emit)
+
+    def finalize(
+        self,
+        source_dir: Path,
+        request: dict[str, Any],
+        out_dir: Path,
+        cancelled: CancelCheck,
+        emit: Emit,
+    ) -> TakeOutput:
+        """Like mlx-Yue, needs the Draft's saved Take and runs only synthesis and decoding."""
+        if not (source_dir / "audio.wav").is_file():
+            raise FileNotFoundError(f"no saved Take in {source_dir}")
+        return self._run(STAGES[2:], request, out_dir, cancelled, emit)
+
+    def _run(self, stages, request, out_dir, cancelled, emit) -> TakeOutput:
         steps = request.get("steps", 8)
-        for stage in STAGES:
+        for stage in stages:
             if cancelled() and not self.ignore_cancel:
                 raise Cancelled(stage)
             emit({"type": "stage", "stage": stage})
@@ -59,7 +75,7 @@ class FakeEngine:
             self._run_stage(stage, count, steps, cancelled, emit)
         out_dir.mkdir(parents=True, exist_ok=True)
         audio = out_dir / "audio.wav"
-        _write_tone(audio, self.audio_seconds)
+        _write_tone(audio, self.audio_seconds, request.get("seed", 0))
         return TakeOutput(audio_path=audio, audio_seconds=self.audio_seconds)
 
     def _run_stage(self, stage, count, steps, cancelled, emit) -> None:
@@ -78,9 +94,19 @@ class FakeEngine:
             time.sleep(min(TICK, max(0.0, deadline - now)))
 
 
-def _write_tone(path: Path, seconds: float) -> None:
+def _write_tone(path: Path, seconds: float, seed: int) -> None:
+    """A tone whose pitch and swell depend on the seed, so Variations look and sound different
+    (and a Final matches its Draft, which has the same seed)."""
     frames = int(SAMPLE_RATE * seconds)
-    samples = (int(8000 * math.sin(2 * math.pi * 440 * i / SAMPLE_RATE)) for i in range(frames))
+    pitch = 220 + seed % 440
+    swells = 1 + seed % 5
+
+    def sample(i: int) -> int:
+        t = i / SAMPLE_RATE
+        envelope = 0.2 + 0.8 * abs(math.sin(math.pi * swells * t / max(seconds, 1e-9)))
+        return int(12000 * envelope * math.sin(2 * math.pi * pitch * t))
+
+    samples = (sample(i) for i in range(frames))
     with wave.open(str(path), "wb") as out:
         out.setnchannels(1)
         out.setsampwidth(2)

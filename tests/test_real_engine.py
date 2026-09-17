@@ -49,3 +49,29 @@ def test_a_real_take_is_rendered_saved_and_indexed(tmp_path):
         assert audio.status_code == 200
         info = soundfile.info(take / "audio.flac")
         assert info.samplerate == 48_000 and info.duration == pytest.approx(job["audio_seconds"])
+
+
+def wait_done(client, job_id, limit=900):
+    deadline = time.monotonic() + limit
+    while (job := client.get(f"/api/jobs/{job_id}").json())["status"] in ("queued", "running"):
+        assert time.monotonic() < deadline, f"job {job_id} took over {limit} s"
+        time.sleep(1)
+    return job
+
+
+def test_a_real_draft_is_finalized_from_its_saved_take(tmp_path):
+    with TestClient(create_app(MLX, tmp_path, models=MlxYueModels(MODELS))) as client:
+        draft = wait_done(client, client.post("/api/jobs", json=SHORT).json()["id"])
+        assert draft["status"] == "done", draft["error"]
+        created = client.post(f"/api/songs/{draft['song_id']}/finalize")
+        assert created.status_code == 201, created.text
+        final = wait_done(client, created.json()["id"])
+
+        assert final["status"] == "done", final["error"]
+        assert final["request"]["steps"] == 32 and final["source_song_id"] == draft["song_id"]
+        draft_dir, final_dir = (tmp_path / "songs" / str(j["id"]) for j in (draft, final))
+        # Same Semantic tokens and noise; only synthesis differs.
+        for name in ("semantic.npy", "noise.npy", "score.abc"):
+            assert (final_dir / name).read_bytes() == (draft_dir / name).read_bytes(), name
+        assert (final_dir / "latent.npy").read_bytes() != (draft_dir / "latent.npy").read_bytes()
+        assert final["audio_seconds"] == pytest.approx(draft["audio_seconds"])
