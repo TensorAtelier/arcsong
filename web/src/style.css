@@ -151,3 +151,6 @@ textarea.abc { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font
 .paper path.abcjs-staff, .paper path.abcjs-bar { stroke: var(--text); }
 ul.diff { margin: 4px 0 0; padding-left: 18px; }
 @media (max-width: 720px) { .score-panes { grid-template-columns: minmax(0, 1fr); } }
+
+.stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+input[type="file"] { padding: 6px; }

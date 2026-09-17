@@ -1,7 +1,13 @@
 export type Mode = "full" | "melody" | "off";
 export type Precision = "8bit" | "bf16";
 export type Status = "queued" | "running" | "done" | "failed" | "cancelled";
-export type Stage = "planning" | "semantic generation" | "synthesis" | "decoding";
+export type Stage =
+  | "planning"
+  | "semantic generation"
+  | "synthesis"
+  | "decoding"
+  /** A cover's own Stage, before any of those. */
+  | "transcribing";
 
 export interface CoverRequest {
   audio: File;

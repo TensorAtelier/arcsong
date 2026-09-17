@@ -14,7 +14,7 @@
 
 - [x] 01 — Setup parts: `Setup` holds named parts (`engine`, `covers`), `GET /api/setup` returns them, `POST /api/setup/download/{part}` and its cancel, an ffmpeg check with an install hint, and `TranscriptionModels` (pinned SheetSage2 and MERT revisions, sizes, verification by the same file-size rule); check: API tests with fake parts (a part downloads independently, jobs still gate on the engine part only, ffmpeg missing shows as a warning not a failure).
 - [x] 02 — Cover jobs: schema v4, `POST /api/covers` (multipart upload with size and rights checks), Engine `transcribe()` for mlx-Yue and the fake, worker dispatch by kind, window progress, cancel, and deleting the upload when the job ends; check: API tests through the fake (a cover job produces a Score, the upload is gone, cancel and failure also delete it, a refused upload never queues), and one real transcription of a songloom Take behind `SONGLOOM_REAL_ENGINE=1`.
-- [ ] 03 — Cover page: the Create panel (file picker, style, lyrics, rights confirmation, copyright note), queue progress for transcription, the Score view's ABC and MIDI download, and rendering a cover from the transcribed Score; check: in the browser against a fake-engine server, and a real cover render if the real transcription ticket passed.
+- [x] 03 — Cover page: the Create panel (file picker, style, lyrics, rights confirmation, copyright note), queue progress for transcription, the Score view's ABC and MIDI download, and rendering a cover from the transcribed Score; check: in the browser against a fake-engine server, and a real cover render if the real transcription ticket passed.
 
 ## Notes
 
@@ -34,3 +34,5 @@
 - Form fields arrive as text, so `steps` is taken as an `int` and checked by hand; `Literal[8, 32]` refused `"8"` and would have broken the page too (caught by the real run, now covered by a test).
 - `GET /api/scores/{job}` serves a cover's transcription as well as a planned Score, so the Score view needs no special case.
 - Real cover check (`SONGLOOM_REAL_ENGINE=1`, 2026-09-17, on AC): the covers weights downloaded and verified in 42 s (218 MB + 2.4 GB), then a rendered Take was transcribed and re-sung in a new style in 47 s, with the upload gone from disk afterwards.
+- MIDI export asks abcjs for `midiOutputType: "binary"`: its "encoded" output is a percent-escaped data URI, not base64, so decoding it as base64 threw (caught in the browser, now shown as an error instead of an uncaught exception). The export uses the tune the view already parsed rather than re-parsing.
+- Browser check (fake engine, debug Chrome): the Cover panel takes a file, style and the rights box; submitting queues a cover that shows "Cover · … from my-song.wav" in the queue with its own transcription Stage, lands in the Score view with notation, exports ABC and MIDI, and "Render song from this Score" queues the cover render.

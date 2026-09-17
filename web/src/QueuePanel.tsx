@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { api, type Job, type Live, type Stage } from "./api";
 import { formatSeconds } from "./format";
 
+const TRANSCRIBING: { key: Stage; label: string }[] = [
+  { key: "transcribing", label: "Transcribing the recording" },
+];
+
 const STAGES: { key: Stage; label: string }[] = [
   { key: "planning", label: "Writing the Score" },
   { key: "semantic generation", label: "Generating the song" },
@@ -59,7 +63,7 @@ function JobCard({ job, group, onChanged }: CardProps) {
     <li className={`job ${job.status}`}>
       <div className="job-head">
         <span className="job-title" title={job.request.style}>
-          #{job.id} · {job.kind === "score" ? "Score · " : ""}
+          #{job.id} · {job.kind === "score" ? "Score · " : job.kind === "cover" ? "Cover · " : ""}
           {job.request.style}
         </span>
         <span className={`badge ${job.status}`}>{job.status}</span>
@@ -77,10 +81,16 @@ function JobCard({ job, group, onChanged }: CardProps) {
       )}
       {job.source_song_id !== null && <div className="small">Final of song #{job.source_song_id}</div>}
 
-      {job.status === "running" && (
-        <Progress live={job.live} stages={job.kind === "score" ? STAGES.slice(0, 1) : STAGES} />
-      )}
+      {job.status === "running" && <Progress live={job.live} stages={stagesFor(job)} />}
 
+      {job.request.source_name && (
+        <div className="muted small">from {job.request.source_name}</div>
+      )}
+      {job.kind === "cover" && job.status === "done" && (
+        <div className="small">
+          <a href={`#/score/job/${job.id}`}>Open the transcribed Score</a>
+        </div>
+      )}
       {job.kind === "score" && job.status === "done" && (
         <div className="small">
           <a href={`#/score/job/${job.id}`}>Open the Score</a>
@@ -111,6 +121,11 @@ function JobCard({ job, group, onChanged }: CardProps) {
       {cancelError && <p className="error">{cancelError}</p>}
     </li>
   );
+}
+
+function stagesFor(job: Job) {
+  if (job.kind === "cover") return TRANSCRIBING;
+  return job.kind === "score" ? STAGES.slice(0, 1) : STAGES;
 }
 
 export function Progress({ live, stages = STAGES }: { live: Live | null; stages?: typeof STAGES }) {

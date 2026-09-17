@@ -24,6 +24,8 @@ export default function ScoreView({ source, onJob }: Props) {
   const [check, setCheck] = useState<ScoreCheck | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // The parsed Score the notation is showing, which MIDI export needs.
+  const [tune, setTune] = useState<abcjs.TuneObject | null>(null);
 
   // Bumped to reload while the run is still planning.
   const [attempt, setAttempt] = useState(0);
@@ -145,6 +147,7 @@ export default function ScoreView({ source, onJob }: Props) {
   }
 
   const edited = text !== original;
+  const name = `songloom-score-${source.kind}-${source.id}`;
 
   return (
     <section className="panel score" aria-label="Score">
@@ -164,7 +167,7 @@ export default function ScoreView({ source, onJob }: Props) {
         </p>
       )}
 
-      <Notation abc={check?.ok === false ? original : text} valid={check?.ok !== false} />
+      <Notation abc={check?.ok === false ? original : text} valid={check?.ok !== false} onTune={setTune} />
 
       <div className="score-panes">
         <div>
@@ -214,6 +217,16 @@ export default function ScoreView({ source, onJob }: Props) {
             <button type="button" disabled={busy || !edited} onClick={() => setText(original)}>
               Reset
             </button>
+            <button type="button" onClick={() => download(`${name}.abc`, new Blob([text]))}>
+              ABC
+            </button>
+            <button
+              type="button"
+              disabled={check?.ok === false}
+              onClick={() => setActionError(exportMidi(tune, name))}
+            >
+              MIDI
+            </button>
             {request && (
               <button
                 type="button"
@@ -240,7 +253,37 @@ export default function ScoreView({ source, onJob }: Props) {
   );
 }
 
-function Notation({ abc, valid }: { abc: string; valid: boolean }) {
+function download(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** abcjs turns the Score the view already parsed into a MIDI file, here in the page. */
+function exportMidi(tune: abcjs.TuneObject | null, name: string): string | null {
+  if (!tune) return "This Score could not be turned into MIDI.";
+  try {
+    // "binary" hands back the MIDI bytes; "encoded" is a percent-escaped data URI, not base64.
+    const bytes = abcjs.synth.getMidiFile(tune, { midiOutputType: "binary" }) as Uint8Array;
+    const copy = new Uint8Array(bytes.length);
+    copy.set(bytes);  // a plain ArrayBuffer, which Blob's types insist on
+    download(`${name}.mid`, new Blob([copy], { type: "audio/midi" }));
+    return null;
+  } catch (e) {
+    return `MIDI export failed: ${e instanceof Error ? e.message : String(e)}`;
+  }
+}
+
+interface NotationProps {
+  abc: string;
+  valid: boolean;
+  onTune: (tune: abcjs.TuneObject | null) => void;
+}
+
+function Notation({ abc, valid, onTune }: NotationProps) {
   const paper = useRef<HTMLDivElement>(null);
   const synth = useRef<InstanceType<typeof abcjs.synth.CreateSynth> | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -257,9 +300,10 @@ function Notation({ abc, valid }: { abc: string; valid: boolean }) {
       add_classes: true,
     });
     setTune(rendered ?? null);
+    onTune(rendered ?? null);
     // An edited Score is a different tune: whatever was primed no longer matches it.
     stop();
-  }, [abc]);
+  }, [abc, onTune]);
 
   // Leaving the view must not play on.
   useEffect(() => {

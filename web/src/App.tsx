@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Deleted, type Job, type Setup, type Song, type SongRequest, watchEvents } from "./api";
 import CompareView from "./CompareView";
+import CoverForm from "./CoverForm";
 import ScoreView from "./ScoreView";
 import CreateForm from "./CreateForm";
 import LibraryView from "./LibraryView";
@@ -22,6 +23,17 @@ function viewFromHash(): View {
   if (scoreSource(hash) !== null) return "score";
   if (compareGroup(hash) !== null) return "compare";
   return hash === HASHES.library ? "library" : hash === HASHES.setup ? "setup" : "create";
+}
+
+/** Covers need their own weights and ffmpeg; Setup reports both on the covers part. */
+function coversReady(setup: Setup | null): boolean {
+  const part = setup?.parts?.find((p) => p.id === "covers");
+  if (!part) return false;
+  return (
+    part.weights.installed &&
+    part.download.state !== "running" &&
+    part.checks.every((check) => check.status !== "fail" || check.id === "weights")
+  );
 }
 
 /** The Score behind `#/score/job/<id>` or `#/score/song/<id>`, or null. */
@@ -201,12 +213,15 @@ export default function App() {
         <CompareView groupId={groupId} jobs={ordered} songs={songs} onJob={upsert} onSong={updateSong} />
       ) : view === "create" ? (
         <div className="layout">
-          <CreateForm
-            key={draft?.version ?? 0}
-            initial={draft?.request}
-            onCreated={upsert}
-            canRender={setup?.can_render ?? true}
-          />
+          <div className="stack">
+            <CreateForm
+              key={draft?.version ?? 0}
+              initial={draft?.request}
+              onCreated={upsert}
+              canRender={setup?.can_render ?? true}
+            />
+            <CoverForm onCreated={upsert} ready={coversReady(setup)} />
+          </div>
           <QueuePanel jobs={ordered} onChanged={upsert} error={jobsError} />
         </div>
       ) : (
