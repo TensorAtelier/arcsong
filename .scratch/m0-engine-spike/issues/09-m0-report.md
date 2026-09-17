@@ -6,10 +6,35 @@ Read first: spec, ledger D-017 and D-019; `CONTEXT.md`; every file in the result
 
 **Blocked by:** 02, 04, 05, 06, 07, 08
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `uv run spike report` regenerates the report's tables from the results files; a test with fixture results checks every M0 question gets a section and missing results are shown as "not measured"
-- [ ] Every number in the report appears in, and cites, a results file
-- [ ] The recommendation walks D-017's criteria in order and states the Engine
-- [ ] PLAN.md's M0 checkboxes are ticked with a link to the report; no other PLAN.md section is rewritten
-- [ ] `uv run pytest -q` and `uv run ruff check .` pass
+- [x] `uv run spike report` regenerates the report's tables from the results files; a test with fixture results checks every M0 question gets a section and missing results are shown as "not measured"
+- [x] Every number in the report appears in, and cites, a results file
+- [x] The recommendation walks D-017's criteria in order and states the Engine
+- [x] PLAN.md's M0 checkboxes are ticked with a link to the report; no other PLAN.md section is rewritten
+- [x] `uv run pytest -q` and `uv run ruff check .` pass
+
+## Comments
+
+**Driver, after ticket 02 (from QA):** (1) The 250 ms sampled `peak_footprint_bytes` reads 0.02–0.66 GiB below macOS's `lifetime_peak_footprint_bytes`; quote the lifetime figure, or both. (2) `spike/results/doctor-mlx-clip-bf16-32.json` (ticket 01) uses the older per-run shape (no `run`/`outcome`/memory fields) and `SCHEMA_VERSION` was not bumped; the report generator must tolerate both shapes, or doctor results can be regenerated. (3) LM Studio and ComfyUI were running throughout the mlx timing matrix (`env.model_servers`); run-to-run synthesis time varied up to ~25%. Say so next to the timing numbers.
+
+**Driver, after ticket 04:** power and sleep affect the timing comparison. (1) The Mac slept (lid closed, battery) 17:38:02–17:44:19 on 2026-09-16; the affected audio.cpp bf16/32 case was rerun under `caffeinate`. (2) audio.cpp bf16/8 and possibly other early cases ran partly on battery; mlx-Yue refuses to run without AC (`require_ac=True`), so every mlx result ran on AC. (3) ComfyUI's memory was freed partway through ticket 04 (user, ~17:50). The report must list these conditions next to the Engine timing comparison. Where a difference could come from them (e.g. audio.cpp bf16/8 on battery), say so, or rerun that case under `caffeinate` on AC before writing the recommendation.
+
+**Driver, after ticket 04 (from QA):** (1) Songs differ in length between Engines (audio.cpp bf16 204 s / q8_0 216 s vs mlx bf16 172 s / 8bit 185 s of audio), so compare time per audio second as well as totals. (2) Quote both runs; mlx bf16/32 run 2 (504 s) was much faster than run 1 (656 s). (3) Compare `model_load_seconds`, not `load_seconds` (audio.cpp loads inside the run). (4) The audio.cpp log parser clamps Stage starts after a sleep without flagging it; no kept result was clamped. Power state isn't in the results files: per `pmset`, audio.cpp bf16/8 (17:10–17:24) ran on battery and the rest ran on AC.
+
+**Driver, after ticket 06:** audio.cpp v0.8.0's CLI cannot export a generated Score (`--out-dir`/`--text-out` probed and failed; v0.8.0's docs don't promise it, but `main` added it in PR #561, merged 2026-09-15 23:09 UTC, just after the v0.8.0 tag, so a later release should have it. Report it as "missing in the pinned release, landed upstream", not as a permanent gap), and its "warm" repro pair is two cold CLI runs (it reloads per Take). The first point matters for the score-edit workflow (#7) under D-017's must-haves: the UI could not show or edit a Score that audio.cpp planned. With v0.8.0 as pinned, audio.cpp would need `abc` supplied or a separate planning path; bumping to a release containing #561 likely removes the gap.
+
+**Driver, after ticket 07 (from QA):** (1) audio.cpp `timing.final_saving_seconds` (4.1 s, ratio 0.995) is run-to-run jitter between two full re-runs, not a saving; don't report it as one. The real audio.cpp Draft→Final cost is `fallback.same_seed_rerun` (776.9 s, a full re-run). (2) The mlx proof that the Final re-synthesizes is Final == direct-32 bit for bit from a separate process. `reused ... equal: true` compares re-saved copies and proves little, and the Final's own `result.json` repeats the Draft's planning/semantic timings, so use the harness's `final_seconds`. (3) "A plain same-seed audio.cpp Draft needs no probe and shares the Engine's noise" is inferred from ticket 06, not measured; label it. (4) mlx-Yue Draft 223 s + Final 361 s = 584 s, versus direct-32 486 s: the saving applies only to Drafts that get a Final. State this per D-012 (#5 placement).
+
+**Driver, after ticket 08 (from QA):** (1) `after_redownload` is `snapshot_download` over the fixed directory: huggingface_hub re-hashes the VAE and skips fetching it, and re-fetches only the small files. Don't call it a fresh download. (2) The minimal working fix is to delete `converted/.cache` and `converted/.gitattributes` (or use `ignore_patterns` for `.gitattributes` at download). `vae/.cache` never breaks VAE verification. (3) The three large safetensors were cloned, not downloaded. A real full download would add metadata/lock pairs for them too, and deleting `.cache` still covers that. Say the download check covered small files + VAE (~530 MB). (4) Hygiene covers kills mid-synthesis only. A kill while the Take is being saved (partly written output directory) was not measured. Note the gap for M1's worker cleanup.
+
+**QA round 1 (FAIL):** 5 defects: PR #561 overstated as enabling planning alone; two sums computed from rounded values; 8-bit speed/memory claims contradicted by results; the audio.cpp log claim was too broad; the PLAN.md change description was inaccurate. All fixed in round 2.
+
+**QA round 2 (FAIL) — parked on `wip/m0-engine-spike/09-m0-report` (f9e22e3). Open defects:**
+1. docs/m0-report.md:59 and :285 — says audio.cpp semantic generation logs nothing until it ends, but the cited log `spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audiocpp.log` lines 110–113 show a KV-cache refill ~111 s into the Stage (every q8_0 log has `refill_count 1`; bf16 none). Synthesis really is silent. Fix: say semantic generation logs only an occasional refill line that is useless for progress.
+2. docs/m0-report.md:429–447 — the ticket-04 caveat is missing: the audio.cpp log parser clamps Stage starts after a sleep without flagging it, and no kept result was clamped. Add it next to the Sleep bullet.
+3. docs/m0-report.md:535 — Findings 1 says mlx-Yue is "confirmed" by D-017 step 1; D-017 makes it a proposal the user confirms (and report line 51 says so). Fix: "proposed"/"recommended".
+4. tests/test_m0_report_numbers.py:32–37, 50, 61, 67, 73, 80 — substring checks miss drift for 11 of 15 numbers that appear more than once in the prose (e.g. 223.2, 360.8, 485.5, 98.4, 776.9, cancel ranges, 0.08–0.25, 6.27–6.28, 37.9–62.9). Fix: assert every occurrence (regex on the surrounding phrase) or the expected count.
+QA round 2 otherwise confirmed: regeneration byte-identical; all recomputed numbers match unrounded results; PR #561 described accurately; PLAN.md changed only in M0; all other caveats present; listening paths exist.
+
+**Resolved 2026-09-17 (user approved):** the four round-2 defects plus the goal review's fifth (PLAN.md progress box ticked although within-Stage rate wasn't measured; now left open) were fixed on the wip branch in `0ec12eb`, then merged into `feat/m0-engine-spike` (`96b4882`). Verified: 110 tests pass, ruff clean, regeneration byte-identical, and a mutation check shows the numbers test now fails on single-occurrence drift. Within-Stage progress continues as ticket 10.

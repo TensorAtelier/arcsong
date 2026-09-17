@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "measurement": "timing",
+  "engine": "mlx",
+  "engine_version": "0.1.0",
+  "case": "song",
+  "params": {
+    "precision": "bf16",
+    "steps": 32
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "mlx-Yue",
+      "version": "0.1.0",
+      "commit": "9253ed133343406947bde7b67d43c7a63fb39d99"
+    },
+    "model_servers": [
+      {
+        "server": "LM Studio",
+        "pid": 1445,
+        "rss_bytes": 188055552,
+        "command": "/Applications/LM Studio.app/Contents/MacOS/LM Studio"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1451,
+        "rss_bytes": 5406720,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/Electron Framework.framework/Helpers/chrome_crashpad_handler --no-rate-limit --no-upload-gzip --monitor-self-annotation=ptype=crashpad-handler --database=/Users/julian/Library/Application Support/LM Studio/Crashpad --annotation=_productName=LM Studio --annotation=_version=0.4.18+1 --annotation=plat=OS X --annotation=prod=Electron --annotation=ver=38.6.0 --handshake-fd=17"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1452,
+        "rss_bytes": 41811968,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper (GPU).app/Contents/MacOS/LM Studio Helper (GPU) --type=gpu-process --user-data-dir=/Users/julian/Library/Application Support/LM Studio --gpu-preferences=SAAAAAAAAAAgAAAIAAAAAAAAAAAAAGAAAwAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --seatbelt-client=30"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1453,
+        "rss_bytes": 19939328,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper.app/Contents/MacOS/LM Studio Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --user-data-dir=/Users/julian/Library/Application Support/LM Studio --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --seatbelt-client=30"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1454,
+        "rss_bytes": 20692992,
+        "command": "/Users/julian/.lmstudio/.internal/utils/node -e \\012function connectPort(port) {\\012  const handlersMap = new Map();\\012  return {\\012    postMessage: data => process.send({ port: port, data }),\\012    on: (event, handler) => {\\012      if (event !== \"message\") {\\012        throw new Error(\"Unsupported event: \" + event);\\012      }\\012      const innerHandler = payload => {\\012        if (payload.port === port) {\\012          handler({ data: payload.data });\\012        }\\012      }\\012      handlersMap.set(handler, innerHandler);\\012      process.on('message', innerHandler);\\012    },\\012    off: (event, handler) => {\\012      if (event !== \"message\") {\\012        throw new Error(\"Unsupported event: \" + event);\\012      }\\012      const innerHandler = handlersMap.get(handler);\\012      if (innerHandler) {\\012        process.off('message', innerHandler);\\012        handlersMap.delete(handler);\\012      }\\012    },\\012  };\\012}\\012process.parentPort = connectPort(0);\\012process.rcPort = connectPort(1);\\012process.resourcesPath = \"/Applications/LM Studio.app/Contents/Resources\";\\012require(\"/Applications/LM Studio.app/Contents/Resources/app/.webpack/lib/systemresourcesworker.js\"); /Applications/LM Studio.app/Contents/Resources/app/.webpack/lib/systemresourcesworker.js /Applications/LM Studio.app/Contents/Resources/app/.webpack/bin/liblmstudio/metal/liblmstudio_bindings.node"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1458,
+        "rss_bytes": 107757568,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper (Renderer).app/Contents/MacOS/LM Studio Helper (Renderer) --type=renderer --user-data-dir=/Users/julian/Library/Application Support/LM Studio --app-path=/Applications/LM Studio.app/Contents/Resources/app --no-sandbox --no-zygote --node-integration-in-worker --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=4 --time-ticks-at-unix-epoch=-1786127886274263 --launch-time-ticks=2551478391518 --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --lmstudio-window-key=window-1 --lmstudio-project-identifier=default-project-identifier"
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 36205,
+        "rss_bytes": 4374528,
+        "command": "/Users/julian/image_gen/ComfyUI/.venv/bin/python -c from multiprocessing.resource_tracker import main;main(23)"
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 74446,
+        "rss_bytes": 53673984,
+        "command": "/Users/julian/image_gen/ComfyUI/.venv/bin/python /Users/julian/image_gen/ComfyUI/main.py --highvram --use-pytorch-cross-attention"
+      }
+    ]
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-16T22:57:28.127753+00:00",
+  "total_seconds": 1160.4722285000607,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "load_seconds": 6.174088708125055,
+      "lazy_load_seconds": {
+        "ar_load_seconds": 0.18722937488928437,
+        "nar_load_seconds": 0.25876875035464764,
+        "vae_load_seconds": 0.13762937486171722
+      },
+      "model_load_seconds": 6.757716208230704,
+      "stage_seconds": {
+        "planning": 62.862329041585326,
+        "semantic generation": 136.67472229106352,
+        "synthesis": 438.0218756659888,
+        "decoding": 11.764422624837607
+      },
+      "run_seconds": 649.8294410831295,
+      "total_seconds": 656.0035297912546,
+      "engine_peak_memory_bytes": 11256157062,
+      "audio_seconds": 172.31866666666667,
+      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-bf16-32/run-1/take/audio.flac",
+      "audio_bytes": 36825623,
+      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-bf16-32/run-1/take",
+      "files": [
+        {
+          "path": "abc_tokens.npy",
+          "bytes": 7988
+        },
+        {
+          "path": "audio.flac",
+          "bytes": 36825623
+        },
+        {
+          "path": "config.json",
+          "bytes": 1716
+        },
+        {
+          "path": "latent.npy",
+          "bytes": 1102976
+        },
+        {
+          "path": "noise.npy",
+          "bytes": 1102976
+        },
+        {
+          "path": "plan.json",
+          "bytes": 44310
+        },
+        {
+          "path": "plan_manifest.json",
+          "bytes": 341
+        },
+        {
+          "path": "prefix.npy",
+          "bytes": 9896
+        },
+        {
+          "path": "request.json",
+          "bytes": 1665
+        },
+        {
+          "path": "result.json",
+          "bytes": 7815
+        },
+        {
+          "path": "score.abc",
+          "bytes": 2745
+        },
+        {
+          "path": "semantic.npy",
+          "bytes": 17360
+        }
+      ],
+      "files_total_bytes": 39125411,
+      "stage_events": [
+        {
+          "stage": "planning",
+          "kind": "start",
+          "seconds": 4.237517714500427e-05
+        },
+        {
+          "stage": "planning",
+          "kind": "end",
+          "seconds": 62.86237141676247
+        },
+        {
+          "stage": "semantic generation",
+          "kind": "start",
+          "seconds": 62.8624229170382
+        },
+        {
+          "stage": "semantic generation",
+          "kind": "end",
+          "seconds": 199.53714520810172
+        },
+        {
+          "stage": "synthesis",
+          "kind": "start",
+          "seconds": 199.57043616706505
+        },
+        {
+          "stage": "synthesis",
+          "kind": "end",
+          "seconds": 637.5923118330538
+        },
+        {
+          "stage": "decoding",
+          "kind": "start",
+          "seconds": 637.5923447920941
+        },
+        {
+          "stage": "decoding",
+          "kind": "end",
+          "seconds": 649.3567674169317
+        }
+      ],
+      "child_wall_seconds": 656.2142474576831,
+      "peak_footprint_bytes": 11236120720,
+      "lifetime_peak_footprint_bytes": 11544402040,
+      "footprint_samples": 2571,
+      "footprint_interval_seconds": 0.25
+    },
+    {
+      "run": 2,
+      "outcome": "ok",
+      "load_seconds": 6.183530832640827,
+      "lazy_load_seconds": {
+        "ar_load_seconds": 0.18016749992966652,
+        "nar_load_seconds": 0.18757791630923748,
+        "vae_load_seconds": 0.13333804067224264
+      },
+      "model_load_seconds": 6.684614289551973,
+      "stage_seconds": {
+        "planning": 59.071228000335395,
+        "semantic generation": 112.3764169588685,
+        "synthesis": 315.6900829579681,
+        "decoding": 10.281937249936163
+      },
+      "run_seconds": 497.86282058339566,
+      "total_seconds": 504.0463514160365,
+      "engine_peak_memory_bytes": 11256157062,
+      "audio_seconds": 172.31866666666667,
+      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-bf16-32/run-2/take/audio.flac",
+      "audio_bytes": 36825623,
+      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-bf16-32/run-2/take",
+      "files": [
+        {
+          "path": "abc_tokens.npy",
+          "bytes": 7988
+        },
+        {
+          "path": "audio.flac",
+          "bytes": 36825623
+        },
+        {
+          "path": "config.json",
+          "bytes": 1716
+        },
+        {
+          "path": "latent.npy",
+          "bytes": 1102976
+        },
+        {
+          "path": "noise.npy",
+          "bytes": 1102976
+        },
+        {
+          "path": "plan.json",
+          "bytes": 44309
+        },
+        {
+          "path": "plan_manifest.json",
+          "bytes": 341
+        },
+        {
+          "path": "prefix.npy",
+          "bytes": 9896
+        },
+        {
+          "path": "request.json",
+          "bytes": 1665
+        },
+        {
+          "path": "result.json",
+          "bytes": 7814
+        },
+        {
+          "path": "score.abc",
+          "bytes": 2745
+        },
+        {
+          "path": "semantic.npy",
+          "bytes": 17360
+        }
+      ],
+      "files_total_bytes": 39125409,
+      "stage_events": [
+        {
+          "stage": "planning",
+          "kind": "start",
+          "seconds": 5.283299833536148e-05
+        },
+        {
+          "stage": "planning",
+          "kind": "end",
+          "seconds": 59.07128083333373
+        },
+        {
+          "stage": "semantic generation",
+          "kind": "start",
+          "seconds": 59.071331958286464
+        },
+        {
+          "stage": "semantic generation",
+          "kind": "end",
+          "seconds": 171.44774891715497
+        },
+        {
+          "stage": "synthesis",
+          "kind": "start",
+          "seconds": 171.46964175021276
+        },
+        {
+          "stage": "synthesis",
+          "kind": "end",
+          "seconds": 487.1597247081809
+        },
+        {
+          "stage": "decoding",
+          "kind": "start",
+          "seconds": 487.1597542921081
+        },
+        {
+          "stage": "decoding",
+          "kind": "end",
+          "seconds": 497.4416915420443
+        }
+      ],
+      "child_wall_seconds": 504.25743633368984,
+      "peak_footprint_bytes": 11061991520,
+      "lifetime_peak_footprint_bytes": 11517352032,
+      "footprint_samples": 1967,
+      "footprint_interval_seconds": 0.25
+    }
+  ]
+}

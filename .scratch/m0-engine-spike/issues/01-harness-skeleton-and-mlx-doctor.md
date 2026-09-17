@@ -6,10 +6,10 @@ Read first: `.scratch/m0-engine-spike/spec.md`, and ledger entries D-004, D-005,
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `uv sync` then `uv run spike doctor --engine mlx` produces a playable `clip` audio file under the runs directory and a results JSON with `outcome: ok` in the results directory
-- [ ] Rerunning the same command skips the case because results exist; `--force` reruns it
-- [ ] Tests through `FakeEngine` cover: results schema, resume/skip, and a crashing / Unsupported engine recorded as that outcome while the command exits cleanly
-- [ ] mlx-Yue is pinned by git commit in `pyproject.toml`; no weights, audio or tensors are tracked by git
-- [ ] `uv run pytest -q` and `uv run ruff check .` pass
+- [x] `uv sync` then `uv run spike doctor --engine mlx` produces a playable `clip` audio file under the runs directory and a results JSON with `outcome: ok` in the results directory
+- [x] Rerunning the same command skips the case because results exist; `--force` reruns it
+- [x] Tests through `FakeEngine` cover: results schema, resume/skip, and a crashing / Unsupported engine recorded as that outcome while the command exits cleanly
+- [x] mlx-Yue is pinned by git commit in `pyproject.toml`; no weights, audio or tensors are tracked by git
+- [x] `uv run pytest -q` and `uv run ruff check .` pass

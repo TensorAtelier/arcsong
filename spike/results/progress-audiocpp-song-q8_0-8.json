@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "measurement": "progress",
+  "engine": "audiocpp",
+  "engine_version": "0.8.0",
+  "case": "song",
+  "params": {
+    "precision": "q8_0",
+    "steps": 8
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "audio.cpp",
+      "version": "0.8.0",
+      "commit": "4af1432"
+    },
+    "model_servers": []
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-17T09:18:09.258131+00:00",
+  "total_seconds": 314.97419320838526,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "load_seconds": 3.8667116314172745e-05,
+      "run_seconds": 314.86894199997187,
+      "total_seconds": 314.8689806670882,
+      "audio_seconds": 216.31866666666667,
+      "stage_seconds": {
+        "planning": 39.11561837652698,
+        "semantic generation": 118.83134508272633,
+        "synthesis": 137.2789162080735,
+        "decoding": 18.64368537487462
+      },
+      "stages": {
+        "planning": {
+          "seconds": 39.11561837652698,
+          "signals": {
+            "--log line": {
+              "count": 62,
+              "inter_arrival_seconds": {
+                "min": 5.917157977819443e-06,
+                "median": 4.716683179140091e-05,
+                "max": 38.494508042000234
+              },
+              "first_after_start_seconds": 1.0293442755937576e-05,
+              "last_before_end_seconds": 5.792360752820969e-06,
+              "per_second": {
+                "mean": 1.5850446080945964,
+                "max_in_one_second": 56
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.8873504960196034,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.903,
+                  0.903,
+                  0.903,
+                  0.903,
+                  0.903,
+                  0.903,
+                  0.903,
+                  0.903,
+                  0.903,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "uneven_count",
+            "signal": "--log line"
+          }
+        },
+        "semantic generation": {
+          "seconds": 118.83134508272633,
+          "signals": {
+            "--log line": {
+              "count": 21,
+              "inter_arrival_seconds": {
+                "min": 5.499925464391708e-06,
+                "median": 7.835379801690578e-05,
+                "max": 105.03057204186916
+              },
+              "first_after_start_seconds": 8.707866072654724e-06,
+              "last_before_end_seconds": 0.04219987476244569,
+              "per_second": {
+                "mean": 0.1767210493610126,
+                "max_in_one_second": 8
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.4662317604992983,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.429,
+                  0.429,
+                  0.429,
+                  0.429,
+                  0.429,
+                  0.429,
+                  0.429,
+                  0.429,
+                  0.619,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "uneven_count",
+            "signal": "--log line"
+          }
+        },
+        "synthesis": {
+          "seconds": 137.2789162080735,
+          "signals": {
+            "--log line": {
+              "count": 35,
+              "inter_arrival_seconds": {
+                "min": 7.000286132097244e-06,
+                "median": 4.162546247243881e-05,
+                "max": 130.78037054091692
+              },
+              "first_after_start_seconds": 0.2767029581591487,
+              "last_before_end_seconds": 1.3874843716621399e-05,
+              "per_second": {
+                "mean": 0.25495539276366763,
+                "max_in_one_second": 19
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.8669481880892007,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.914,
+                  0.914,
+                  0.914,
+                  0.914,
+                  0.914,
+                  0.914,
+                  0.914,
+                  0.914,
+                  0.914,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "uneven_count",
+            "signal": "--log line"
+          }
+        },
+        "decoding": {
+          "seconds": 18.64368537487462,
+          "signals": {
+            "--log line": {
+              "count": 101,
+              "inter_arrival_seconds": {
+                "min": 2.9159709811210632e-06,
+                "median": 1.1375173926353455e-05,
+                "max": 3.4938171254470944
+              },
+              "first_after_start_seconds": 7.497146725654602e-07,
+              "last_before_end_seconds": 1.2124888598918915e-05,
+              "per_second": {
+                "mean": 5.417383847086039,
+                "max_in_one_second": 41
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.3957453771765439,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.406,
+                  0.545,
+                  0.545,
+                  0.624,
+                  0.624,
+                  0.703,
+                  0.703,
+                  0.782,
+                  0.782,
+                  1.0
+                ]
+              }
+            },
+            "VAE chunk decoded (framework.oobleck_audio_vae.decode.full_ms)": {
+              "count": 6,
+              "inter_arrival_seconds": {
+                "min": 1.0223334999755025,
+                "median": 3.486597375012934,
+                "max": 3.5754908337257802
+              },
+              "first_after_start_seconds": 3.5769425411708653,
+              "last_before_end_seconds": 0.000756917055696249,
+              "per_second": {
+                "mean": 0.3218247829952102,
+                "max_in_one_second": 1
+              },
+              "total_known_up_front": false,
+              "total_known_from_signal": null,
+              "running_count_only": true,
+              "total": null,
+              "tracks_wall_time": {
+                "max_deviation": 0.27845735809240924,
+                "linear": false,
+                "curve": [
+                  0.0,
+                  0.0,
+                  0.167,
+                  0.167,
+                  0.333,
+                  0.333,
+                  0.5,
+                  0.5,
+                  0.667,
+                  0.667,
+                  1.0
+                ]
+              }
+            }
+          },
+          "percent_bar": {
+            "verdict": "uneven_count",
+            "signal": "VAE chunk decoded (framework.oobleck_audio_vae.decode.full_ms)"
+          }
+        }
+      },
+      "progress_hooks": {
+        "planning": "--log lines only; no per-token output while the Score is written.",
+        "semantic generation": "--log lines only; no per-token output (a KV-cache refill logs mid-Stage).",
+        "synthesis": "--log lines only; no per-step output.",
+        "decoding": "--log lines; framework.oobleck_audio_vae.decode.full_ms once per VAE chunk, no chunk total up front."
+      },
+      "stderr_is_tty": false,
+      "progress_events": 272,
+      "events_path": "/Users/julian/projects/songloom/spike/runs/progress-audiocpp-song-q8_0-8/run-1/progress-events.jsonl",
+      "child_wall_seconds": 314.9730955003761,
+      "peak_footprint_bytes": 6734226816,
+      "lifetime_peak_footprint_bytes": 6740845952,
+      "footprint_samples": 1238,
+      "footprint_interval_seconds": 0.25
+    }
+  ]
+}

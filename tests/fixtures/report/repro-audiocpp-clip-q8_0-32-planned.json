@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "measurement": "repro",
+  "engine": "audiocpp",
+  "engine_version": "0.8.0",
+  "case": "clip",
+  "params": {
+    "precision": "q8_0",
+    "steps": 32,
+    "score": "planned"
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "audio.cpp",
+      "version": "0.8.0",
+      "commit": "4af1432"
+    },
+    "model_servers": [
+      {
+        "server": "LM Studio",
+        "pid": 1445,
+        "rss_bytes": 403292160
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1451,
+        "rss_bytes": 6832128
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1452,
+        "rss_bytes": 43778048
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1453,
+        "rss_bytes": 19857408
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1454,
+        "rss_bytes": 16760832
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1458,
+        "rss_bytes": 61882368
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 36205,
+        "rss_bytes": 4374528
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 74446,
+        "rss_bytes": 606502912
+      }
+    ]
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-17T03:01:47.691850+00:00",
+  "total_seconds": 89.27931545861065,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "process": "warm",
+      "pid": 90631,
+      "takes_reuse_loaded_model": false,
+      "load_seconds": 0.00003741588443517685,
+      "takes": [
+        {
+          "take": 1,
+          "seed": 831001,
+          "run_seconds": 29.509478750173002,
+          "take_dir": "/Users/julian/projects/songloom/spike/runs/repro-audiocpp-clip-q8_0-32-planned/run-1/take-1",
+          "audio_path": "/Users/julian/projects/songloom/spike/runs/repro-audiocpp-clip-q8_0-32-planned/run-1/take-1/audio.wav",
+          "audio_seconds": 15.998666666666667,
+          "stage_outputs": {}
+        },
+        {
+          "take": 2,
+          "seed": 831001,
+          "run_seconds": 29.482699166052043,
+          "take_dir": "/Users/julian/projects/songloom/spike/runs/repro-audiocpp-clip-q8_0-32-planned/run-1/take-2",
+          "audio_path": "/Users/julian/projects/songloom/spike/runs/repro-audiocpp-clip-q8_0-32-planned/run-1/take-2/audio.wav",
+          "audio_seconds": 15.998666666666667,
+          "stage_outputs": {}
+        }
+      ],
+      "child_wall_seconds": 59.101329416036606,
+      "peak_footprint_bytes": 4729315296,
+      "lifetime_peak_footprint_bytes": 4729479136,
+      "footprint_samples": 230,
+      "footprint_interval_seconds": 0.25
+    },
+    {
+      "run": 2,
+      "outcome": "ok",
+      "process": "fresh",
+      "pid": 91656,
+      "takes_reuse_loaded_model": false,
+      "load_seconds": 0.00004312535747885704,
+      "takes": [
+        {
+          "take": 1,
+          "seed": 831001,
+          "run_seconds": 29.97475295793265,
+          "take_dir": "/Users/julian/projects/songloom/spike/runs/repro-audiocpp-clip-q8_0-32-planned/run-2/take-1",
+          "audio_path": "/Users/julian/projects/songloom/spike/runs/repro-audiocpp-clip-q8_0-32-planned/run-2/take-1/audio.wav",
+          "audio_seconds": 15.998666666666667,
+          "stage_outputs": {}
+        }
+      ],
+      "child_wall_seconds": 30.096176833845675,
+      "peak_footprint_bytes": 4729216992,
+      "lifetime_peak_footprint_bytes": 4729380832,
+      "footprint_samples": 118,
+      "footprint_interval_seconds": 0.25
+    }
+  ],
+  "comparisons": {
+    "warm_vs_warm": {
+      "warm_process": false,
+      "first_diverging_stage": "none",
+      "uncompared_stages_before": [],
+      "stages": {
+        "planning": {
+          "output": "Score",
+          "compared": false,
+          "reason": "not exported by the Engine"
+        },
+        "semantic generation": {
+          "output": "Semantic tokens",
+          "compared": false,
+          "reason": "not exported by the Engine"
+        },
+        "synthesis": {
+          "output": "Latents",
+          "compared": false,
+          "reason": "not exported by the Engine"
+        },
+        "decoding": {
+          "output": "audio",
+          "compared": true,
+          "equal": true,
+          "bit_identical": true,
+          "sample_counts": [
+            767936,
+            767936
+          ]
+        }
+      },
+      "note": "the Engine starts a new process for every Take, which loads the model again: the warm Takes are cold runs from one harness process, so a warm process (reused model, caches, kernel selection) was not tested"
+    },
+    "warm_vs_fresh": {
+      "warm_process": false,
+      "first_diverging_stage": "none",
+      "uncompared_stages_before": [],
+      "stages": {
+        "planning": {
+          "output": "Score",
+          "compared": false,
+          "reason": "not exported by the Engine"
+        },
+        "semantic generation": {
+          "output": "Semantic tokens",
+          "compared": false,
+          "reason": "not exported by the Engine"
+        },
+        "synthesis": {
+          "output": "Latents",
+          "compared": false,
+          "reason": "not exported by the Engine"
+        },
+        "decoding": {
+          "output": "audio",
+          "compared": true,
+          "equal": true,
+          "bit_identical": true,
+          "sample_counts": [
+            767936,
+            767936
+          ]
+        }
+      },
+      "note": "the Engine starts a new process for every Take, which loads the model again: the warm Takes are cold runs from one harness process, so a warm process (reused model, caches, kernel selection) was not tested"
+    }
+  },
+  "listening_pair": {
+    "comparison": "warm_vs_fresh",
+    "first": "/Users/julian/projects/songloom/spike/listen/repro-audiocpp-clip-q8_0-32-planned/warm-take-1.flac",
+    "second": "/Users/julian/projects/songloom/spike/listen/repro-audiocpp-clip-q8_0-32-planned/fresh-take-1.flac"
+  }
+}

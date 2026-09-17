@@ -1,0 +1,35 @@
+[project]
+name = "songloom"
+version = "0.0.0"
+description = "Local app for generating full songs with YuE2 (M0 engine spike harness)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  # mlx-Yue Engine, pinned by commit (D-006). Weights are read from a configurable path.
+  "mlx-yue @ git+https://github.com/vanch007/mlx-Yue.git@9253ed133343406947bde7b67d43c7a63fb39d99",
+]
+
+[project.scripts]
+spike = "spike.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["spike"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

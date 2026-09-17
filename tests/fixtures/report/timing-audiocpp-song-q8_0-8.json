@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "measurement": "timing",
+  "engine": "audiocpp",
+  "engine_version": "0.8.0",
+  "case": "song",
+  "params": {"precision": "q8_0", "steps": 8},
+  "env": {"engine": {"name": "audio.cpp", "version": "0.8.0", "commit": "4af1432"}, "model_servers": []},
+  "outcome": "failed",
+  "started_at": "2026-09-17T00:57:45.062824+00:00",
+  "total_seconds": 12.5,
+  "runs": [{"run": 1, "outcome": "failed", "error": "child process exited with code 1 without reporting a result", "child_wall_seconds": 12.5}],
+  "error": "child process exited with code 1 without reporting a result"
+}

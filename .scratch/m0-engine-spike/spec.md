@@ -45,7 +45,7 @@ A measurement harness (`spike/`) that runs the same fixed Song requests through 
 
 - **Repository:** git repo on `main`; `.gitignore` excludes venv, runs, vendor binaries, models, listening audio, and any audio/tensor/weight file types (D-018).
 - **Project:** `uv` project, Python 3.12; pytest + ruff. mlx-Yue is a git dependency pinned to commit `9253ed1`; its weights are read from a configurable path defaulting to `~/projects/mlx-Yue/models` (D-006).
-- **audio.cpp:** pinned release `v0.8.0` macOS arm64 Metal tarball, sha256 recorded, unpacked into a gitignored vendor directory; GGUF weights (main q8_0, main bf16, VAE f16 plus sidecars) from HF `audio-cpp/audio.cpp-gguf` into a gitignored models directory (D-006).
+- **audio.cpp:** pinned release `v0.8.0` macOS arm64 Metal tarball, sha256 recorded, unpacked into a gitignored vendor directory; GGUF weights (main q8_0, main bf16, VAE f16 plus sidecars) from HF `audio-cpp/Yue2-3B-GGUF` (the repo audio.cpp v0.8.0's own model spec names; corrected after ticket 03) into a gitignored models directory (D-006).
 - **Engine interface (`SpikeEngine`):** `load(precision)`, `plan(request)`, `generate_semantic(score_or_request)`, `synthesize(semantic, steps, noise)`, `decode(latents)`, `run(request, steps)`. Every call takes a cancel check and emits timestamped Stage events; unavailable operations raise `Unsupported` (D-005).
   - `MlxYueEngine`: in-process `lyra.YuE2Pipeline`, using its public Stage methods, `cancelled=` and `on_token`.
   - `AudioCppEngine`: subprocess of the prebuilt CLI; whole-run only; Stage times parsed from `--log`; cancel = process kill; supports seed, Synthesis steps, planning mode, ABC input and noise file.

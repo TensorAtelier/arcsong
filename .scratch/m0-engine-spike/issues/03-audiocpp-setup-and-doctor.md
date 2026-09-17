@@ -6,10 +6,10 @@ Read first: spec, ledger D-005, D-006, D-007 and the audio.cpp facts at the top 
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The setup command is idempotent (a second run downloads nothing) and fails loudly on a sha256 mismatch
-- [ ] `uv run spike doctor --engine audiocpp` produces a playable `clip` audio file and a results JSON with `outcome: ok` and the audio.cpp version
-- [ ] A log-parsing test against captured real `--log` output (saved as a test fixture) yields the Stage events and their durations
-- [ ] Unsupported operations are recorded as `outcome: unsupported` by the harness, not as crashes
-- [ ] `uv run pytest -q` and `uv run ruff check .` pass
+- [x] The setup command is idempotent (a second run downloads nothing) and fails loudly on a sha256 mismatch
+- [x] `uv run spike doctor --engine audiocpp` produces a playable `clip` audio file and a results JSON with `outcome: ok` and the audio.cpp version
+- [x] A log-parsing test against captured real `--log` output (saved as a test fixture) yields the Stage events and their durations
+- [x] Unsupported operations are recorded as `outcome: unsupported` by the harness, not as crashes
+- [x] `uv run pytest -q` and `uv run ruff check .` pass

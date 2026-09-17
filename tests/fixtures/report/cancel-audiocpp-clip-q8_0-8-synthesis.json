@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "measurement": "cancel",
+  "engine": "audiocpp",
+  "engine_version": "0.8.0",
+  "case": "clip",
+  "params": {
+    "precision": "q8_0",
+    "steps": 8,
+    "stage": "synthesis"
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "audio.cpp",
+      "version": "0.8.0",
+      "commit": "4af1432"
+    },
+    "model_servers": [
+      {
+        "server": "LM Studio",
+        "pid": 1445,
+        "rss_bytes": 390905856
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1451,
+        "rss_bytes": 6864896
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1452,
+        "rss_bytes": 42926080
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1453,
+        "rss_bytes": 19791872
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1454,
+        "rss_bytes": 16760832
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1458,
+        "rss_bytes": 61259776
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 36205,
+        "rss_bytes": 4374528
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 74446,
+        "rss_bytes": 606519296
+      }
+    ]
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-17T02:22:35.352438+00:00",
+  "total_seconds": 19.13020437490195,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "stage": "synthesis",
+      "cancel_after_seconds": 1.0,
+      "load_seconds": 0.00003824988380074501,
+      "stage_entered_seconds": 6.209694290999323,
+      "cancel_requested_seconds": 7.216560665983707,
+      "stage_at_request": "synthesis",
+      "cancel_latency_seconds": 0.06510391738265753,
+      "cancelled_by": "Cancelled",
+      "cancel_message": "audio.cpp run killed (pid 47694)",
+      "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/take",
+      "leftover_files": [
+        {
+          "path": "audiocpp.log",
+          "bytes": 13991
+        },
+        {
+          "path": "score.abc",
+          "bytes": 339
+        }
+      ],
+      "leftover_looks_complete": false,
+      "kill_to_exit_seconds": 0.039660374633967876,
+      "reuse": {
+        "case": "clip",
+        "reloaded": false,
+        "attempts": [
+          {
+            "reloaded": false,
+            "outcome": "ok"
+          }
+        ],
+        "outcome": "ok",
+        "run_seconds": 11.781470708083361,
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.335310125,
+          "nar_load_seconds": 0.277882209,
+          "vae_load_seconds": 0.000015459,
+          "session_load_seconds": 0.38686254154890776
+        },
+        "audio_seconds": 15.998666666666667,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/reuse",
+        "files": [
+          {
+            "path": "audio.wav",
+            "bytes": 3071788
+          },
+          {
+            "path": "audiocpp.log",
+            "bytes": 20426
+          },
+          {
+            "path": "score.abc",
+            "bytes": 339
+          }
+        ]
+      },
+      "child_wall_seconds": 19.12992320768535,
+      "peak_footprint_bytes": 4639743896,
+      "lifetime_peak_footprint_bytes": 4639973296,
+      "footprint_samples": 75,
+      "footprint_interval_seconds": 0.25
+    }
+  ]
+}
