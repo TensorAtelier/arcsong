@@ -7,4 +7,4 @@ goal: Build the M1b Setup page from PLAN.md: detect and download the model weigh
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review — MET; 3 small defects fixed after review (see REPORT.md)
