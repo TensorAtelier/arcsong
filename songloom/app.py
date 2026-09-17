@@ -6,6 +6,7 @@ import asyncio
 import json
 import queue
 import random
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -35,7 +36,10 @@ class SongRequest(BaseModel):
 
 
 def create_app(
-    spec: EngineSpec, data: str | Path | None = None, cancel_grace: float | None = None
+    spec: EngineSpec,
+    data: str | Path | None = None,
+    cancel_grace: float | None = None,
+    load_retry: float | None = None,
 ) -> FastAPI:
     root = data_dir(data)
     songs_dir = root / "songs"
@@ -44,17 +48,22 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         store = Store(root / "songloom.db")
-        kwargs = {} if cancel_grace is None else {"cancel_grace": cancel_grace}
+        options = {"cancel_grace": cancel_grace, "load_retry": load_retry}
+        kwargs = {k: v for k, v in options.items() if v is not None}
         runner = JobRunner(store, songs_dir, spec, **kwargs)
         app.state.store, app.state.runner = store, runner
         runner.start()
         try:
             yield
         finally:
+            app.state.shutting_down.set()
             runner.stop()
             store.close()
 
     app = FastAPI(title="songloom", lifespan=lifespan)
+    # Set when the server starts shutting down, so open event streams end instead of keeping
+    # the server alive (uvicorn waits for open connections before running lifespan shutdown).
+    app.state.shutting_down = threading.Event()
 
     @app.post("/api/jobs", status_code=201)
     def create_job(body: SongRequest):
@@ -95,7 +104,7 @@ def create_app(
         async def stream():
             try:
                 yield ": connected\n\n"
-                while not await request.is_disconnected():
+                while not (await request.is_disconnected() or app.state.shutting_down.is_set()):
                     try:
                         message = await asyncio.to_thread(subscription.get, True, 1.0)
                     except queue.Empty:

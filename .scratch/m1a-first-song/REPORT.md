@@ -79,15 +79,30 @@ DEFECTS:
 
 (The five DEFECTS entries are condensed from the reviewer's multi-line bullets without changing their content.)
 
+## Fixes after review (2026-09-17)
+
+The user asked to continue after the review, so all five defects were fixed on this branch. `tests/test_shutdown.py` has one test per defect; all five fail on the pre-fix code (checked in a temporary worktree) and pass after.
+
+| Defect | Fix | Checked |
+|---|---|---|
+| 1. An open SSE page blocks shutdown | `songloom serve` runs a uvicorn `Server` subclass whose `handle_exit` sets `app.state.shutting_down`; event streams end on it; `timeout_graceful_shutdown=5` as a backstop | real subprocess test; real mlx-Yue server with a stream open exits 2 s after SIGTERM, worker gone. It had also happened for real: the `dev`-stopped server (pid 87885) and its worker were still alive, holding the GPU, and had to be killed. |
+| 2. Load failure → endless restart loop, no reason shown | worker catches load errors and sends `load_failed`; the runner fails the waiting job with "The model could not load: <reason>" and starts another worker only when a job needs it, at least 5 s later; a worker that dies before `ready` is treated as a load failure | fake-engine test (2 jobs fail with the reason, ≤3 worker starts, none while idle); real server with missing weights: job fails with `FileNotFoundError: /nonexistent/models/converted`, no restart loop |
+| 3. A SIGKILLed server orphans its worker | the worker gets the server pid and a daemon thread exits when its parent changes (checked every 1 s, also mid-render) | real subprocess test: worker exits within 5 s of `kill -9` on the server |
+| 4. `seq` resets on restart; the page doesn't reload on reconnect | `seq` starts from microseconds since the epoch; the page reloads `/api/jobs` on every EventSource (re)connect | restart test: `seq` after restart > before |
+| 5. A Take finishing during shutdown is discarded | `stop()` joins the pump thread first, waits up to 5 s for the worker, then drains remaining worker events | test: a job still running at shutdown is `done` with playable audio after restart |
+
+Also: `_watch` now runs on every pump pass (review risk 6: a busy job that ignores cancel still gets its grace-period kill).
+Not fixed: review risk 7 (HEAD on the audio endpoint returns 404; browsers use GET).
+
 ## Parked tickets
 
-None. The five review defects are unfixed; they are follow-up work, not parked tickets.
+None.
 
 ## Look here first
 
-1. **Restarting while a page is open (defects 1, 3, 2).** The server doesn't exit while an SSE page is connected, an orphaned worker keeps the GPU lock, and the next worker then crash-loops. Until fixed, close the page before `dev restart songloom`, and check no `spawn_main` process is left.
-2. **An open page goes stale after a server restart (defect 4).** Reload the page after a restart.
-3. **Load failures show no reason (defect 2).** Running on battery, missing weights or a held GPU lock shows only "worker process exited unexpectedly"; the real reason is in `dev log songloom`.
+1. **All five review defects are fixed** (see "Fixes after review"). The fixes weren't re-reviewed by a fresh QA agent; each has a test that fails on the old code, and the two that hit the user were rechecked on the real engine.
+2. **Precision and data-dir defaults:** 8-bit, 32 steps, data in `~/Library/Application Support/songloom` (see Decisions).
+3. **Review risk 7 is still open:** HEAD on `/api/songs/{id}/audio` returns 404 (harmless for browsers).
 
 ## Decisions made for you
 

@@ -16,22 +16,24 @@ export default function App() {
     });
 
   useEffect(() => {
-    // Subscribe first so no change between the list request and the stream is missed.
-    const stop = watchJobs(upsert);
-    api
-      .jobs()
-      .then((list) =>
-        setJobs((current) => {
-          const next = new Map(list.map((job) => [job.id, job]));
-          for (const [id, job] of current) {
-            const listed = next.get(id);
-            if (!listed || listed.seq < job.seq) next.set(id, job);
-          }
-          return next;
-        }),
-      )
-      .catch((error) => setLoadError(String(error)));
-    return stop;
+    // Load the full list whenever the stream (re)connects: first load, and after a server
+    // restart, when jobs may have changed while no events could arrive.
+    const reload = () =>
+      api
+        .jobs()
+        .then((list) => {
+          setLoadError(null);
+          setJobs((current) => {
+            const next = new Map(list.map((job) => [job.id, job]));
+            for (const [id, job] of current) {
+              const listed = next.get(id);
+              if (listed && listed.seq < job.seq) next.set(id, job);
+            }
+            return next;
+          });
+        })
+        .catch((error) => setLoadError(String(error)));
+    return watchJobs(upsert, reload);
   }, []);
 
   const ordered = [...jobs.values()].sort((a, b) => b.id - a.id);

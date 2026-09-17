@@ -58,9 +58,11 @@ export const api = {
   audioUrl: (songId: number) => `/api/songs/${songId}/audio`,
 };
 
-/** Subscribes to job snapshots; reconnects automatically (EventSource does). */
-export function watchJobs(onJob: (job: Job) => void): () => void {
+/** Subscribes to job snapshots. EventSource reconnects by itself; `onConnect` runs on every
+ * (re)connection so the caller can reload anything that changed while it was disconnected. */
+export function watchJobs(onJob: (job: Job) => void, onConnect: () => void): () => void {
   const source = new EventSource("/api/events");
+  source.onopen = onConnect;
   source.onmessage = (event) => {
     const message = JSON.parse(event.data);
     if (message.type === "job") onJob(message.job);

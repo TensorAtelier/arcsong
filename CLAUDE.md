@@ -10,9 +10,9 @@ Local web UI for the YuE2 music model. Plan: `PLAN.md`. Prior art: `docs/prior-a
 - Verify: `uv run pytest -q`, `uv run ruff check .`, `cd web && npm run typecheck`. Real render test: `SONGLOOM_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py`.
 
 Gotchas:
-- Only one process can own the Lyra GPU lock. A second worker (another server, or an orphan) fails with "Another Lyra process owns the GPU", and today the runner restarts it in a loop (M1a review defect 2).
-- A server with an open page (SSE) doesn't exit on SIGTERM, and a SIGKILLed server orphans its worker (defects 1, 3). Close the page before restarting, and check no `spawn_main` process is left.
-- `seq` on job snapshots resets on server restart, so reload the page after restarting (defect 4).
+- Only one process can own the Lyra GPU lock; a second worker fails to load with "Another Lyra process owns the GPU". That now fails the waiting job with the reason and retries only when a job needs a worker (5 s apart).
+- The worker exits when its server dies (parent check every 1 s), and SIGTERM ends open SSE streams so the server can stop with a page open. If a server was killed with an older build, check no `spawn_main` process is left.
+- Job snapshots carry a `seq` seeded from the clock, so it keeps increasing across restarts; the page reloads the job list whenever its event stream reconnects.
 - Serve FLAC as `audio/flac`; Chrome won't play the `audio/x-flac` that mimetypes guesses.
 - Static files are mounted last in `create_app`; a mount registered before a route swallows it.
 

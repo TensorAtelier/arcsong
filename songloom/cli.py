@@ -32,4 +32,22 @@ def main(argv: list[str] | None = None) -> None:
 
     kwargs = {"models": args.mlx_models} if args.engine == "mlx" else {"stage_seconds": 1.0}
     app = create_app(EngineSpec(ENGINES[args.engine], kwargs), args.data)
-    uvicorn.run(app, host=args.host, port=args.port)
+    config = uvicorn.Config(app, host=args.host, port=args.port, timeout_graceful_shutdown=5)
+    Server(config, app.state.shutting_down).run()
+
+
+class Server(uvicorn.Server):
+    """Tells the app it is shutting down the moment a stop signal arrives, so open event
+    streams close and the server can exit (and stop its worker) even with a page open."""
+
+    def __init__(self, config: uvicorn.Config, shutting_down):
+        super().__init__(config)
+        self.shutting_down = shutting_down
+
+    def handle_exit(self, sig, frame) -> None:
+        self.shutting_down.set()
+        super().handle_exit(sig, frame)
+
+
+if __name__ == "__main__":
+    main()

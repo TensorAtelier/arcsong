@@ -28,6 +28,7 @@ class FakeEngine:
         fail_in: str | None = None,
         crash_in: str | None = None,
         ignore_cancel: bool = False,
+        fail_load: str | None = None,
     ):
         self.stage_seconds = stage_seconds
         self.audio_seconds = audio_seconds
@@ -35,9 +36,11 @@ class FakeEngine:
         self.fail_in = fail_in
         self.crash_in = crash_in  # the worker process dies abruptly, like an OOM kill
         self.ignore_cancel = ignore_cancel
+        self.fail_load = fail_load  # load() raises this, like missing weights or a held GPU
 
     def load(self) -> None:
-        pass
+        if self.fail_load:
+            raise RuntimeError(self.fail_load)
 
     def render(
         self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
