@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type Job, type Live, type Stage } from "./api";
+import { formatSeconds } from "./format";
 
 const STAGES: { key: Stage; label: string }[] = [
   { key: "planning", label: "Writing the Score" },
@@ -119,11 +120,6 @@ function Elapsed({ since }: { since: number }) {
     return () => clearInterval(timer);
   }, []);
   return <> · {formatSeconds(Math.max(0, now - since))} elapsed</>;
-}
-
-function formatSeconds(seconds: number): string {
-  const s = Math.round(seconds);
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
 }
 
 function lastLine(text: string): string {

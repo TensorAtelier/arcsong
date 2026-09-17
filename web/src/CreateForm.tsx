@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { api, type Job, type Mode, type Precision } from "./api";
+import { api, type Job, type Mode, type Precision, type SongRequest } from "./api";
 
 const LYRICS_TEMPLATE = `[Verse]
 
@@ -15,15 +15,17 @@ const LYRICS_TEMPLATE = `[Verse]
 
 interface Props {
   onCreated: (job: Job) => void;
+  /** Values to start from, e.g. a Library song loaded to tweak. */
+  initial?: SongRequest;
 }
 
-export default function CreateForm({ onCreated }: Props) {
-  const [style, setStyle] = useState("");
-  const [lyrics, setLyrics] = useState("");
-  const [mode, setMode] = useState<Mode>("full");
-  const [seed, setSeed] = useState("");
-  const [precision, setPrecision] = useState<Precision>("8bit");
-  const [steps, setSteps] = useState<8 | 32>(32);
+export default function CreateForm({ onCreated, initial }: Props) {
+  const [style, setStyle] = useState(initial?.style ?? "");
+  const [lyrics, setLyrics] = useState(initial?.lyrics ?? "");
+  const [mode, setMode] = useState<Mode>(initial?.mode ?? "full");
+  const [seed, setSeed] = useState(initial?.seed != null ? String(initial.seed) : "");
+  const [precision, setPrecision] = useState<Precision>(initial?.precision ?? "8bit");
+  const [steps, setSteps] = useState<8 | 32>(initial?.steps ?? 32);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +53,7 @@ export default function CreateForm({ onCreated }: Props) {
   return (
     <form className="panel" onSubmit={submit} aria-label="Create a song">
       <h2>Create</h2>
+      {initial && <p className="hint">Loaded from the Library. Change anything, then Generate.</p>}
 
       <label htmlFor="style">Style</label>
       <input
@@ -80,7 +83,7 @@ export default function CreateForm({ onCreated }: Props) {
       />
       <p className="hint">Section tags like [Verse] and [Chorus] shape the song. Leave empty for an instrumental.</p>
 
-      <details>
+      <details open={initial !== undefined}>
         <summary>Advanced</summary>
         <div className="grid">
           <div>

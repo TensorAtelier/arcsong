@@ -45,6 +45,21 @@ async function json<T>(response: Response): Promise<T> {
   return response.json();
 }
 
+export interface Song {
+  id: number;
+  job_id: number;
+  audio_seconds: number | null;
+  created_at: number;
+  bytes: number;
+  request: SongRequest & { seed: number };
+}
+
+export interface LibraryUsage {
+  songs: number;
+  bytes_used: number;
+  bytes_free: number;
+}
+
 export const api = {
   jobs: () => fetch("/api/jobs").then((r) => json<Job[]>(r)),
   create: (request: SongRequest) =>
@@ -56,16 +71,31 @@ export const api = {
   cancel: (id: number) =>
     fetch(`/api/jobs/${id}/cancel`, { method: "POST" }).then((r) => json<Job>(r)),
   audioUrl: (songId: number) => `/api/songs/${songId}/audio`,
+  songs: () => fetch("/api/songs").then((r) => json<Song[]>(r)),
+  library: () => fetch("/api/library").then((r) => json<LibraryUsage>(r)),
+  deleteSong: (id: number) =>
+    fetch(`/api/songs/${id}`, { method: "DELETE" }).then((r) => json<{ deleted: number }>(r)),
+  downloadUrl: (id: number, format: "flac" | "wav") => `/api/songs/${id}/download?format=${format}`,
 };
+
+export interface Deleted {
+  job_id: number;
+  song_id: number;
+}
 
 /** Subscribes to job snapshots. EventSource reconnects by itself; `onConnect` runs on every
  * (re)connection so the caller can reload anything that changed while it was disconnected. */
-export function watchJobs(onJob: (job: Job) => void, onConnect: () => void): () => void {
+export function watchJobs(
+  onJob: (job: Job) => void,
+  onDeleted: (deleted: Deleted) => void,
+  onConnect: () => void,
+): () => void {
   const source = new EventSource("/api/events");
   source.onopen = onConnect;
   source.onmessage = (event) => {
     const message = JSON.parse(event.data);
     if (message.type === "job") onJob(message.job);
+    if (message.type === "deleted") onDeleted(message);
   };
   return () => source.close();
 }

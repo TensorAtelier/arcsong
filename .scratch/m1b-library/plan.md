@@ -11,8 +11,8 @@
 
 - [x] 01 — Library API: `GET /api/songs`, `GET /api/library` and `DELETE /api/songs/{id}` (removes the Take directory and its song and job rows, and broadcasts a `deleted` SSE message); check: API tests through the fake engine (listing order and fields, sizes, delete removes files and rows, deleting twice → 404, a running job has no song to delete).
 - [x] 02 — Download as FLAC or WAV: `GET /api/songs/{id}/download?format=flac|wav` returns the audio as an attachment named after the song; the missing format is converted on the fly; check: tests decode both formats with soundfile and compare length.
-- [ ] 03 — Library view: nav between Create and Library; newest-first list with filter, player, settings drawer, size and date, and disk usage in the header; check: in the browser against a fake-engine server with a few songs.
-- [ ] 04 — Library actions: Download FLAC/WAV, Re-run (queues the identical request, then switches to Create so the job is visible), Edit in Create (prefills the form), and Delete with an in-page confirm step that removes the song from both views live; check: in the browser (re-run appears in the queue with the same seed; delete confirm, cancel and confirm paths; the file is gone on disk).
+- [x] 03 — Library view: nav between Create and Library; newest-first list with filter, player, settings drawer, size and date, and disk usage in the header; check: in the browser against a fake-engine server with a few songs.
+- [x] 04 — Library actions: Download FLAC/WAV, Re-run (queues the identical request, then switches to Create so the job is visible), Edit in Create (prefills the form), and Delete with an in-page confirm step that removes the song from both views live; check: in the browser (re-run appears in the queue with the same seed; delete confirm, cancel and confirm paths; the file is gone on disk).
 
 ## Notes
 
@@ -22,3 +22,4 @@
 - WAV/FLAC conversion uses `soundfile` (already installed with mlx-Yue) into memory; no temporary files; the download filename is `songloom-<id>-<style slug>.<ext>`.
 - Re-run sends the stored Song request unchanged (seed included), which M0 showed reproduces the same Take at the same precision and steps.
 - Browser checks use the fake engine (no GPU needed); the real engine's saved Takes are FLAC, so ticket 02 also tests FLAC input with a FLAC written by the test.
+- Tickets 03 and 04 share one commit: the Library view and its actions were written as one component and checked together in the browser.
