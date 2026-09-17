@@ -88,9 +88,10 @@ def test_stderr_counts_pass_every_write_through_and_restore_stderr(monkeypatch):
 def collect_until_finished(subscription, job_id, timeout=30):
     messages, deadline = [], time.monotonic() + timeout
     while time.monotonic() < deadline:
-        job = subscription.get(timeout=timeout)["job"]
-        if job["id"] != job_id:
+        message = subscription.get(timeout=timeout)
+        if message["type"] != "job" or message["job"]["id"] != job_id:
             continue
+        job = message["job"]
         messages.append(job)
         if job["status"] in ("done", "failed", "cancelled"):
             return messages

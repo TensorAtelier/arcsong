@@ -23,7 +23,9 @@ from pydantic import BaseModel, Field
 from songloom.config import data_dir
 from songloom.db import Store
 from songloom.engine import EngineSpec
+from songloom.models import FakeModels, Models
 from songloom.runner import JobRunner
+from songloom.setup import Setup
 
 STATIC_DIR = Path(__file__).parent / "static"
 # Browsers reject the `audio/x-flac` that mimetypes guesses for .flac (Chrome plays audio/flac).
@@ -44,10 +46,14 @@ def create_app(
     data: str | Path | None = None,
     cancel_grace: float | None = None,
     load_retry: float | None = None,
+    models: Models | None = None,
 ) -> FastAPI:
+    """`models` are the weights the Engine needs; by default, fake weights that are already
+    installed, so tests of other features never meet the Setup gate."""
     root = data_dir(data)
     songs_dir = root / "songs"
     songs_dir.mkdir(exist_ok=True)
+    models = models or FakeModels(root / "models")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -55,12 +61,15 @@ def create_app(
         options = {"cancel_grace": cancel_grace, "load_retry": load_retry}
         kwargs = {k: v for k, v in options.items() if v is not None}
         runner = JobRunner(store, songs_dir, spec, **kwargs)
-        app.state.store, app.state.runner = store, runner
+        setup = Setup(models, store, runner.publish_message, runner.next_seq)
+        app.state.store, app.state.runner, app.state.setup = store, runner, setup
+        setup.run_checks()
         runner.start()
         try:
             yield
         finally:
             app.state.shutting_down.set()
+            setup.stop()
             runner.stop()
             store.close()
 
@@ -71,6 +80,8 @@ def create_app(
 
     @app.post("/api/jobs", status_code=201)
     def create_job(body: SongRequest):
+        if not app.state.setup.can_render():
+            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
         request = body.model_dump()
         if request["seed"] is None:
             request["seed"] = random.randrange(2**31)
@@ -101,7 +112,9 @@ def create_app(
     @app.get("/api/events")
     async def events(request: Request):
         """Server-sent events: a `job` message with the job's snapshot whenever a job changes
-        (created, started, Stage change, progress at most a few times a second, finished)."""
+        (created, started, Stage change, progress at most a few times a second, finished); a
+        `deleted` message when a song is deleted; a `setup` message with the Setup snapshot when
+        checks finish, the licence is acknowledged, or a download starts, progresses or ends."""
         broadcaster = app.state.runner.broadcaster
         subscription = broadcaster.subscribe()
 
@@ -119,6 +132,33 @@ def create_app(
                 broadcaster.unsubscribe(subscription)
 
         return StreamingResponse(stream(), media_type="text/event-stream")
+
+    @app.get("/api/setup")
+    def get_setup():
+        return app.state.setup.snapshot()
+
+    @app.post("/api/setup/checks")
+    def run_checks():
+        app.state.setup.run_checks()
+        return app.state.setup.snapshot()
+
+    @app.post("/api/setup/licence")
+    def acknowledge_licence():
+        app.state.setup.acknowledge()
+        return app.state.setup.snapshot()
+
+    @app.post("/api/setup/download")
+    def start_download():
+        refused = app.state.setup.start_download()
+        if refused:
+            raise HTTPException(409, refused)
+        return app.state.setup.snapshot()
+
+    @app.post("/api/setup/download/cancel")
+    def cancel_download():
+        if not app.state.setup.cancel_download():
+            raise HTTPException(409, "no download is running")
+        return app.state.setup.snapshot()
 
     @app.get("/api/songs")
     def list_songs():

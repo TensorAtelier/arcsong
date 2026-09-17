@@ -215,8 +215,15 @@ class JobRunner:
             return None
         shutil.rmtree(song["dir"], ignore_errors=True)
         message = {"type": "deleted", "job_id": song["job_id"], "song_id": song_id}
-        self.broadcaster.publish({**message, "seq": next(self._seq)})
+        self.publish_message({**message, "seq": self.next_seq()})
         return song
+
+    def next_seq(self) -> int:
+        return next(self._seq)
+
+    def publish_message(self, message: dict[str, Any]) -> None:
+        """Broadcast a message that is not a job snapshot (`deleted`, `setup`)."""
+        self.broadcaster.publish(message)
 
     def publish(self, job_id: int) -> None:
         job = self.job(job_id)

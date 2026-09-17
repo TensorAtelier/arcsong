@@ -3,6 +3,7 @@ runs with SONGLOOM_REAL_ENGINE=1."""
 
 import os
 import time
+from pathlib import Path
 
 import pytest
 import soundfile
@@ -10,12 +11,14 @@ from fastapi.testclient import TestClient
 
 from songloom.app import create_app
 from songloom.engine import EngineSpec
+from songloom.models import MlxYueModels
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("SONGLOOM_REAL_ENGINE") != "1", reason="set SONGLOOM_REAL_ENGINE=1"
 )
 
-MLX = EngineSpec("songloom.mlx_engine:MlxYueEngine")
+MODELS = Path(os.environ.get("SONGLOOM_MLX_MODELS", "~/projects/mlx-Yue/models")).expanduser()
+MLX = EngineSpec("songloom.mlx_engine:MlxYueEngine", {"models": str(MODELS)})
 SHORT = {
     "style": "English, warm piano pop, expressive female voice",
     "lyrics": "[Verse]\nNeon fades along the lane\nFootsteps keep the time",
@@ -27,7 +30,7 @@ SHORT = {
 
 
 def test_a_real_take_is_rendered_saved_and_indexed(tmp_path):
-    with TestClient(create_app(MLX, tmp_path)) as client:
+    with TestClient(create_app(MLX, tmp_path, models=MlxYueModels(MODELS))) as client:
         job = client.post("/api/jobs", json=SHORT).json()
         deadline = time.monotonic() + 900
         while (job := client.get(f"/api/jobs/{job['id']}").json())["status"] in (

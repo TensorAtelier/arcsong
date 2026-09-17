@@ -21,7 +21,7 @@ def _is_cancelled(cancel_job, job_id: int) -> bool:
     return cancel_job.value == job_id
 
 
-def _exit_with_parent(parent_pid: int) -> None:
+def exit_with_parent(parent_pid: int) -> None:
     """If the server dies without stopping us (e.g. SIGKILL), exit rather than keep the model
     and the GPU lock. Runs in a daemon thread, so it also works mid-render."""
     while True:
@@ -35,7 +35,7 @@ def worker_main(spec: EngineSpec, jobs, events, cancel_job, parent_pid: int | No
     `events` carries dicts back to the server; `cancel_job.value` holds the id of the job to
     stop, so a late cancel for a finished job can never stop the next one."""
     if parent_pid is not None:
-        threading.Thread(target=_exit_with_parent, args=(parent_pid,), daemon=True).start()
+        threading.Thread(target=exit_with_parent, args=(parent_pid,), daemon=True).start()
     try:
         engine = spec.build()
         engine.load()

@@ -24,14 +24,26 @@ def main(argv: list[str] | None = None) -> None:
     serve.add_argument("--engine", choices=sorted(ENGINES), default="mlx")
     serve.add_argument(
         "--mlx-models",
-        help="mlx-Yue weights (default: $SONGLOOM_MLX_MODELS or ~/projects/mlx-Yue/models)",
+        help="mlx-Yue weights (default: $SONGLOOM_MLX_MODELS or <data>/models)",
     )
     args = parser.parse_args(argv)
 
     from songloom.app import create_app
+    from songloom.config import data_dir
+    from songloom.models import FakeModels, MlxYueModels, models_dir
 
-    kwargs = {"models": args.mlx_models} if args.engine == "mlx" else {"stage_seconds": 1.0}
-    app = create_app(EngineSpec(ENGINES[args.engine], kwargs), args.data)
+    data = data_dir(args.data)
+    if args.engine == "mlx":
+        directory = models_dir(data, args.mlx_models)
+        models = MlxYueModels(directory)
+        kwargs = {"models": str(directory)}
+    else:
+        # Fake weights to download, so the Setup page can be tried without a GPU or network.
+        models = FakeModels(
+            data / "models", preinstalled=False, size=64 * 2**20, download_seconds=6
+        )
+        kwargs = {"stage_seconds": 1.0}
+    app = create_app(EngineSpec(ENGINES[args.engine], kwargs), data, models=models)
     config = uvicorn.Config(app, host=args.host, port=args.port, timeout_graceful_shutdown=5)
     Server(config, app.state.shutting_down).run()
 

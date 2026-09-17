@@ -30,6 +30,10 @@ CREATE TABLE IF NOT EXISTS songs (
     audio_seconds REAL,
     created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value_json TEXT NOT NULL
+);
 """
 
 
@@ -138,6 +142,21 @@ class Store:
         with self._lock:
             row = self._conn.execute("SELECT * FROM songs WHERE id = ?", (song_id,)).fetchone()
         return dict(row) if row else None
+
+    def get_setting(self, key: str) -> Any:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT value_json FROM settings WHERE key = ?", (key,)
+            ).fetchone()
+        return json.loads(row["value_json"]) if row else None
+
+    def set_setting(self, key: str, value: Any) -> None:
+        with self._lock, self._conn:
+            self._conn.execute(
+                "INSERT INTO settings (key, value_json) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json",
+                (key, json.dumps(value)),
+            )
 
     def _update(self, job_id: int, assignments: str, *values: Any) -> None:
         with self._lock, self._conn:

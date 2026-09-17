@@ -9,6 +9,7 @@ dependencies = [
   "fastapi>=0.115",
   "uvicorn>=0.30",
   "platformdirs>=4",
+  "psutil>=5",
 ]
 
 [project.scripts]

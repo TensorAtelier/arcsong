@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import dataclasses
-import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -14,22 +13,15 @@ from typing import Any
 from songloom.engine import STAGES, CancelCheck, Cancelled, Emit, TakeOutput
 from songloom.progress import StderrCounts
 
-MODELS_ENV = "SONGLOOM_MLX_MODELS"
-DEFAULT_MODELS_DIR = "~/projects/mlx-Yue/models"
 SAMPLE_RATE = 48_000
-
-
-def models_dir(override: str | Path | None = None) -> Path:
-    chosen = override or os.environ.get(MODELS_ENV) or DEFAULT_MODELS_DIR
-    return Path(chosen).expanduser()
 
 
 class MlxYueEngine:
     """Keeps one pipeline loaded and reuses it across Takes; a Take asking for the other
     precision reloads it."""
 
-    def __init__(self, models: str | Path | None = None, require_ac: bool = True):
-        self.models = models_dir(models)
+    def __init__(self, models: str | Path, require_ac: bool = True):
+        self.models = Path(models).expanduser()
         self.require_ac = require_ac
         self._pipe: Any = None
         self._precision: str | None = None

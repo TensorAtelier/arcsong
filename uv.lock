@@ -665,6 +665,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "mlx-yue" },
     { name = "platformdirs" },
+    { name = "psutil" },
     { name = "uvicorn" },
 ]
 
@@ -680,6 +681,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "mlx-yue", git = "https://github.com/vanch007/mlx-Yue.git?rev=9253ed133343406947bde7b67d43c7a63fb39d99" },
     { name = "platformdirs", specifier = ">=4" },
+    { name = "psutil", specifier = ">=5" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
 
