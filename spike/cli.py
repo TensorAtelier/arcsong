@@ -14,7 +14,7 @@ from spike import audiocpp_setup
 from spike.audiocpp_engine import AudioCppEngine
 from spike.cases import load_case
 from spike.fake import FakeEngine
-from spike.measurements import doctor, timing
+from spike.measurements import cancel, doctor, timing
 from spike.mlx_engine import DEFAULT_MODELS_DIR, MlxYueEngine
 from spike.runner import DEFAULT_TIMEOUT_SECONDS, EngineFactory, run_case
 
@@ -92,6 +92,34 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_TIMEOUT_SECONDS,
         help="seconds before a run is killed and recorded as failed (default %(default)g)",
     )
+
+    run = commands.add_parser(
+        "cancel",
+        help="Per-Stage cancel latency, reuse after cancel and leftover files",
+    )
+    _common_arguments(run)
+    run.add_argument("--precision", help="default: 8bit for mlx, q8_0 for audio.cpp")
+    run.add_argument("--steps", type=int, default=cancel.STEPS, help="Synthesis steps")
+    run.add_argument(
+        "--stages",
+        nargs="+",
+        choices=list(cancel.STAGE_CASES),
+        default=list(cancel.STAGE_CASES),
+        metavar="STAGE",
+        help="Stages to cancel in (default: all four)",
+    )
+    run.add_argument(
+        "--cancel-after",
+        type=float,
+        default=cancel.CANCEL_AFTER_SECONDS,
+        help="seconds a Stage runs before cancel is requested (default %(default)g)",
+    )
+    run.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help="seconds before a run is killed and recorded as failed (default %(default)g)",
+    )
     return parser
 
 
@@ -158,4 +186,22 @@ def main(argv: list[str] | None = None) -> int:
                     timeout=args.timeout,
                     **common,
                 )
+    elif args.command == "cancel":
+        for stage in args.stages:
+            case = cancel.STAGE_CASES[stage]
+            run_case(
+                measurement=cancel.MEASUREMENT,
+                measure=cancel.measure,
+                case=case,
+                request=load_case(case),
+                params=cancel.params(
+                    args.precision or cancel.PRECISIONS[args.engine],
+                    args.steps,
+                    stage,
+                    args.cancel_after,
+                ),
+                timeout=args.timeout,
+                **common,
+            )
     return 0
+

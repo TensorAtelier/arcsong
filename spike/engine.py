@@ -19,8 +19,11 @@ class Unsupported(Exception):  # noqa: N818 - glossary term, recorded as an outc
 
 @dataclass(frozen=True)
 class StageEvent:
+    """A Stage's `start`/`end` at time `t`. An Engine that learns a Stage's exact start only
+    after the fact also sends `enter` the moment it sees the Stage has begun."""
+
     stage: str
-    kind: Literal["start", "end"]
+    kind: Literal["start", "end", "enter"]
     t: float = field(default_factory=time.monotonic)
 
     def to_dict(self) -> dict[str, Any]:

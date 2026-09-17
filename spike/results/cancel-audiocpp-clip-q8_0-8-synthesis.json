@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "measurement": "cancel",
+  "engine": "audiocpp",
+  "engine_version": "0.8.0",
+  "case": "clip",
+  "params": {
+    "precision": "q8_0",
+    "steps": 8,
+    "stage": "synthesis"
+  },
+  "env": {
+    "machine": {
+      "arch": "arm64",
+      "model": "Mac17,9",
+      "cpu": "Apple M5 Pro",
+      "memory_bytes": 68719476736
+    },
+    "os": {
+      "system": "Darwin",
+      "release": "25.4.0",
+      "macos": "26.4.1"
+    },
+    "python": "3.12.9",
+    "engine": {
+      "name": "audio.cpp",
+      "version": "0.8.0",
+      "commit": "4af1432"
+    },
+    "model_servers": [
+      {
+        "server": "LM Studio",
+        "pid": 1445,
+        "rss_bytes": 390905856,
+        "command": "/Applications/LM Studio.app/Contents/MacOS/LM Studio"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1451,
+        "rss_bytes": 6864896,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/Electron Framework.framework/Helpers/chrome_crashpad_handler --no-rate-limit --no-upload-gzip --monitor-self-annotation=ptype=crashpad-handler --database=/Users/julian/Library/Application Support/LM Studio/Crashpad --annotation=_productName=LM Studio --annotation=_version=0.4.18+1 --annotation=plat=OS X --annotation=prod=Electron --annotation=ver=38.6.0 --handshake-fd=17"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1452,
+        "rss_bytes": 42926080,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper (GPU).app/Contents/MacOS/LM Studio Helper (GPU) --type=gpu-process --user-data-dir=/Users/julian/Library/Application Support/LM Studio --gpu-preferences=SAAAAAAAAAAgAAAIAAAAAAAAAAAAAGAAAwAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --seatbelt-client=30"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1453,
+        "rss_bytes": 19791872,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper.app/Contents/MacOS/LM Studio Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --user-data-dir=/Users/julian/Library/Application Support/LM Studio --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --seatbelt-client=30"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1454,
+        "rss_bytes": 16760832,
+        "command": "/Users/julian/.lmstudio/.internal/utils/node -e \\012function connectPort(port) {\\012  const handlersMap = new Map();\\012  return {\\012    postMessage: data => process.send({ port: port, data }),\\012    on: (event, handler) => {\\012      if (event !== \"message\") {\\012        throw new Error(\"Unsupported event: \" + event);\\012      }\\012      const innerHandler = payload => {\\012        if (payload.port === port) {\\012          handler({ data: payload.data });\\012        }\\012      }\\012      handlersMap.set(handler, innerHandler);\\012      process.on('message', innerHandler);\\012    },\\012    off: (event, handler) => {\\012      if (event !== \"message\") {\\012        throw new Error(\"Unsupported event: \" + event);\\012      }\\012      const innerHandler = handlersMap.get(handler);\\012      if (innerHandler) {\\012        process.off('message', innerHandler);\\012        handlersMap.delete(handler);\\012      }\\012    },\\012  };\\012}\\012process.parentPort = connectPort(0);\\012process.rcPort = connectPort(1);\\012process.resourcesPath = \"/Applications/LM Studio.app/Contents/Resources\";\\012require(\"/Applications/LM Studio.app/Contents/Resources/app/.webpack/lib/systemresourcesworker.js\"); /Applications/LM Studio.app/Contents/Resources/app/.webpack/lib/systemresourcesworker.js /Applications/LM Studio.app/Contents/Resources/app/.webpack/bin/liblmstudio/metal/liblmstudio_bindings.node"
+      },
+      {
+        "server": "LM Studio",
+        "pid": 1458,
+        "rss_bytes": 61259776,
+        "command": "/Applications/LM Studio.app/Contents/Frameworks/LM Studio Helper (Renderer).app/Contents/MacOS/LM Studio Helper (Renderer) --type=renderer --user-data-dir=/Users/julian/Library/Application Support/LM Studio --app-path=/Applications/LM Studio.app/Contents/Resources/app --no-sandbox --no-zygote --node-integration-in-worker --lang=en-US --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=4 --time-ticks-at-unix-epoch=-1786127886274263 --launch-time-ticks=2551478391518 --shared-files --field-trial-handle=1718379636,r,3147754202980661401,15616348274932619061,262144 --enable-features=PdfUseShowSaveFilePicker,ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma --disable-features=MacWebContentsOcclusion,ScreenAIOCREnabled,SpareRendererForSitePerProcess,TimeoutHangingVideoCaptureStarts,TraceSiteInstanceGetProcessCreation --variations-seed-version --lmstudio-window-key=window-1 --lmstudio-project-identifier=default-project-identifier"
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 36205,
+        "rss_bytes": 4374528,
+        "command": "/Users/julian/image_gen/ComfyUI/.venv/bin/python -c from multiprocessing.resource_tracker import main;main(23)"
+      },
+      {
+        "server": "ComfyUI",
+        "pid": 74446,
+        "rss_bytes": 606519296,
+        "command": "/Users/julian/image_gen/ComfyUI/.venv/bin/python /Users/julian/image_gen/ComfyUI/main.py --highvram --use-pytorch-cross-attention"
+      }
+    ]
+  },
+  "outcome": "ok",
+  "started_at": "2026-09-17T02:22:35.352438+00:00",
+  "total_seconds": 19.13020437490195,
+  "runs": [
+    {
+      "run": 1,
+      "outcome": "ok",
+      "stage": "synthesis",
+      "cancel_after_seconds": 1.0,
+      "load_seconds": 3.824988380074501e-05,
+      "stage_entered_seconds": 6.209694290999323,
+      "cancel_requested_seconds": 7.216560665983707,
+      "stage_at_request": "synthesis",
+      "cancel_latency_seconds": 0.06510391738265753,
+      "cancelled_by": "Cancelled",
+      "cancel_message": "audio.cpp run killed (pid 47694)",
+      "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/take",
+      "leftover_files": [
+        {
+          "path": "audiocpp.log",
+          "bytes": 13991
+        },
+        {
+          "path": "score.abc",
+          "bytes": 339
+        }
+      ],
+      "leftover_looks_complete": false,
+      "stage_events": [
+        {
+          "stage": "planning",
+          "kind": "start",
+          "seconds": 0.4089597500860691
+        },
+        {
+          "stage": "planning",
+          "kind": "enter",
+          "seconds": 0.40991870826110244
+        },
+        {
+          "stage": "semantic generation",
+          "kind": "enter",
+          "seconds": 0.40991870826110244
+        },
+        {
+          "stage": "planning",
+          "kind": "end",
+          "seconds": 0.40991870826110244
+        },
+        {
+          "stage": "semantic generation",
+          "kind": "start",
+          "seconds": 0.4099499578587711
+        },
+        {
+          "stage": "synthesis",
+          "kind": "enter",
+          "seconds": 6.209694290999323
+        },
+        {
+          "stage": "semantic generation",
+          "kind": "end",
+          "seconds": 6.209694290999323
+        }
+      ],
+      "kill_to_exit_seconds": 0.039660374633967876,
+      "reuse": {
+        "case": "clip",
+        "reloaded": false,
+        "attempts": [
+          {
+            "reloaded": false,
+            "outcome": "ok"
+          }
+        ],
+        "outcome": "ok",
+        "run_seconds": 11.781470708083361,
+        "lazy_load_seconds": {
+          "ar_load_seconds": 0.335310125,
+          "nar_load_seconds": 0.277882209,
+          "vae_load_seconds": 1.5459e-05,
+          "session_load_seconds": 0.38686254154890776
+        },
+        "audio_seconds": 15.998666666666667,
+        "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/reuse",
+        "files": [
+          {
+            "path": "audio.wav",
+            "bytes": 3071788
+          },
+          {
+            "path": "audiocpp.log",
+            "bytes": 20426
+          },
+          {
+            "path": "score.abc",
+            "bytes": 339
+          }
+        ]
+      },
+      "child_wall_seconds": 19.12992320768535,
+      "peak_footprint_bytes": 4639743896,
+      "lifetime_peak_footprint_bytes": 4639973296,
+      "footprint_samples": 75,
+      "footprint_interval_seconds": 0.25
+    }
+  ]
+}

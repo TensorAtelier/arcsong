@@ -31,7 +31,12 @@ if argv == ["--version"]:
 out = argv[argv.index("--out") + 1]
 with open(os.environ["FAKE_CLI_RECORD"], "w") as record:
     json.dump({{"argv": argv, "pid": os.getpid()}}, record)
-if os.environ.get("FAKE_CLI_HANG"):
+hang_once = os.environ.get("FAKE_CLI_HANG_ONCE")
+if hang_once and not os.path.exists(hang_once):
+    open(hang_once, "w").close()
+if os.environ.get("FAKE_CLI_HANG") or (hang_once and os.path.getsize(hang_once) == 0):
+    if hang_once:
+        open(hang_once, "w").write("hung")
     print("[TIMING ts=0] yue2.plan_ms 1.0", flush=True)
     time.sleep(120)
 block = bytearray(b"\\x01") * (int(os.environ.get("FAKE_CLI_ALLOCATE_MIB", "0")) * 2**20)
@@ -199,6 +204,50 @@ def test_cancel_kills_the_cli_process(tmp_path, fake_cli, monkeypatch):
 
     assert time.monotonic() - requested[0] < 2
     assert not alive(json.loads(record.read_text())["pid"])
+
+
+def test_cancel_records_kill_to_exit_latency_and_announces_the_stage(
+    tmp_path, fake_cli, monkeypatch
+):
+    factory, record = fake_cli
+    monkeypatch.setenv("FAKE_CLI_HANG", "1")
+    engine = factory()
+    engine.load("q8_0")
+    events = []
+
+    with pytest.raises(Cancelled) as raised:
+        engine.run(
+            {"style": "s", "lyrics": "l", "seed": 1},
+            8,
+            tmp_path / "take",
+            cancelled=lambda: bool(events),
+            on_event=events.append,
+        )
+
+    assert 0 < raised.value.kill_to_exit_seconds < 2
+    assert [(e.stage, e.kind) for e in events] == [("planning", "enter")]
+
+
+def test_cancel_measurement_runs_against_the_cli(tmp_path, fake_cli, monkeypatch):
+    monkeypatch.setenv("FAKE_CLI_HANG_ONCE", str(tmp_path / "hung-once"))
+
+    code = cli.main(
+        ["cancel", "--engine", "audiocpp", "--stages", "planning", "--cancel-after", "0.2",
+         "--results-dir", str(tmp_path / "results"), "--runs-dir", str(tmp_path / "runs")]
+    )  # fmt: skip
+
+    assert code == 0
+    [path] = (tmp_path / "results").glob("*.json")
+    assert path.name == "cancel-audiocpp-song-q8_0-8-planning-0.2.json"
+    [run] = json.loads(path.read_text())["runs"]
+    assert run["stage_at_request"] == "planning"
+    assert run["cancelled_by"] == "Cancelled"
+    assert 0 < run["kill_to_exit_seconds"] <= run["cancel_latency_seconds"] < 2
+    assert "audiocpp.log" in {f["path"] for f in run["leftover_files"]}
+    assert run["leftover_looks_complete"] is False
+    reuse = run["reuse"]
+    assert (reuse["outcome"], reuse["reloaded"]) == ("ok", False)
+    assert {"session_load_seconds", "ar_load_seconds"} <= set(reuse["lazy_load_seconds"])
 
 
 def test_a_failing_cli_is_recorded_with_its_log_tail(tmp_path, fake_cli, monkeypatch):

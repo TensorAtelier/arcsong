@@ -47,6 +47,22 @@ def _mlx_peak_memory_bytes() -> int | None:
     return None if get_peak is None else int(get_peak())
 
 
+def loads_since(before: dict, after: dict) -> dict[str, float]:
+    """Weights loaded between two snapshots of `YuE2Pipeline.load_timing`, per model.
+
+    The pipeline appends each lazy load to `<model>_load_events_seconds`.
+    """
+    loads = {}
+    suffix = "_load_events_seconds"
+    for key, events in after.items():
+        if not key.endswith(suffix):
+            continue
+        new = tuple(events)[len(tuple(before.get(key, ()))) :]
+        if new:
+            loads[f"{key.removesuffix(suffix)}_load_seconds"] = float(sum(new))
+    return loads
+
+
 class _Stage:
     def __init__(self, stage: str, on_event: EventSink):
         self.stage, self.on_event = stage, on_event
@@ -173,6 +189,7 @@ class MlxYueEngine:
 
         pipe = self._loaded()
         _, sampling = self._split(request)
+        load_timing_before = dict(pipe.load_timing)
         start = time.perf_counter()
         plan = self.plan(request, cancelled=cancelled, on_event=on_event)
         semantic = self.generate_semantic(
@@ -208,10 +225,6 @@ class MlxYueEngine:
             output_dir / "audio.flac",
             len(audio) / SAMPLE_RATE,
             files,
-            lazy_load_seconds={
-                key: float(seconds)
-                for key, seconds in pipe.load_timing.items()
-                if key.endswith("_load_seconds")
-            },
+            lazy_load_seconds=loads_since(load_timing_before, pipe.load_timing),
             engine_peak_memory_bytes=_mlx_peak_memory_bytes(),
         )

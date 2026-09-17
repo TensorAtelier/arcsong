@@ -4,7 +4,9 @@ The CLI only runs a whole Take, so `run` is the one supported operation; the Sta
 operations raise `Unsupported`. Stage events come from the CLI's `--log` output: YuE2
 logs each Stage's duration (`yue2.plan_ms`, `yue2.semantic_ms`, ...) the moment the
 Stage ends, and log lines are flushed one by one, so a line's arrival time is the
-Stage's end and its logged duration gives the start. Cancel kills the process.
+Stage's end and its logged duration gives the start. Because those `start` events come
+late, each Stage is also announced by an `enter` event as soon as the log shows it has
+begun. Cancel kills the process.
 """
 
 from __future__ import annotations
@@ -57,6 +59,34 @@ _LOAD_KEYS = {
 
 class Cancelled(Exception):  # noqa: N818 - names what happened to the Take
     """The run was cancelled and its process killed."""
+
+    def __init__(self, message: str, *, kill_to_exit_seconds: float | None = None):
+        super().__init__(message)
+        self.kill_to_exit_seconds = kill_to_exit_seconds
+
+
+# The log line that shows a Stage has just begun (the one ending the Stage before it).
+_ENTERED_BY = {
+    "yue2.plan_ms": (PLANNING,),
+    "yue2.semantic.abc_generate_ms": (SEMANTIC,),
+    "yue2.semantic_ms": (SYNTHESIS,),
+    "yue2.nar_ms": (DECODING,),
+}
+
+
+def entered_stages(line: str, score_given: bool) -> tuple[str, ...]:
+    """Stages a `--log` line shows have just begun, for live `enter` events.
+
+    With a Score supplied nothing is logged between planning and semantic generation,
+    so both are announced by `yue2.plan_ms`.
+    """
+    match = _SCALAR.match(line.strip())
+    if not match:
+        return ()
+    key = match.group(1)
+    if score_given and key == "yue2.plan_ms":
+        return (PLANNING, SEMANTIC)
+    return _ENTERED_BY.get(key, ())
 
 
 @dataclass
@@ -272,6 +302,7 @@ class AudioCppEngine:
         parser = StageLogParser(started=time.monotonic())
         log_path = output_dir / LOG_NAME
         tail: list[str] = []
+        score_given = bool(request.get("abc"))
 
         process = subprocess.Popen(
             argv,
@@ -291,6 +322,8 @@ class AudioCppEngine:
                     log.write(line)
                     log.flush()
                     tail[:] = [*tail[-39:], line.rstrip("\n")]
+                    for stage in entered_stages(line, score_given):
+                        on_event(StageEvent(stage, "enter", now))
                     for event in parser.feed(line, now):
                         on_event(event)
 
@@ -299,9 +332,13 @@ class AudioCppEngine:
         try:
             while process.poll() is None:
                 if cancelled():
+                    killed_at = time.monotonic()
                     process.kill()
                     process.wait()
-                    raise Cancelled(f"audio.cpp run killed (pid {process.pid})")
+                    raise Cancelled(
+                        f"audio.cpp run killed (pid {process.pid})",
+                        kill_to_exit_seconds=time.monotonic() - killed_at,
+                    )
                 time.sleep(POLL_SECONDS)
         finally:
             if process.poll() is None:

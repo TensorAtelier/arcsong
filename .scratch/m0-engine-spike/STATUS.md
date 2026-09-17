@@ -61,7 +61,7 @@
 ## 04 — audio.cpp Stage timing, peak memory and artifact sizes
 
 - Result: done
-- Commit: COMMIT04
+- Commit: d1cf6c8
 - QA rounds: 1
 - Verification:
   ```
@@ -72,3 +72,20 @@
   All checks passed!
   ```
 - QA verdict: PASS — the 4 audio.cpp results files were checked field by field against the mlx results, the files on disk, the raw log durations and `pmset -g log`. All 8 runs are ok, no kept run overlaps the 17:38–17:44 sleep, and footprints include the CLI (6.26 / 8.84 GiB).
+
+## 05 — Cancellation per Stage, both Engines
+
+- Result: done
+- Commit: COMMIT05
+- QA rounds: 2
+- Verification:
+  ```
+  $ uv run pytest -q
+  58 passed in 59.88s
+  $ uv run ruff check .
+  All checks passed!
+  $ caffeinate -ims uv run spike cancel --engine mlx --stages synthesis --results-dir …/qa05r2/results --runs-dir …/qa05r2/runs --timeout 600
+  ok cancel-mlx-clip-8bit-8-synthesis in 24.9s
+  ```
+- QA verdict: PASS — all 8 results use a 1.0 s delay (measured request gap 1.002–1.006 s). A real mlx synthesis cancel reproduced the committed result: 0.112 s latency, nothing left on disk, reuse in the same process without a reload. Reuse and reload are measured through lyra's load events.
+  (Round 1: FAIL — planning cancelled at 5 s with no recorded reason; fixed by rerunning at 1 s and putting the delay into params.)

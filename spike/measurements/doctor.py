@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from spike.engine import SpikeEngine, StageEvent
+from spike.measurements.timing import stage_events
 
 MEASUREMENT = "doctor"
 CASE = "clip"
@@ -26,7 +27,5 @@ def measure(engine: SpikeEngine, request: dict, params: dict, run_dir: Path) -> 
         "audio_path": str(output.audio_path),
         "audio_seconds": output.audio_seconds,
         "files": [{"path": str(p), "bytes": p.stat().st_size} for p in output.files],
-        "stage_events": [
-            {"stage": e.stage, "kind": e.kind, "seconds": e.t - run_start} for e in events
-        ],
+        "stage_events": stage_events(events, run_start),
     }

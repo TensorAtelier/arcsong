@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from spike.audiocpp_engine import StageLogParser
+from spike.audiocpp_engine import StageLogParser, entered_stages
 from spike.engine import STAGES
 from spike.measurements.timing import stage_seconds
 
@@ -97,3 +97,29 @@ def test_a_stage_never_starts_before_the_previous_stage_ended():
     assert seconds["synthesis"] == pytest.approx(80.0)
     assert seconds["decoding"] == pytest.approx(10.0)
     assert all(a.t <= b.t for a, b in zip(events, events[1:], strict=False))
+
+
+def entered(name: str, score_given: bool) -> list[tuple[str, float]]:
+    stages = []
+    for entry in (FIXTURES / name).read_text().splitlines():
+        arrived, line = entry.split(" ", 1)
+        stages.extend((stage, float(arrived)) for stage in entered_stages(line, score_given))
+    return stages
+
+
+def test_generated_score_log_announces_each_stage_as_it_begins():
+    assert entered("audiocpp_clip_generated_score.log", score_given=False) == [
+        ("planning", 0.450),
+        ("semantic generation", 10.102),
+        ("synthesis", 17.130),
+        ("decoding", 21.498),
+    ]
+
+
+def test_given_score_log_announces_semantic_generation_with_planning():
+    assert entered("audiocpp_clip_given_score.log", score_given=True) == [
+        ("planning", 10.350),
+        ("semantic generation", 10.350),
+        ("synthesis", 18.435),
+        ("decoding", 32.536),
+    ]

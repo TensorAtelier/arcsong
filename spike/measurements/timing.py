@@ -27,10 +27,19 @@ def stage_seconds(events: list[StageEvent]) -> dict[str, float]:
     for event in events:
         if event.kind == "start":
             open_since[event.stage] = event.t
-        elif event.stage in open_since:
+        elif event.kind == "end" and event.stage in open_since:
             span = event.t - open_since.pop(event.stage)
             totals[event.stage] = totals.get(event.stage, 0.0) + span
     return totals
+
+
+def stage_events(events: list[StageEvent], since: float) -> list[dict]:
+    """Stage spans as recorded in results; live `enter` announcements are left out."""
+    return [
+        {"stage": e.stage, "kind": e.kind, "seconds": e.t - since}
+        for e in events
+        if e.kind in ("start", "end")
+    ]
 
 
 def artifact_sizes(take_dir: Path) -> list[dict]:
@@ -69,7 +78,5 @@ def measure(engine: SpikeEngine, request: dict, params: dict, run_dir: Path) -> 
         "take_dir": str(take_dir),
         "files": files,
         "files_total_bytes": sum(f["bytes"] for f in files),
-        "stage_events": [
-            {"stage": e.stage, "kind": e.kind, "seconds": e.t - run_start} for e in events
-        ],
+        "stage_events": stage_events(events, run_start),
     }
