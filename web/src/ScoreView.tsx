@@ -128,7 +128,7 @@ export default function ScoreView({ source, onJob }: Props) {
               {status === "done"
                 ? "This run wrote no Score."
                 : status === "failed" || status === "cancelled"
-                  ? `This run ${status} before writing a Score.`
+                  ? `This run was ${status} before writing a Score.`
                   : "Writing the Score… this page updates when it is ready."}{" "}
               <a href="#/">Back to Create</a>
             </p>
@@ -247,6 +247,7 @@ function Notation({ abc, valid }: { abc: string; valid: boolean }) {
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tune, setTune] = useState<abcjs.TuneObject | null>(null);
+  const ending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!paper.current) return;
@@ -256,18 +257,23 @@ function Notation({ abc, valid }: { abc: string; valid: boolean }) {
       add_classes: true,
     });
     setTune(rendered ?? null);
+    // An edited Score is a different tune: whatever was primed no longer matches it.
+    stop();
   }, [abc]);
 
-  // A new Score invalidates whatever was primed, and leaving the view must not play on.
+  // Leaving the view must not play on.
   useEffect(() => {
     return () => {
       synth.current?.stop();
       synth.current = null;
+      clearTimeout(ending.current);
     };
-  }, [tune]);
+  }, []);
 
   function stop() {
     synth.current?.stop();
+    synth.current = null;
+    clearTimeout(ending.current);
     setPlaying(false);
   }
 
@@ -280,15 +286,17 @@ function Notation({ abc, valid }: { abc: string; valid: boolean }) {
       if (!abcjs.synth.supportsAudio()) throw new Error("This browser can't play audio");
       const created = new abcjs.synth.CreateSynth();
       await created.init({ visualObj: tune, options: { soundFontUrl: SOUNDFONT_URL } });
-      await created.prime();
+      const primed = await created.prime();
       synth.current = created;
       created.start();
       setPlaying(true);
+      // The synth reports no end of its own, so let the button fall back when it is over.
+      ending.current = setTimeout(() => setPlaying(false), (primed.duration + 0.3) * 1000);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setError(
         message.includes("Can't load sound")
-          ? "This Score has a note outside the piano the preview uses (A0–C8)."
+          ? "The preview couldn't load a piano sample; a note may be outside its range (A0–C8)."
           : message,
       );
     } finally {

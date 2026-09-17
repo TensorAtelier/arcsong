@@ -7,9 +7,10 @@
 comes from the abcjs layout of
 [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts) by Benjamin Gleitzman
 (MIT licence), which packages samples from the FluidR3 GM soundfont by Frank Wen (MIT
-licence). abcjs fetches one file per note, so the whole 88-key piano range (A0–C8) is vendored; a
-hand-edited note above or below it has no sample, and the preview says so. It is vendored so the Score view's melody preview works without
-reaching the network; songloom does not load anything from a CDN at runtime.
+licence). abcjs fetches one file per note, so the whole 88-key piano range (A0–C8) is
+vendored. A hand-edited note above that range makes the preview say it could not load a
+sample; one below it is simply silent. It is vendored so the Score view's melody preview
+works without reaching the network; songloom does not load anything from a CDN at runtime.
 
 ## Bundled JavaScript
 
