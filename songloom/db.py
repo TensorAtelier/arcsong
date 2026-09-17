@@ -111,6 +111,29 @@ class Store:
             )
         return ids
 
+    def list_songs(self) -> list[dict[str, Any]]:
+        """Finished Takes with their Song request, newest first."""
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT s.*, j.request_json FROM songs s JOIN jobs j ON j.id = s.job_id "
+                "ORDER BY s.id DESC"
+            ).fetchall()
+        return [_song(r) for r in rows]
+
+    def delete_song(self, song_id: int) -> dict[str, Any] | None:
+        """Remove a song and the job that made it; returns the deleted song, or None."""
+        with self._lock, self._conn:
+            row = self._conn.execute(
+                "SELECT s.*, j.request_json FROM songs s JOIN jobs j ON j.id = s.job_id "
+                "WHERE s.id = ?",
+                (song_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            self._conn.execute("DELETE FROM songs WHERE id = ?", (song_id,))
+            self._conn.execute("DELETE FROM jobs WHERE id = ?", (row["job_id"],))
+        return _song(row)
+
     def get_song(self, song_id: int) -> dict[str, Any] | None:
         with self._lock:
             row = self._conn.execute("SELECT * FROM songs WHERE id = ?", (song_id,)).fetchone()
@@ -125,3 +148,9 @@ def _job(row: sqlite3.Row) -> dict[str, Any]:
     job = dict(row)
     job["request"] = json.loads(job.pop("request_json"))
     return job
+
+
+def _song(row: sqlite3.Row) -> dict[str, Any]:
+    song = dict(row)
+    song["request"] = json.loads(song.pop("request_json"))
+    return song

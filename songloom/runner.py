@@ -208,6 +208,16 @@ class JobRunner:
         self.publish(job_id)
         return True
 
+    def delete_song(self, song_id: int) -> dict[str, Any] | None:
+        """Permanently delete a finished Take: its files, its song row and its job row."""
+        song = self.store.delete_song(song_id)
+        if song is None:
+            return None
+        shutil.rmtree(song["dir"], ignore_errors=True)
+        message = {"type": "deleted", "job_id": song["job_id"], "song_id": song_id}
+        self.broadcaster.publish({**message, "seq": next(self._seq)})
+        return song
+
     def publish(self, job_id: int) -> None:
         job = self.job(job_id)
         if job is not None:
