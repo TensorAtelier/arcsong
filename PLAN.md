@@ -117,7 +117,7 @@ Answered 2026-09-16 — see [`docs/m0-report.md`](docs/m0-report.md) (recommenda
       settings" and draft→final both depend on it; if not, the UI says "similar", not "same".
 - [x] Artifact sizes per song (`.npy` intermediates vs FLAC) — sizes the library cleanup feature.
 - [x] Per-stage progress: what callbacks fire, how often, and can they map to a % bar?
-      (Answered — see report, "Progress within a Stage": token counts, up to 71/s, in planning and semantic generation; a stepped % only in mlx-Yue synthesis, via stderr.)
+      (Answered — see report, "Progress within a Stage": mlx-Yue gives token counts, up to 71/s, in planning and semantic generation and a stepped % in synthesis via stderr; its decoding % is too coarse for a bar; audio.cpp gives nothing usable inside a Stage.)
 - [x] Cancellation: does `cancelled()` stop each stage promptly and leave the pipeline reusable?
 - [x] Draft→final: render at 8 steps, then re-`synthesize` the saved semantic tokens + noise at
       32 steps — same song, better quality? (Decides #5.) Already shown feasible by YuE-Studio

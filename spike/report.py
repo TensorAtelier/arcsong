@@ -428,6 +428,7 @@ PERCENT_BAR = {
     "percent": "yes: % from a known total",
     "uneven_percent": "stepped: % from a known total, not tracking wall time",
     "count_only": "running count only (tracks wall time)",
+    "coarse_percent": "no: % from a known total, too few updates for a bar",
     "uneven_count": "no: running count, not tracking wall time",
     "none": "none: fewer than 2 signals",
     "not_run": "Stage not run",

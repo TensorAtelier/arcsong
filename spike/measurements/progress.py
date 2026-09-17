@@ -35,9 +35,12 @@ EVENTS_NAME = "progress-events.jsonl"
 # signal, 0 before the first) and at the Stage's end, so a bar with fewer steps than
 # 1 / LINEAR_MAX_DEVIATION can only pass if its steps are offset to straddle wall time.
 LINEAR_MAX_DEVIATION = 0.15
+# A % signal with fewer updates than this inside its Stage is too coarse to animate a bar,
+# however its few steps happen to line up with wall time.
+MIN_BAR_UPDATES = 5
 CURVE_POINTS = 10
 # Verdicts, best first.
-VERDICTS = ("percent", "uneven_percent", "count_only", "uneven_count")
+VERDICTS = ("percent", "uneven_percent", "count_only", "coarse_percent", "uneven_count")
 
 Event = StageEvent | ProgressEvent
 
@@ -124,9 +127,10 @@ def signal_stats(signals: list[ProgressEvent], start: float, end: float) -> dict
 def verdict(signals: dict[str, dict]) -> dict[str, Any]:
     """Whether a Stage's best signal can drive a % bar: `percent` (a total and progress that
     tracks wall time), `uneven_percent` (a total, but progress runs ahead of or behind wall
-    time), `count_only` (a running count with no total that tracks wall time), `uneven_count`
-    (a running count that does not, e.g. bursts of setup lines) or `none` (fewer than two
-    signals). Among signals with the same verdict, the one closest to wall time wins, then
+    time), `count_only` (a running count with no total that tracks wall time),
+    `coarse_percent` (a total, but fewer than MIN_BAR_UPDATES updates), `uneven_count` (a
+    running count that does not track wall time, e.g. bursts of setup lines) or `none` (fewer
+    than two signals). Among signals with the same verdict, the one closest to wall time wins, then
     the busiest."""
     ranked = []
     for name, stats in signals.items():
@@ -135,6 +139,8 @@ def verdict(signals: dict[str, dict]) -> dict[str, Any]:
         linear = stats["tracks_wall_time"]["linear"]
         if stats["running_count_only"]:
             kind = "count_only" if linear else "uneven_count"
+        elif stats["count"] < MIN_BAR_UPDATES:
+            kind = "coarse_percent"
         else:
             kind = "percent" if linear else "uneven_percent"
         deviation = stats["tracks_wall_time"]["max_deviation"]

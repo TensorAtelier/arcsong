@@ -40,6 +40,10 @@ SCRIPT = {
     SYNTHESIS: [{"signal": "step", "at": evenly(5), "total": True}],
 }
 SECONDS = {PLANNING: 0.2, SEMANTIC: 0.4, SYNTHESIS: 0.5, DECODING: 0.1}
+MIN_UPDATES = progress.MIN_BAR_UPDATES
+# mlx-Yue decoding in spike/runs/progress-mlx-song-8bit-8/run-1/progress-events.jsonl.
+DECODING_START, DECODING_END = 200.29461470805109, 210.43428287515417
+DECODING_UPDATES = (200.424190166872, 205.43453254224733, 210.4218798330985)
 
 
 def test_a_song_case_records_every_signal_fired_inside_each_stage(tmp_path, monkeypatch):
@@ -182,7 +186,7 @@ def test_linearity_uses_the_counts_a_signal_carries_or_else_its_share_of_arrival
 
 
 def test_a_sparse_bar_is_judged_by_the_value_it_holds_between_updates():
-    # mlx-Yue decoding, progress-mlx-song-8bit-8.json: yue2's stderr lines, one per 5 s.
+    # A sparse % signal like yue2's stderr progress lines (one per 5 s through a pipe).
     start, end = 208.180, 218.958
     events = [
         *spans(decoding=(start, end)),
@@ -199,7 +203,45 @@ def test_a_sparse_bar_is_judged_by_the_value_it_holds_between_updates():
     held = 8 / 19
     assert fit["max_deviation"] == pytest.approx((218.325 - start) / (end - start) - held)
     assert fit["linear"] is False
-    assert stage["percent_bar"] == {"verdict": "uneven_percent", "signal": "stderr"}
+    # Four updates are too few to animate a bar, whatever their deviation.
+    assert stage["percent_bar"] == {"verdict": "coarse_percent", "signal": "stderr"}
+
+
+def test_a_percent_signal_with_too_few_updates_is_too_coarse_for_a_bar():
+    # mlx-Yue decoding in the committed progress-mlx-song-8bit-8 timeline
+    # (spike/runs/progress-mlx-song-8bit-8/run-1/progress-events.jsonl).
+    start, end = DECODING_START, DECODING_END
+    events = [
+        *spans(decoding=(start, end)),
+        ProgressEvent(DECODING, "stderr: Decoding audio", completed=0, t=DECODING_UPDATES[0]),
+        ProgressEvent(DECODING, "stderr: Decoding audio", 9, 19, DECODING_UPDATES[1]),
+        ProgressEvent(DECODING, "stderr: Decoding audio", 19, 19, DECODING_UPDATES[2]),
+    ]
+
+    stage = progress.analyse(events)[DECODING]
+
+    fit = stage["signals"]["stderr: Decoding audio"]["tracks_wall_time"]
+    # Just before 19/19 arrives the bar still holds 9/19, with nearly all the Stage gone.
+    elapsed = (DECODING_UPDATES[2] - start) / (end - start)
+    assert fit["max_deviation"] == pytest.approx(elapsed - 9 / 19)
+    assert stage["percent_bar"] == {
+        "verdict": "coarse_percent",
+        "signal": "stderr: Decoding audio",
+    }
+
+
+def test_a_percent_signal_with_enough_updates_is_a_stepped_bar_even_off_wall_time():
+    start, end = 0.0, 10.0
+    steps = [(2.0 + i, i + 1) for i in range(MIN_UPDATES)]
+    events = [
+        *spans(decoding=(start, end)),
+        *(ProgressEvent(DECODING, "step", done, MIN_UPDATES, t) for t, done in steps),
+    ]
+
+    stage = progress.analyse(events)[DECODING]
+
+    assert stage["signals"]["step"]["tracks_wall_time"]["linear"] is False
+    assert stage["percent_bar"] == {"verdict": "uneven_percent", "signal": "step"}
 
 
 def test_a_bar_that_stops_short_is_judged_at_the_stage_end():

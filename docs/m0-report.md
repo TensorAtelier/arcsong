@@ -296,7 +296,7 @@ What fires *inside* each Stage, and how often, is in [Progress within a Stage](#
 | mlx-Yue | synthesis | 84.9 | `stderr: Loading acoustic model` | 2 | 0.110 / 0.110 / 0.110 | 0.2 / 84.6 | 0.02 | 2 | running count | 1.00 (not linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
 | mlx-Yue | synthesis | 84.9 | `stderr: Synthesizing audio` | 18 | 4.483 / 5.003 / 5.010 | 0.3 / 0.0 | 0.21 | 1 | from signal 4 (8) | 0.18 (not linear) | stepped: % from a known total, not tracking wall time | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
 | mlx-Yue | decoding | 10.1 | `stderr: Loading MLX audio decoder` | 2 | 0.125 / 0.125 / 0.125 | 0.0 / 10.0 | 0.20 | 2 | running count | 0.99 (not linear) | — | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
-| mlx-Yue | decoding | 10.1 | `stderr: Decoding audio` | 3 | 4.987 / 4.999 / 5.010 | 0.1 / 0.0 | 0.30 | 1 | from signal 2 (19) | 0.53 (not linear) | stepped: % from a known total, not tracking wall time | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
+| mlx-Yue | decoding | 10.1 | `stderr: Decoding audio` | 3 | 4.987 / 4.999 / 5.010 | 0.1 / 0.0 | 0.30 | 1 | from signal 2 (19) | 0.53 (not linear) | no: % from a known total, too few updates for a bar | `progress-mlx-song-8bit-8.json` (8bit, 8 steps) |
 | audio.cpp | planning | 39.1 | `--log line` | 62 | 0.000 / 0.000 / 38.495 | 0.0 / 0.0 | 1.59 | 56 | running count | 0.89 (not linear) | no: running count, not tracking wall time | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
 | audio.cpp | semantic generation | 118.8 | `--log line` | 21 | 0.000 / 0.000 / 105.031 | 0.0 / 0.0 | 0.18 | 8 | running count | 0.47 (not linear) | no: running count, not tracking wall time | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
 | audio.cpp | synthesis | 137.3 | `--log line` | 35 | 0.000 / 0.000 / 130.780 | 0.3 / 0.0 | 0.25 | 19 | running count | 0.87 (not linear) | no: running count, not tracking wall time | `progress-audiocpp-song-q8_0-8.json` (q8_0, 8 steps) |
@@ -321,7 +321,9 @@ by the signal strays from the elapsed share of the Stage's wall time. The bar sh
 total, or the share of the Stage's signals when there is no total. It is checked as each
 signal arrives, just before it (the value held since the previous signal, 0 before the
 first) and at the Stage's end; 0.15 or less counts as linear. So a bar with few, sparse
-steps is judged by how long it sits still, not only by where each step lands.
+steps is judged by how long it sits still, not only by where each step lands. A % signal
+with fewer than 5 updates inside its Stage is judged too coarse for a bar, whatever its
+deviation.
 
 **mlx-Yue, planning and semantic generation: a running count at token rate.** `plan()` and
 `generate_semantic()` take a public `on_token(phase, token)`; it fired 2072 times while the
@@ -364,7 +366,8 @@ and `decode()`. On audio.cpp: Stage segments only (its decoding chunk count cove
 of the Take). **What the SSE throttle must handle:** mlx-Yue's `on_token` peaked at 71
 callbacks in one second (6745 progress events in the Take); audio.cpp's log peaked at 56
 lines in one second. Coalescing to a few events per second, as PLAN.md proposes, drops
-nothing a bar needs: the slowest-moving signals change every 3–5 s.
+nothing a bar needs: no signal a bar uses arrives more often than every 5 s outside
+mlx-Yue's token counts, and mlx-Yue's synthesis % moves one step about every 10 s.
 
 ## Cancellation
 

@@ -146,8 +146,10 @@ def test_progress_within_a_stage_lists_each_signal_with_its_verdict(tmp_path):
     assert "| 4619 |" in tokens and "| 71 |" in tokens and "running count" in tokens
     assert "progress-mlx-song-8bit-8.json" in tokens
     decoding = next(line for line in lines if "`stderr: Decoding audio`" in line)
-    # 3 stderr lines in 10.1 s: the bar holds 9/19 for half the Stage.
-    assert "stepped: % from a known total" in decoding and "from signal 2 (19)" in decoding
+    # 3 stderr lines in 10.1 s: the bar holds 9/19 for half the Stage, too few updates.
+    assert "too few updates for a bar" in decoding and "from signal 2 (19)" in decoding
+    synthesis = next(line for line in lines if "`stderr: Synthesizing audio`" in line)
+    assert "stepped: % from a known total" in synthesis
     assert "0.53 (not linear)" in decoding
     audiocpp = next(line for line in lines if line.startswith("| audio.cpp |"))
     assert "not measured" in audiocpp

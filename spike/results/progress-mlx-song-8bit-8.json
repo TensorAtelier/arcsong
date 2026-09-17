@@ -428,7 +428,7 @@
             }
           },
           "percent_bar": {
-            "verdict": "uneven_percent",
+            "verdict": "coarse_percent",
             "signal": "stderr: Decoding audio"
           }
         }
