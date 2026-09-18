@@ -7,11 +7,11 @@
 
 | # | Ticket | Commit |
 |---|---|---|
-| 01 | Setup parts: engine + covers, ffmpeg check, per-part download | `14873e5` |
-| 02 | Cover jobs: upload, `transcribe()`, upload deleted on every finish | `56d2c78` |
-| 03 | Cover panel, queue labels, ABC/MIDI export | `2eed88b` |
-| — | Review fixes | `a5ee620` |
-| — | Re-review fixes | `1aadd4b`, `874ea87` |
+| 01 | Setup parts: engine + covers, ffmpeg check, per-part download | `51ba6a5` |
+| 02 | Cover jobs: upload, `transcribe()`, upload deleted on every finish | `5e8dc68` |
+| 03 | Cover panel, queue labels, ABC/MIDI export | `af06f17` |
+| — | Review fixes | `d630073` |
+| — | Re-review fixes | `1dab6b7`, `52745e6` |
 
 Parked: none.
 

@@ -1,17 +1,17 @@
 # m1b-setup — report
 
 **Goal:** Build the M1b Setup page from PLAN.md: model download with progress, `doctor`, licence acknowledgement, RAM check.
-**Result:** QA goal verdict **MET**; its 3 code defects are fixed with tests (`5a8a625`), and the stale docs go through `/doc-commit`.
+**Result:** QA goal verdict **MET**; its 3 code defects are fixed with tests (`6cdb9ad`), and the stale docs go through `/doc-commit`.
 
 ## Tickets
 
 | # | Ticket | Commit |
 |---|---|---|
-| 01 | Setup checks API, weights state, `<data>/models` default, jobs 409 gate | `8a3d83a` |
-| 02 | Licence acknowledgement in SQLite, download gated on it | `8a3d83a` |
-| 03 | Weights download in a spawned process: pinned revisions, cleanup, verify, cancel/resume, SSE | `8a3d83a` |
-| 04 | Setup page, nav mark, first-load redirect, Create notice | `3f093b6` |
-| — | Review fixes | `5a8a625` |
+| 01 | Setup checks API, weights state, `<data>/models` default, jobs 409 gate | `b1f314e` |
+| 02 | Licence acknowledgement in SQLite, download gated on it | `b1f314e` |
+| 03 | Weights download in a spawned process: pinned revisions, cleanup, verify, cancel/resume, SSE | `b1f314e` |
+| 04 | Setup page, nav mark, first-load redirect, Create notice | `bbd05ca` |
+| — | Review fixes | `6cdb9ad` |
 
 Parked: none.
 

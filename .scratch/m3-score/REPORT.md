@@ -7,12 +7,12 @@
 
 | # | Ticket | Commit |
 |---|---|---|
-| 01 | Score jobs: schema v3, `POST /api/scores`, Engine `plan_only`, dispatch by kind | `461a212` |
-| 02 | Score checking: `/api/score/check`, `/strip-chords`, a Take's Score | `461a212` |
-| 03 | Rendering from an edited Score (planning skipped) | `461a212` |
-| 04 | Score view: notation, melody preview, editor, diff, entry points | `4eaf27c` |
-| — | Review fixes | `416b05d` |
-| — | Re-review fix | `826f967` |
+| 01 | Score jobs: schema v3, `POST /api/scores`, Engine `plan_only`, dispatch by kind | `b47f5ce` |
+| 02 | Score checking: `/api/score/check`, `/strip-chords`, a Take's Score | `b47f5ce` |
+| 03 | Rendering from an edited Score (planning skipped) | `b47f5ce` |
+| 04 | Score view: notation, melody preview, editor, diff, entry points | `4ca7778` |
+| — | Review fixes | `9d33371` |
+| — | Re-review fix | `7d0f35a` |
 
 Parked: none.
 
@@ -41,7 +41,7 @@ Defects, all fixed:
 
 Drift, both fixed: Variations accepted a supplied Score (now 422), and the `Song` type declared fields the API never returns.
 
-Re-review regression, fixed in `826f967`: after fix 1 the Play button stayed on "Stop" once the Score was edited, so restarting took two clicks.
+Re-review regression, fixed in `7d0f35a`: after fix 1 the Play button stayed on "Stop" once the Score was edited, so restarting took two clicks.
 
 Residual nits accepted: the 422 for a group carrying a Score is pydantic's wording (no UI path sends it), and the sample-loading error can't tell a missing soundfont from an out-of-range note, so it names both possibilities.
 

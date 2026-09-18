@@ -1,8 +1,19 @@
 [project]
 name = "songloom"
-version = "0.0.0"
-description = "Local app for generating full songs with YuE2"
+version = "0.1.0"
+description = "Local app for generating full songs with the YuE2 music model on your own Mac"
+readme = "README.md"
 requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Julian Wong", email = "julian@tensoratelier.com" }]
+keywords = ["music", "generation", "yue2", "mlx", "apple-silicon", "local-first"]
+classifiers = [
+  "Environment :: MacOS X",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
+]
 dependencies = [
   # mlx-Yue Engine, pinned by commit (D-006). Weights are read from a configurable path.
   # The transcription extra (mido, mir-eval, pretty-midi, scipy) is what covers need (M4).
@@ -13,6 +24,11 @@ dependencies = [
   "psutil>=5",
   "python-multipart>=0.0.9",
 ]
+
+[project.urls]
+Homepage = "https://github.com/TensorAtelier/songloom"
+Source = "https://github.com/TensorAtelier/songloom"
+Issues = "https://github.com/TensorAtelier/songloom/issues"
 
 [project.scripts]
 spike = "spike.cli:main"

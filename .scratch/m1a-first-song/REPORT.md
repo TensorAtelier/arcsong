@@ -1,17 +1,17 @@
 # m1a-first-song — report
 
 - Plan: `.scratch/m1a-first-song/plan.md` · Size: lite · Mode: auto
-- Branch: `feat/m1a-first-song` (base `61d6908`) · Built 2026-09-17
+- Branch: `feat/m1a-first-song` (base `dd7fe85`) · Built 2026-09-17
 
 ## Tickets
 
 | # | Ticket | Commit | Check |
 |---|---|---|---|
-| 01 | Server, database and queue with a fake engine | `4f49cb0` | 5 API tests; curl against a running fake server |
-| 02 | Real mlx-Yue worker | `a09d498` | opt-in real render test (25 s); two curl renders, the second faster on the warm model |
-| 03 | Live progress and cancel | `daeff99` | 9 tests; real server: SSE Stages, ~4 token updates/s, synthesis `N/32`, cancel mid-synthesis in 0.19 s with no Take left |
-| 04 | Worker crash and restart recovery | `a159631` | 3 tests (crash, grace kill, restart recovery), stable over 5 repeated runs |
-| 05 | Bare Create page | `bf9062d` | browser end to end on the real engine: generate, progress, song playable (decoded 23.2 s stereo), cancel; found and fixed two bugs |
+| 01 | Server, database and queue with a fake engine | `311fa45` | 5 API tests; curl against a running fake server |
+| 02 | Real mlx-Yue worker | `65ce832` | opt-in real render test (25 s); two curl renders, the second faster on the warm model |
+| 03 | Live progress and cancel | `b98654e` | 9 tests; real server: SSE Stages, ~4 token updates/s, synthesis `N/32`, cancel mid-synthesis in 0.19 s with no Take left |
+| 04 | Worker crash and restart recovery | `53fba29` | 3 tests (crash, grace kill, restart recovery), stable over 5 repeated runs |
+| 05 | Bare Create page | `92f4134` | browser end to end on the real engine: generate, progress, song playable (decoded 23.2 s stereo), cancel; found and fixed two bugs |
 
 Parked: none.
 

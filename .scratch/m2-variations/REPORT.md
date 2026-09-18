@@ -1,17 +1,17 @@
 # m2-variations — report
 
 **Goal:** Build M2 from PLAN.md: "Generate ×N" Drafts with distinct seeds, a compare view with synced players and waveforms, star/pick, and "Finalize" a Draft by re-synthesizing its saved Semantic tokens and noise at 32 steps.
-**Result:** QA goal verdict **MET**. Its 3 defects and 2 of its 5 risks were fixed with tests (the fix commit after `aa2ce1b`).
+**Result:** QA goal verdict **MET**. Its 3 defects and 2 of its 5 risks were fixed with tests (the fix commit after `13b06a9`).
 
 ## Tickets
 
 | # | Ticket | Commit |
 |---|---|---|
-| 01 | Variations and stars API, schema v2 with migration | `5c2428f` |
-| 02 | Finalize: API, runner, worker, Engine `finalize` (mlx-Yue + fake) | `21a98d7` |
-| 03 | Waveform peaks endpoint, seed-dependent fake tone | `21a98d7` |
-| 04 | Takes count in Create, queue labels, Library star/filter/labels/Finalize | `8fbbb1f` |
-| 05 | Compare view with waveforms and a shared playhead | `8fbbb1f` |
+| 01 | Variations and stars API, schema v2 with migration | `63b32ba` |
+| 02 | Finalize: API, runner, worker, Engine `finalize` (mlx-Yue + fake) | `80d40db` |
+| 03 | Waveform peaks endpoint, seed-dependent fake tone | `80d40db` |
+| 04 | Takes count in Create, queue labels, Library star/filter/labels/Finalize | `9b843f6` |
+| 05 | Compare view with waveforms and a shared playhead | `9b843f6` |
 | — | Review fixes | see `git log` |
 
 Parked: none.

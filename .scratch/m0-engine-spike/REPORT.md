@@ -1,22 +1,22 @@
 # M0 engine spike — run report
 
 - Spec: `.scratch/m0-engine-spike/spec.md` · Ledger: `DECISIONS.md` · Per-ticket evidence: `STATUS.md`
-- Branch: `feat/m0-engine-spike` (base `ded28b4`) · Mode: auto · Run: 2026-09-16 → 2026-09-17
+- Branch: `feat/m0-engine-spike` (base `ea4cfbc`) · Mode: auto · Run: 2026-09-16 → 2026-09-17
 
 ## Run summary
 
 | Ticket | Result | Commit / wip branch | QA rounds |
 |---|---|---|---|
-| 01 Harness skeleton and mlx-Yue doctor | done | `b48a947` | 1 |
-| 02 mlx-Yue Stage timing, peak memory, artifact sizes | done | `4c27e25` | 1 |
-| 03 audio.cpp setup and doctor | done | `61b4337` | 1 |
-| 04 audio.cpp Stage timing, peak memory, artifact sizes | done | `d1cf6c8` | 1 |
-| 05 Cancellation per Stage, both Engines | done | `baaf447` | 2 |
-| 06 Seed reproducibility, both Engines | done | `503771e` | 2 |
-| 07 Draft→Final, both Engines | done | `0079aed` | 2 |
-| 08 Stale resource files and download checks (mlx-Yue) | done | `1b5dfbd` | 1 |
-| 09 M0 report and Engine recommendation | done (unparked 2026-09-17) | `0ec12eb`, merged `96b4882` | 2 + fixes |
-| 10 Progress within a Stage, both Engines | done (unparked 2026-09-17) | `3fcfe84`, merged `67fe51b` | 2 + fixes |
+| 01 Harness skeleton and mlx-Yue doctor | done | `294d9f6` | 1 |
+| 02 mlx-Yue Stage timing, peak memory, artifact sizes | done | `6038085` | 1 |
+| 03 audio.cpp setup and doctor | done | `94affee` | 1 |
+| 04 audio.cpp Stage timing, peak memory, artifact sizes | done | `2a1a631` | 1 |
+| 05 Cancellation per Stage, both Engines | done | `1742689` | 2 |
+| 06 Seed reproducibility, both Engines | done | `2b6c657` | 2 |
+| 07 Draft→Final, both Engines | done | `bc85cff` | 2 |
+| 08 Stale resource files and download checks (mlx-Yue) | done | `46a41ca` | 1 |
+| 09 M0 report and Engine recommendation | done (unparked 2026-09-17) | `c2a1fb8`, merged `5b6e5f0` | 2 + fixes |
+| 10 Progress within a Stage, both Engines | done (unparked 2026-09-17) | `8d21b5f`, merged `6cceba4` | 2 + fixes |
 
 ## Goal review (verbatim)
 
@@ -98,13 +98,13 @@ DEFECTS:
 
 ## Parked tickets
 
-*Update 2026-09-17: ticket 09 was unparked with the user's approval. All five defects below were fixed in `0ec12eb` and merged (`96b4882`). Stories 24–26 are now on the branch. Within-Stage progress (goal review defect 3) continues as ticket 10.*
+*Update 2026-09-17: ticket 09 was unparked with the user's approval. All five defects below were fixed in `c2a1fb8` and merged (`5b6e5f0`). Stories 24–26 are now on the branch. Within-Stage progress (goal review defect 3) continues as ticket 10.*
 
-- **09 — M0 report and Engine recommendation.** Branch `wip/m0-engine-spike/09-m0-report` (`f9e22e3`). It failed QA round 2 on four small defects: (1) the report says audio.cpp semantic generation logs nothing until it ends, but q8_0 logs show one mid-Stage KV-cache refill line; (2) the "parser clamps Stage starts after sleep" caveat is missing; (3) Findings 1 says mlx-Yue is "confirmed", which should say recommended (D-017); (4) the prose-number test misses drift for 11 of 15 repeated numbers. The goal review adds (5): PLAN.md ticks "Per-stage progress" although within-Stage rate wasn't measured. Everything else in the report passed a line-by-line QA recheck against the results.
+- **09 — M0 report and Engine recommendation.** Branch `wip/m0-engine-spike/09-m0-report` (`5d11e34`). It failed QA round 2 on four small defects: (1) the report says audio.cpp semantic generation logs nothing until it ends, but q8_0 logs show one mid-Stage KV-cache refill line; (2) the "parser clamps Stage starts after sleep" caveat is missing; (3) Findings 1 says mlx-Yue is "confirmed", which should say recommended (D-017); (4) the prose-number test misses drift for 11 of 15 repeated numbers. The goal review adds (5): PLAN.md ticks "Per-stage progress" although within-Stage rate wasn't measured. Everything else in the report passed a line-by-line QA recheck against the results.
 
 ## Ticket 10 (added 2026-09-17)
 
-Unparked with the user's approval: both defects below were fixed without GPU runs (`3fcfe84`) and merged (`67fe51b`). mlx-Yue decoding is now verdict `coarse_percent` (too few updates for a bar). All M0 checkboxes in PLAN.md are ticked.
+Unparked with the user's approval: both defects below were fixed without GPU runs (`8d21b5f`) and merged (`6cceba4`). mlx-Yue decoding is now verdict `coarse_percent` (too few updates for a bar). All M0 checkboxes in PLAN.md are ticked.
 
 It was parked after two QA rounds. The measurement holds up: QA rebuilt the analysis from the raw timelines and matched both results files. What M1 can use for a progress bar:
 - **mlx-Yue:** `on_token` in planning and semantic generation gives a steady running count with no total, up to 71 events/s, which the SSE throttle must absorb. Synthesis and decoding have no public callback; yue2's `N/total` lines on stderr give a stepped % (at most one line per 5 s through a pipe; synthesis starts 15.3 s in, and decoding has only 3 updates).

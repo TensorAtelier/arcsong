@@ -18,3 +18,4 @@ spike/listen/
 *.safetensors
 *.swp
 node_modules/
+dist/

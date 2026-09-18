@@ -1,16 +1,16 @@
 # m1b-library — report
 
 - Plan: `.scratch/m1b-library/plan.md` · Size: lite · Mode: auto
-- Branch: `feat/m1b-library` (base `11b168a`) · Built 2026-09-17
+- Branch: `feat/m1b-library` (base `a7d0591`) · Built 2026-09-17
 
 ## Tickets
 
 | # | Ticket | Commit | Check |
 |---|---|---|---|
-| 01 | Library API: list, usage, delete | `a41db1f` | 4 API tests (order and fields, sizes against disk, delete removes files, song and job rows plus SSE message, double delete → 404, running job has no song) |
-| 02 | Download as FLAC or WAV | `a155a4a` | 4 tests (both formats and filenames, FLAC source served unchanged, unknown song or format refused) |
-| 03 + 04 | Library view and actions (one commit, as noted in the plan) | `962f09b` | browser against a fake-engine server: filter, settings, both delete confirm paths (files and job gone on disk), downloads, re-run with the same seed, Edit in Create prefilling every field |
-| — | Review fixes | `7dbe1e3` | lossless WAV test (sample for sample); browser: delete, then server restart with the page open → reload keeps the song deleted, no error |
+| 01 | Library API: list, usage, delete | `48515bf` | 4 API tests (order and fields, sizes against disk, delete removes files, song and job rows plus SSE message, double delete → 404, running job has no song) |
+| 02 | Download as FLAC or WAV | `212ebae` | 4 tests (both formats and filenames, FLAC source served unchanged, unknown song or format refused) |
+| 03 + 04 | Library view and actions (one commit, as noted in the plan) | `13d2b83` | browser against a fake-engine server: filter, settings, both delete confirm paths (files and job gone on disk), downloads, re-run with the same seed, Edit in Create prefilling every field |
+| — | Review fixes | `8f5c82c` | lossless WAV test (sample for sample); browser: delete, then server restart with the page open → reload keeps the song deleted, no error |
 
 Parked: none.
 
@@ -90,7 +90,7 @@ DEFECTS:
 
 (The three DEFECTS entries are condensed from the reviewer's multi-line bullets without changing their content.)
 
-## Fixes after review (`7dbe1e3`)
+## Fixes after review (`8f5c82c`)
 
 | Defect | Fix | Checked |
 |---|---|---|
