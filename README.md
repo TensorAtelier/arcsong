@@ -7,20 +7,46 @@ Silicon. Nothing is sent anywhere: the model, the weights and your songs stay on
 
 > **Status: v0.1.0, early.** Apple Silicon only. NVIDIA support is planned but not started.
 
+## Hear it first
+
+Three songs made with songloom, nothing edited — style and lyrics in, these came out. Each is a
+45-second excerpt of the full take (click to play):
+
+| | Style given to the model |
+|---|---|
+| [indie-folk.mp3](docs/media/samples/indie-folk.mp3) | *English, warm indie folk, fingerpicked acoustic guitar, soft female vocal, 90 bpm* |
+| [dream-pop.mp3](docs/media/samples/dream-pop.mp3) | *English, dream pop, hazy reverb guitars, breathy vocal, slow tempo* |
+| [city-pop.mp3](docs/media/samples/city-pop.mp3) | *English, upbeat city pop, groovy electric bass, bright synth stabs, male vocal* |
+
+Each took two to four minutes to render on an M5 Pro, at 32 synthesis steps.
+
 ## What it does
 
-- **Write a song** from a style description and lyrics, with section tags (`[Verse]`, `[Chorus]`),
-  a seed, precision and quality settings, and live per-stage progress you can cancel.
-- **Variations**: queue 2–8 takes of the same request with different seeds, compare them side by
-  side with waveforms and one shared playhead, and star the one you want.
-- **Finalize** a quick 8-step draft into a full 32-step render that keeps the same music, by
-  re-synthesizing what the draft already generated.
-- **Library**: everything you have made, with playback, FLAC/WAV download, disk usage, re-run,
-  and permanent delete.
-- **Score**: read the melody the model planned as notation, play it, edit the ABC with live
-  validation, and render a song from your edit. Export ABC or MIDI.
-- **Covers** (optional): upload a recording, have it transcribed into a Score, and re-sing that
-  melody with your own style and lyrics. The recording is deleted as soon as the job ends.
+**Write a song** from a style description and lyrics, with section tags (`[Verse]`, `[Chorus]`),
+a seed, precision and quality settings, and live per-stage progress you can cancel.
+
+![The Create page, with a style and lyrics filled in](docs/media/screens/create.png)
+
+**Compare variations.** Queue 2–8 takes of one request with different seeds, then play them
+against each other: one shared playhead, so pressing Play on another take continues from the
+same moment. Star the one you want, and **Finalize** turns a quick 8-step draft into a full
+32-step render that keeps the same music.
+
+![Two takes side by side with waveforms](docs/media/screens/compare.png)
+
+**Read and edit the Score.** The model plans a melody before it sings; you can see it as
+notation, play it, edit the ABC with live validation and a diff against the original, and render
+a song from your edit. Export ABC or MIDI.
+
+![The Score view: notation above, ABC editor below](docs/media/screens/score.png)
+
+**Keep what you make.** Everything lands in a library with playback, FLAC and WAV download, disk
+usage, re-run, and permanent delete.
+
+![The Library, listing five songs](docs/media/screens/library.png)
+
+**Covers** (optional): upload a recording, have it transcribed into a Score, and re-sing that
+melody with your own style and lyrics. The recording is deleted as soon as the job ends.
 
 ## Requirements
 
@@ -41,6 +67,8 @@ songloom serve
 Then open <http://127.0.0.1:8840>. The first run opens the Setup page, which checks the machine,
 shows the model licence, and downloads the weights with progress — you can close the page and
 come back; the download resumes.
+
+![The Setup page, with its checks and the licence acknowledgement](docs/media/screens/setup.png)
 
 No Node is needed to run it: the web app ships prebuilt.
 

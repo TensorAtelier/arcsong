@@ -82,7 +82,7 @@ export default function SetupView({ setup, error, onChanged }: Props) {
         </ul>
       </div>
 
-      <div className="setup-section">
+      <div className={`setup-section${acknowledged ? "" : " needs-action"}`}>
         <h3>Model licence</h3>
         <p>
           Every set of weights songloom downloads — the song model and, if you use covers, the
@@ -107,9 +107,17 @@ export default function SetupView({ setup, error, onChanged }: Props) {
         {acknowledged ? (
           <p className="small ok-text">✓ Acknowledged {formatDate(licence.acknowledged_at as number)}</p>
         ) : (
-          <button type="button" disabled={busy} onClick={() => void act(api.acknowledgeLicence)}>
-            I acknowledge the model licence
-          </button>
+          <>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy}
+              onClick={() => void act(api.acknowledgeLicence)}
+            >
+              I acknowledge the model licence
+            </button>
+            <p className="hint">Nothing downloads until you do.</p>
+          </>
         )}
       </div>
 
@@ -200,7 +208,7 @@ function PartSection({ part, acknowledged, busy, checking, onAct }: PartProps) {
         <>
           <button
             type="button"
-            className={part.id === "engine" ? "primary" : undefined}
+            className={part.id === "engine" && acknowledged ? "primary" : undefined}
             disabled={busy || !acknowledged}
             onClick={() => void onAct(() => api.startDownload(part.id))}
           >

@@ -154,3 +154,11 @@ ul.diff { margin: 4px 0 0; padding-left: 18px; }
 
 .stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 input[type="file"] { padding: 6px; }
+
+/* The step the page is waiting on: a quiet accent, not a warning. */
+.setup-section.needs-action { border-left: 3px solid var(--accent); padding-left: 12px; }
+.setup-section.needs-action h3::after {
+  content: "needs you"; margin-left: 8px; padding: 1px 8px; border-radius: 999px;
+  font-size: 0.7rem; font-weight: 600; color: var(--accent-text); background: var(--accent);
+  vertical-align: middle;
+}
