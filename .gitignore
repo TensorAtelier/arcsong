@@ -12,8 +12,11 @@ spike/listen/
 *.flac
 *.wav
 *.mp3
-# …except the vendored soundfont the Score view plays (THIRD_PARTY_NOTICES.md).
+# …except the vendored soundfont the Score view plays (THIRD_PARTY_NOTICES.md)
 !songloom/soundfont/**/*.mp3
+# …and the README's sample songs and screenshots.
+!docs/media/**/*.mp3
+!docs/media/**/*.png
 *.gguf
 *.safetensors
 *.swp

@@ -1,5 +1,6 @@
 """mlx-Yue load bookkeeping, without weights: only the pipeline's `load_timing` dict."""
 
+import dataclasses
 import re
 
 import pytest
@@ -92,3 +93,33 @@ def test_stderr_progress_lines_become_progress_events_while_a_stage_runs(monkeyp
         ("synthesis", "stderr: Synthesizing audio", 0, None, "progress"),
         ("synthesis", "stderr: Synthesizing audio", 3, 8, "progress"),
     ]
+
+
+def test_a_memory_pressure_refusal_is_explained_rather_than_dumped(tmp_path, monkeypatch):
+    """mlx-Yue aborts when macOS reports memory pressure; the queue should say what to do about
+    it instead of showing a MemoryError from inside the port."""
+    from songloom.mlx_engine import PRESSURE_ERROR, MlxYueEngine
+
+    engine = MlxYueEngine(models=tmp_path)
+
+    @dataclasses.dataclass
+    class Config:
+        ode_steps: int = 8
+
+    class Pipe:
+        generation_config = Config()
+
+        def plan(self, *args, **kwargs):
+            raise MemoryError(f"{PRESSURE_ERROR} (level=2)")
+
+    monkeypatch.setattr(engine, "load", lambda *a, **k: None)
+    engine._pipe = Pipe()
+    engine._generation_config = Config()
+    request = {"style": "x", "lyrics": "", "mode": "full", "seed": 1, "precision": "8bit",
+               "steps": 8}  # fmt: skip
+
+    with pytest.raises(MemoryError) as raised:
+        engine.render(request, tmp_path / "out", lambda: False, lambda event: None)
+
+    assert "quit other model servers" in str(raised.value)
+    assert "11 GiB" in str(raised.value)

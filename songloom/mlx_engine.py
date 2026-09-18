@@ -264,15 +264,27 @@ def _step_reporter(stage: str, emit: Emit):
     return on_count
 
 
+# mlx-Yue refuses to run while macOS reports memory pressure, and says so in these words.
+PRESSURE_ERROR = "System memory pressure is not normal"
+PRESSURE_ADVICE = (
+    "macOS is short of memory, so mlx-Yue stopped before it could render. A song needs about "
+    "11 GiB: quit other model servers (ComfyUI, LM Studio) and memory-hungry apps, then try "
+    "again."
+)
+
+
 def _cancel_guard(cancelled: CancelCheck):
-    """Call a Stage method, turning mlx-Yue's own cancellation error into `Cancelled`."""
+    """Call a Stage method, turning mlx-Yue's own cancellation error into `Cancelled`, and its
+    memory-pressure refusal into something the user can act on."""
 
     def call(method, *args, **kwargs):
         try:
             return method(*args, **kwargs)
-        except Exception:
+        except Exception as error:
             if cancelled():
                 raise Cancelled(method.__name__) from None
+            if PRESSURE_ERROR in str(error):
+                raise MemoryError(PRESSURE_ADVICE) from error
             raise
 
     return call
