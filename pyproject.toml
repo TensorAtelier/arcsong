@@ -3,7 +3,7 @@ name = "songloom"
 version = "0.1.0"
 description = "Local app for generating full songs with the YuE2 music model on your own Mac"
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Julian Wong", email = "julian@tensoratelier.com" }]
@@ -31,7 +31,6 @@ Source = "https://github.com/TensorAtelier/songloom"
 Issues = "https://github.com/TensorAtelier/songloom/issues"
 
 [project.scripts]
-spike = "spike.cli:main"
 songloom = "songloom.cli:main"
 
 [dependency-groups]
@@ -44,8 +43,15 @@ build-backend = "hatchling.build"
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.hatch.build.targets.sdist]
+# A source release of the app: what you need to build, run and test it — not the M0 spike,
+# the agent notes or the web sources, which live in the repository.
+include = ["songloom", "tests", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "pyproject.toml"]
+
 [tool.hatch.build.targets.wheel]
-packages = ["spike", "songloom"]
+# The M0 measurement harness (`spike/`) stays in the repository as evidence, but it is not
+# part of what users install.
+packages = ["songloom"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
