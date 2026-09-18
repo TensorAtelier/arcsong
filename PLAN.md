@@ -191,6 +191,11 @@ and Score export by then (re-evaluate with the spike harness); engine auto-detec
 CUDA machine; document Linux/Windows install.
 
 ### M6 — Release (#11)
+Started 2026-09-17: the project moved to `TensorAtelier/songloom` (org under the personal account, ToS-clean — one free account per person), history rewritten to `julian@tensoratelier.com`, `LICENSE` (Apache-2.0, Julian Wong / Tensor Atelier), README and package metadata at v0.1.0 are done. What a dry run of `uv tool install git+https://github.com/TensorAtelier/songloom` showed, still to fix:
+- **It also installs a global `spike` command** — the M0 measurement harness — because `pyproject.toml` declares both console scripts. The released package should ship `songloom` only.
+- **The wheel says `Requires-Python: >=3.12,<3.13`, but uv installed it into Python 3.14.4 and it ran fine** (mlx and Metal included). Either widen the constraint after testing, or find out why it isn't enforced on this path; a user should not land on an untested Python silently.
+- The installed tool is a shim in `~/.local/bin` over a 438 MB private venv holding a frozen copy of the code; `uv tool upgrade` is the update path. Worth saying in the README's install section.
+
 One-command install (`uv tool install` or bootstrap script), versioned releases, README
 with screenshots/audio samples, licence notices.
 
