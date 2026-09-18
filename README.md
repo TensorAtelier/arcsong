@@ -39,10 +39,37 @@ songloom serve
 ```
 
 Then open <http://127.0.0.1:8840>. The first run opens the Setup page, which checks the machine,
-shows the model licence, and downloads the weights with progress. Songs, the library and settings
-live in `~/Library/Application Support/songloom` (override with `--data` or `$SONGLOOM_DATA`).
+shows the model licence, and downloads the weights with progress — you can close the page and
+come back; the download resumes.
 
 No Node is needed to run it: the web app ships prebuilt.
+
+| | |
+|---|---|
+| Your songs and settings | `~/Library/Application Support/songloom` (`--data DIR` or `$SONGLOOM_DATA` to move them) |
+| The weights | `<data>/models`, or `--mlx-models DIR` if you keep them elsewhere |
+| The app itself | a private environment under `~/.local/share/uv/tools/songloom`, with a `songloom` command on your PATH |
+
+```sh
+uv tool upgrade songloom      # pull a newer version
+uv tool uninstall songloom    # remove the app (your songs and weights stay)
+```
+
+Nothing is installed system-wide, and removing the tool leaves your data alone — delete the data
+directory yourself if you want the songs and the 11 GB of weights gone too.
+
+## When something goes wrong
+
+- **"Songs can't be made on battery."** mlx-Yue refuses to render unless the Mac is on AC power.
+- **"macOS is short of memory."** A song needs about 11 GiB while it renders, and mlx-Yue stops
+  rather than push the machine into swapping. Quit other local model servers — ComfyUI and
+  LM Studio are the usual culprits — and start the job again.
+- **The Setup page says the weights are incomplete.** Press Download again: it resumes, and it
+  cleans up the metadata files that would otherwise make mlx-Yue reject the directory.
+- **Covers are greyed out.** They need ffmpeg (`brew install ffmpeg`) and their own weights;
+  the Covers part of the Setup page checks both and says which is missing.
+- **A song fails with "Another Lyra process owns the GPU".** Another songloom (or another
+  mlx-Yue job) is already running; only one can hold the GPU at a time.
 
 ## Licences
 
