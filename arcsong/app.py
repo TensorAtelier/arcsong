@@ -110,10 +110,12 @@ def create_app(
     load_retry: float | None = None,
     models: Models | None = None,
     covers: Models | None = None,
+    allow_battery: bool = False,
 ) -> FastAPI:
     """`models` are the weights the Engine needs and `covers` the optional transcription ones;
     by default both are fake weights that are already installed, so tests of other features
-    never meet the Setup gate."""
+    never meet the Setup gate. `allow_battery` only changes what the Setup page says: the
+    Engine is told separately, through its own `require_ac` kwarg."""
     root = data_dir(data)
     songs_dir = root / "songs"
     songs_dir.mkdir(exist_ok=True)
@@ -142,7 +144,9 @@ def create_app(
         options = {"cancel_grace": cancel_grace, "load_retry": load_retry}
         kwargs = {k: v for k, v in options.items() if v is not None}
         runner = JobRunner(store, songs_dir, spec, **kwargs)
-        setup = Setup(parts, store, runner.publish_message, runner.next_seq)
+        setup = Setup(
+            parts, store, runner.publish_message, runner.next_seq, allow_battery=allow_battery
+        )
         app.state.store, app.state.runner, app.state.setup = store, runner, setup
         setup.run_checks()
         runner.start()

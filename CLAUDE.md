@@ -47,7 +47,7 @@ Findings and Engine recommendation: `docs/m0-report.md` (regenerate its tables w
 
 Gotchas learned running it:
 - Wrap real GPU runs in `caffeinate -ims`. A lid-close sleep corrupted a timing run, because audio.cpp's own timers count through sleep.
-- mlx-Yue refuses to run on battery (`require_ac=True`); audio.cpp doesn't, so check `pmset -g batt` first.
+- mlx-Yue refuses to run on battery when asked to (`require_ac`); audio.cpp doesn't, so check `pmset -g batt` first. `lyra`'s own default is `require_ac=False` — the guard belongs to its benchmark harness (`lyra/measure.py::ResourceMonitor`) and gates nothing but power sampling; `GPUExecution`'s memory budget, OS headroom and swap-out ceiling are independent. `arcsong serve --allow-battery` / `$ARCSONG_ALLOW_BATTERY` passes `require_ac=False` and softens the Setup power check; the real-engine tests still assume AC.
 - Run one GPU job at a time, and quit LM Studio/ComfyUI for timing numbers; they skew results (recorded in `env.model_servers`).
 - 8bit and bf16 make different songs from the same seed; compare only within one precision.
 - audio.cpp v0.8.0's CLI exports neither the generated Score nor Semantic tokens, and it reloads the model on every run.

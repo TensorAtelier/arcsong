@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 
 import uvicorn
 
@@ -12,6 +13,9 @@ ENGINES = {
     "mlx": "arcsong.mlx_engine:MlxYueEngine",
     "fake": "arcsong.fake_engine:FakeEngine",
 }
+
+BATTERY_ENV = "ARCSONG_ALLOW_BATTERY"
+TRUTHY = {"1", "true", "yes", "on"}
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -26,7 +30,21 @@ def main(argv: list[str] | None = None) -> None:
         "--mlx-models",
         help="mlx-Yue weights (default: $ARCSONG_MLX_MODELS or <data>/models)",
     )
+    serve.add_argument(
+        "--allow-battery",
+        action="store_true",
+        default=None,
+        help=(
+            "Render without AC power (default: $ARCSONG_ALLOW_BATTERY, else off). "
+            "Songs are slower on battery and still need ~11 GiB of memory."
+        ),
+    )
     args = parser.parse_args(argv)
+    allow_battery = (
+        args.allow_battery
+        if args.allow_battery is not None
+        else os.environ.get(BATTERY_ENV, "").strip().lower() in TRUTHY
+    )
 
     from arcsong.app import create_app
     from arcsong.config import data_dir
@@ -37,7 +55,9 @@ def main(argv: list[str] | None = None) -> None:
         directory = models_dir(data, args.mlx_models)
         models = MlxYueModels(directory)
         covers = TranscriptionModels(directory)
-        kwargs = {"models": str(directory)}
+        # mlx-Yue's own default is require_ac=False; arcsong asks for the guard unless
+        # the user turns it off.
+        kwargs = {"models": str(directory), "require_ac": not allow_battery}
     else:
         # Fake weights to download, so the Setup page can be tried without a GPU or network.
         models = FakeModels(
@@ -48,7 +68,13 @@ def main(argv: list[str] | None = None) -> None:
         )
         # Long enough to hear and compare Variations in the page.
         kwargs = {"stage_seconds": 1.0, "audio_seconds": 20.0}
-    app = create_app(EngineSpec(ENGINES[args.engine], kwargs), data, models=models, covers=covers)
+    app = create_app(
+        EngineSpec(ENGINES[args.engine], kwargs),
+        data,
+        models=models,
+        covers=covers,
+        allow_battery=allow_battery,
+    )
     config = uvicorn.Config(app, host=args.host, port=args.port, timeout_graceful_shutdown=5)
     Server(config, app.state.shutting_down).run()
 
