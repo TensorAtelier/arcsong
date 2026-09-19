@@ -6,5 +6,5 @@ size: lite
 goal: Build M6 from PLAN.md: a package that installs in one command and ships only the app, a README with real screenshots and audio samples, licence notices, and a versioned v0.1.0 release
 
 - [x] plan
-- [ ] build
+- [x] build
 - [ ] review
