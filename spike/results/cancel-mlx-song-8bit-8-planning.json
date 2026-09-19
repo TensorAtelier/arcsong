@@ -94,7 +94,7 @@
       "cancel_latency_seconds": 0.01010995777323842,
       "cancelled_by": "InterruptedError",
       "cancel_message": "Cancelled during abc",
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-mlx-song-8bit-8-planning/run-1/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/cancel-mlx-song-8bit-8-planning/run-1/take",
       "leftover_files": [],
       "leftover_looks_complete": false,
       "stage_events": [
@@ -126,7 +126,7 @@
           "vae_load_seconds": 0.15034587495028973
         },
         "audio_seconds": 15.998666666666667,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-mlx-song-8bit-8-planning/run-1/reuse",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/cancel-mlx-song-8bit-8-planning/run-1/reuse",
         "files": [
           {
             "path": "abc_tokens.npy",

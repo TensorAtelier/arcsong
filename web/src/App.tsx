@@ -177,7 +177,7 @@ export default function App() {
     <main>
       <header className="top">
         <div>
-          <h1>Songloom</h1>
+          <h1>Arcsong</h1>
           <p className="muted">Write a style and lyrics; YuE2 makes the song on this Mac.</p>
         </div>
         <nav aria-label="Views">

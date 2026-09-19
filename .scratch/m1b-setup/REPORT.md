@@ -18,7 +18,7 @@ Parked: none.
 ## Evidence
 
 - `uv run pytest -q`: 186 passed, 2 skipped (opt-in real tests); `ruff check`, `npm run typecheck` clean.
-- Real download (`SONGLOOM_REAL_DOWNLOAD=1 uv run pytest tests/test_real_download.py`): 10.45 GB in 151 s, metadata removed, verified, Setup ready (2026-09-17; copy deleted afterwards).
+- Real download (`ARCSONG_REAL_DOWNLOAD=1 uv run pytest tests/test_real_download.py`): 10.45 GB in 151 s, metadata removed, verified, Setup ready (2026-09-17; copy deleted afterwards).
 - Browser, fake engine, empty data dir: page opens on Setup → acknowledge → download with live bar → cancel → "Download again" resumes → ready → Create queues and runs a song. Fresh server: Create shows "Finish Setup" and disables Generate.
 - `weights_state` on `~/projects/mlx-Yue/models`: installed, 10,450,706,602 bytes, nothing missing or stray.
 

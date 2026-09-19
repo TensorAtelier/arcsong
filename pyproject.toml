@@ -1,5 +1,5 @@
 [project]
-name = "songloom"
+name = "arcsong"
 version = "0.1.0"
 description = "Local app for generating full songs with the YuE2 music model on your own Mac"
 readme = "README.md"
@@ -26,12 +26,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/TensorAtelier/songloom"
-Source = "https://github.com/TensorAtelier/songloom"
-Issues = "https://github.com/TensorAtelier/songloom/issues"
+Homepage = "https://github.com/TensorAtelier/arcsong"
+Source = "https://github.com/TensorAtelier/arcsong"
+Issues = "https://github.com/TensorAtelier/arcsong/issues"
 
 [project.scripts]
-songloom = "songloom.cli:main"
+arcsong = "arcsong.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6", "httpx>=0.27"]
@@ -46,12 +46,12 @@ allow-direct-references = true
 [tool.hatch.build.targets.sdist]
 # A source release of the app: what you need to build, run and test it — not the M0 spike,
 # the agent notes or the web sources, which live in the repository.
-include = ["songloom", "tests", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "pyproject.toml"]
+include = ["arcsong", "tests", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "pyproject.toml"]
 
 [tool.hatch.build.targets.wheel]
 # The M0 measurement harness (`spike/`) stays in the repository as evidence, but it is not
 # part of what users install.
-packages = ["songloom"]
+packages = ["arcsong"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

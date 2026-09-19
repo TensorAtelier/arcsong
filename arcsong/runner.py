@@ -14,9 +14,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from songloom.db import Store
-from songloom.engine import EngineSpec
-from songloom.worker import NO_JOB, worker_main
+from arcsong.db import Store
+from arcsong.engine import EngineSpec
+from arcsong.worker import NO_JOB, worker_main
 
 # A running job that has not stopped this long after a cancel request gets its worker killed.
 # (M0: mlx-Yue honoured cancel within 0.13 s in every Stage.)
@@ -93,7 +93,7 @@ class JobRunner:
             self._discard_partial_take(job_id)
             self._discard_upload(job_id)
         self._start_worker()
-        self._thread = threading.Thread(target=self._pump, name="songloom-events", daemon=True)
+        self._thread = threading.Thread(target=self._pump, name="arcsong-events", daemon=True)
         self._thread.start()
         self.dispatch()
 

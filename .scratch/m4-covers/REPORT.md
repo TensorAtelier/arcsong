@@ -18,7 +18,7 @@ Parked: none.
 ## Evidence
 
 - `uv run pytest -q`: 240 passed, 7 skipped (opt-in real tests); `ruff check` and `npm run typecheck` clean; the reviewer rebuilt the committed bundle and compared hashes.
-- Real, on the user's machine and weights (`SONGLOOM_REAL_ENGINE=1`, on AC):
+- Real, on the user's machine and weights (`ARCSONG_REAL_ENGINE=1`, on AC):
   - the covers weights downloaded and verified in 42 s (218 MB SheetSage2 + 2.4 GB MERT2, now in `~/projects/mlx-Yue/models`);
   - a rendered Take was transcribed and re-sung in a new style in 47 s, with the upload gone from disk afterwards. Re-run after the review fixes: 2 passed in 47 s.
 - Real download progress: a covers download into a temp directory, polled every 2 s, reported 0 → 8 → 18 → 39 → 55 → 62 → 100%, which is what proved the second progress fix (the first one never matched the hub's hashed names).
@@ -48,12 +48,12 @@ Risks accepted, recorded in CLAUDE.md: stale `.incomplete` files can inflate a p
 
 Ranked costly-and-surprising first.
 
-- **The uploaded recording is deleted as soon as the job ends,** however it ends, and a server sweeps anything a crash left behind. songloom never keeps someone's recording.
+- **The uploaded recording is deleted as soon as the job ends,** however it ends, and a server sweeps anything a crash left behind. arcsong never keeps someone's recording.
 - **Covers are an optional Setup part** (~2.6 GiB): Setup now manages named parts, and only the Song model gates making songs.
 - **ffmpeg is detected, never shipped:** it is a separate program under its own licence, so Setup says `brew install ffmpeg`.
 - **The transcription models are CC BY-NC 4.0, like the song weights,** so the existing acknowledgement covers them — but they are now named wherever the licence is shown.
 - **A rights confirmation is required per upload,** and the panel says you are responsible for what you upload and for what you do with the result.
-- **mlx-Yue's `transcription` extra is part of songloom's dependency,** so a cover needs no second install.
+- **mlx-Yue's `transcription` extra is part of arcsong's dependency,** so a cover needs no second install.
 - **Uploads are capped at 200 MB** and transcription shares the serial queue with rendering.
 - **Task `melody-full`:** both voices, no chords, which is what a cover re-sings.
 - **The transcribed Score is the same native ABC a planned Score uses,** so it edits, renders and exports through the M3 view unchanged.

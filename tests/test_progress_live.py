@@ -8,9 +8,9 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.engine import STAGES, EngineSpec
-from songloom.progress import PROGRESS_PER_SECOND, Coalescer, StderrCounts, progress_line
+from arcsong.app import create_app
+from arcsong.engine import STAGES, EngineSpec
+from arcsong.progress import PROGRESS_PER_SECOND, Coalescer, StderrCounts, progress_line
 from tests.test_app import wait_for
 
 
@@ -99,7 +99,7 @@ def collect_until_finished(subscription, job_id, timeout=30):
 
 
 def test_job_changes_are_broadcast_with_stages_and_progress(tmp_path):
-    spec = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.5})
+    spec = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.5})
     with TestClient(create_app(spec, tmp_path)) as client:
         subscription = client.app.state.runner.broadcaster.subscribe()
         job = client.post("/api/jobs", json={"style": "x", "steps": 8}).json()
@@ -119,7 +119,7 @@ def test_job_changes_are_broadcast_with_stages_and_progress(tmp_path):
 
 
 def test_a_running_job_is_cancelled_promptly_and_the_next_job_runs(tmp_path):
-    spec = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 5.0})
+    spec = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 5.0})
     with TestClient(create_app(spec, tmp_path)) as client:
         first = client.post("/api/jobs", json={"style": "a"}).json()
         second = client.post("/api/jobs", json={"style": "b"}).json()
@@ -140,7 +140,7 @@ def test_a_running_job_is_cancelled_promptly_and_the_next_job_runs(tmp_path):
 
 
 def test_a_queued_job_is_cancelled_without_running(tmp_path):
-    spec = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.2})
+    spec = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.2})
     with TestClient(create_app(spec, tmp_path)) as client:
         first = client.post("/api/jobs", json={"style": "a"}).json()
         second = client.post("/api/jobs", json={"style": "b"}).json()
@@ -153,7 +153,7 @@ def test_a_queued_job_is_cancelled_without_running(tmp_path):
 
 
 def test_cancelling_a_finished_or_unknown_job_is_refused(tmp_path):
-    spec = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.01})
+    spec = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.01})
     with TestClient(create_app(spec, tmp_path)) as client:
         job = wait_for(client, client.post("/api/jobs", json={"style": "a"}).json()["id"])
         assert client.post(f"/api/jobs/{job['id']}/cancel").status_code == 409

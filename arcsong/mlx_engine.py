@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from songloom.engine import (
+from arcsong.engine import (
     STAGES,
     TRANSCRIBING,
     CancelCheck,
@@ -19,7 +19,7 @@ from songloom.engine import (
     ScoreOutput,
     TakeOutput,
 )
-from songloom.progress import StderrCounts
+from arcsong.progress import StderrCounts
 
 SAMPLE_RATE = 48_000
 # Both melody voices, no chords: what a cover re-sings (mlx-Yue's other tasks add chord symbols

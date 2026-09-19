@@ -19,7 +19,7 @@ Parked: none.
 ## Evidence
 
 - `uv run pytest -q`: 219 passed, 5 skipped (opt-in real tests); `ruff check` and `npm run typecheck` clean; the committed build matches `web/src` (the reviewer rebuilt it and compared asset names).
-- Real engine, on AC (`SONGLOOM_REAL_ENGINE=1`, 38 s for both): a Score-only run finished with ABC that mlx-Yue's own parser accepts and wrote nothing to disk; a Take rendered from a chord-stripped Score came back carrying that Score.
+- Real engine, on AC (`ARCSONG_REAL_ENGINE=1`, 38 s for both): a Score-only run finished with ABC that mlx-Yue's own parser accepts and wrote nothing to disk; a Take rendered from a chord-stripped Score came back carrying that Score.
 - Browser, fake engine: notation with both voices and chord symbols; an edit re-renders and the diff names the changed voice and note; an invalid edit shows mlx-Yue's own message; "Remove chords" took 4 chords to 0 with the melody unchanged; "Render song from this Score" queued a Take labelled "From an edited Score"; the Library's Score link opens a Take's Score; the view fills in when planning finishes.
 - Playback, in the user's debug Chrome over the DevTools protocol: the melody plays from the vendored samples; leaving the view stops it (live audio sources 1 → 0); an edit resets the button, one click restarts it, and it falls back to Play when the melody ends.
 
@@ -49,7 +49,7 @@ Residual nits accepted: the 422 for a group carrying a Score is pydantic's wordi
 
 Ranked costly-and-surprising first.
 
-- **The vendored soundfont is 6.7 MB, not the 2.6 MB in the question you answered:** abcjs fetches one MP3 per note, so the whole 88-key range ships. It lives in `songloom/soundfont/` and FastAPI serves it at `/soundfont`, so one copy is in the package instead of two in the build, and `.gitignore`'s `*.mp3` has an exception for it. Trimming the range or dropping the preview is still open.
+- **The vendored soundfont is 6.7 MB, not the 2.6 MB in the question you answered:** abcjs fetches one MP3 per note, so the whole 88-key range ships. It lives in `arcsong/soundfont/` and FastAPI serves it at `/soundfont`, so one copy is in the package instead of two in the build, and `.gitignore`'s `*.mp3` has an exception for it. Trimming the range or dropping the preview is still open.
 - **Schema v3** adds `jobs.kind` and `jobs.score`; a Score job's ABC lives in the database, since planning writes nothing to disk.
 - **A Score job shares the serial queue and the worker** (planning needs the model), reports the planning Stage and can be cancelled, but makes no song.
 - **Editing never writes back:** rendering queues a new job, so the original Score and its Take are untouched.

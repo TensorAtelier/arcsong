@@ -1,4 +1,4 @@
-"""Where songloom keeps its data."""
+"""Where arcsong keeps its data."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from pathlib import Path
 
 import platformdirs
 
-DATA_ENV = "SONGLOOM_DATA"
+DATA_ENV = "ARCSONG_DATA"
 
 
 def data_dir(override: str | Path | None = None) -> Path:
-    """The data directory: an explicit override, else `$SONGLOOM_DATA`, else the user data dir."""
-    chosen = override or os.environ.get(DATA_ENV) or platformdirs.user_data_dir("songloom")
+    """The data directory: an explicit override, else `$ARCSONG_DATA`, else the user data dir."""
+    chosen = override or os.environ.get(DATA_ENV) or platformdirs.user_data_dir("arcsong")
     path = Path(chosen).expanduser().resolve()
     path.mkdir(parents=True, exist_ok=True)
     return path

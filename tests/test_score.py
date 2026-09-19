@@ -6,10 +6,10 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.db import SCHEMA_VERSION, Store
-from songloom.engine import EngineSpec
-from songloom.fake_engine import fake_score
+from arcsong.app import create_app
+from arcsong.db import SCHEMA_VERSION, Store
+from arcsong.engine import EngineSpec
+from arcsong.fake_engine import fake_score
 from tests.test_app import FAKE, wait_for
 from tests.test_variations import V1_SCHEMA
 
@@ -41,7 +41,7 @@ def test_a_score_job_writes_abc_and_makes_no_song(client):
 
 
 def test_a_score_job_reports_planning_and_the_queue_moves_on(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.3})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.3})
     with TestClient(create_app(slow, tmp_path)) as client:
         subscription = client.app.state.runner.broadcaster.subscribe()
         score_job = client.post("/api/scores", json={"style": "pop"}).json()
@@ -61,7 +61,7 @@ def test_a_score_job_reports_planning_and_the_queue_moves_on(tmp_path):
 
 
 def test_a_queued_score_job_can_be_cancelled(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.5})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.5})
     with TestClient(create_app(slow, tmp_path)) as client:
         client.post("/api/jobs", json=REQUEST)  # keeps the Score job queued
         score_job = client.post("/api/scores", json={"style": "pop"}).json()
@@ -154,7 +154,7 @@ def test_a_take_without_planning_has_no_score(client):
 
 
 def test_a_take_rendered_from_an_edited_score_skips_planning_and_keeps_it(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.3})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.3})
     edited = fake_score({"seed": 7}).replace("Q:1/4=97", "Q:1/4=120")
     with TestClient(create_app(slow, tmp_path)) as client:
         subscription = client.app.state.runner.broadcaster.subscribe()
@@ -184,7 +184,7 @@ def test_a_score_needs_a_planning_mode_and_some_text(client):
 
 
 def test_a_v1_database_migrates_all_the_way_to_the_current_schema(tmp_path):
-    path = tmp_path / "songloom.db"
+    path = tmp_path / "arcsong.db"
     conn = sqlite3.connect(path)
     conn.executescript(V1_SCHEMA)
     conn.execute("INSERT INTO jobs (status, request_json, created_at) VALUES ('done', '{}', 1)")
@@ -220,7 +220,7 @@ def test_variations_never_carry_a_score(client):
 
 
 def test_a_running_score_job_can_be_cancelled(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 3.0})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 3.0})
     with TestClient(create_app(slow, tmp_path)) as client:
         job = client.post("/api/scores", json={"style": "pop"}).json()
         while not (client.get(f"/api/jobs/{job['id']}").json()["live"] or {}).get("stage"):

@@ -47,7 +47,7 @@ export default function SetupView({ setup, error, onChanged }: Props) {
           ✓ Setup is complete. <a href="#/">Make a song</a>
         </p>
       ) : (
-        <p className="muted">Songloom needs the YuE2 model weights on this Mac before it can make songs.</p>
+        <p className="muted">Arcsong needs the YuE2 model weights on this Mac before it can make songs.</p>
       )}
       {actionError && (
         <p className="error" role="alert">
@@ -85,7 +85,7 @@ export default function SetupView({ setup, error, onChanged }: Props) {
       <div className={`setup-section${acknowledged ? "" : " needs-action"}`}>
         <h3>Model licence</h3>
         <p>
-          Every set of weights songloom downloads — the song model and, if you use covers, the
+          Every set of weights arcsong downloads — the song model and, if you use covers, the
           transcription models — is licensed under{" "}
           <a href={licence.url} target="_blank" rel="noreferrer">
             {licence.name}

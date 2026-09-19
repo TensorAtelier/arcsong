@@ -5,14 +5,14 @@ import time
 
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.db import Store
-from songloom.engine import EngineSpec
+from arcsong.app import create_app
+from arcsong.db import Store
+from arcsong.engine import EngineSpec
 from tests.test_app import FAKE, wait_for
 
 
 def fake(**kwargs):
-    return EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.05, **kwargs})
+    return EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.05, **kwargs})
 
 
 def test_a_worker_crash_fails_the_job_and_the_next_job_runs_on_a_new_worker(tmp_path):
@@ -47,7 +47,7 @@ def test_a_job_that_ignores_cancel_is_killed_after_the_grace_period(tmp_path):
 
 
 def test_on_start_running_jobs_fail_and_queued_jobs_run_in_order(tmp_path):
-    store = Store(tmp_path / "songloom.db")
+    store = Store(tmp_path / "arcsong.db")
     interrupted = store.create_job({"style": "was running", "steps": 8})
     store.mark_running(interrupted["id"])
     waiting = [store.create_job({"style": f"queued {i}", "steps": 8}) for i in range(2)]

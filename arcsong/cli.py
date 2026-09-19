@@ -1,4 +1,4 @@
-"""`songloom serve`."""
+"""`arcsong serve`."""
 
 from __future__ import annotations
 
@@ -6,31 +6,31 @@ import argparse
 
 import uvicorn
 
-from songloom.engine import EngineSpec
+from arcsong.engine import EngineSpec
 
 ENGINES = {
-    "mlx": "songloom.mlx_engine:MlxYueEngine",
-    "fake": "songloom.fake_engine:FakeEngine",
+    "mlx": "arcsong.mlx_engine:MlxYueEngine",
+    "fake": "arcsong.fake_engine:FakeEngine",
 }
 
 
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(prog="songloom")
+    parser = argparse.ArgumentParser(prog="arcsong")
     sub = parser.add_subparsers(dest="command", required=True)
-    serve = sub.add_parser("serve", help="Run the songloom web app")
+    serve = sub.add_parser("serve", help="Run the arcsong web app")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8840)
-    serve.add_argument("--data", help="Data directory (default: $SONGLOOM_DATA or user data dir)")
+    serve.add_argument("--data", help="Data directory (default: $ARCSONG_DATA or user data dir)")
     serve.add_argument("--engine", choices=sorted(ENGINES), default="mlx")
     serve.add_argument(
         "--mlx-models",
-        help="mlx-Yue weights (default: $SONGLOOM_MLX_MODELS or <data>/models)",
+        help="mlx-Yue weights (default: $ARCSONG_MLX_MODELS or <data>/models)",
     )
     args = parser.parse_args(argv)
 
-    from songloom.app import create_app
-    from songloom.config import data_dir
-    from songloom.models import FakeModels, MlxYueModels, TranscriptionModels, models_dir
+    from arcsong.app import create_app
+    from arcsong.config import data_dir
+    from arcsong.models import FakeModels, MlxYueModels, TranscriptionModels, models_dir
 
     data = data_dir(args.data)
     if args.engine == "mlx":

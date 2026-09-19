@@ -19,7 +19,7 @@
 - Delete is permanent (no trash) and needs an in-page confirmation; no `window.confirm`. It removes the Take directory, the song row and its job row, so the queue loses the entry too.
 - The library lists songs (finished Takes), newest first; the filter matches style and lyrics case-insensitively in the page; the server returns all songs (fine at this scale).
 - Size on disk = the Take directory's total bytes (M0: ~37–40 MiB per 3-min song, nearly all FLAC); free space from `shutil.disk_usage` on the data dir.
-- WAV/FLAC conversion uses `soundfile` (already installed with mlx-Yue) into memory; no temporary files; the download filename is `songloom-<id>-<style slug>.<ext>`.
+- WAV/FLAC conversion uses `soundfile` (already installed with mlx-Yue) into memory; no temporary files; the download filename is `arcsong-<id>-<style slug>.<ext>`.
 - Re-run sends the stored Song request unchanged (seed included), which M0 showed reproduces the same Take at the same precision and steps.
 - Browser checks use the fake engine (no GPU needed); the real engine's saved Takes are FLAC, so ticket 02 also tests FLAC input with a FLAC written by the test.
 - Tickets 03 and 04 share one commit: the Library view and its actions were written as one component and checked together in the browser.

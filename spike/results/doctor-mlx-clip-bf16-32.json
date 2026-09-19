@@ -84,55 +84,55 @@
     {
       "load_seconds": 6.433417666703463,
       "run_seconds": 23.052169917151332,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/audio.flac",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/audio.flac",
       "audio_seconds": 15.998666666666667,
       "files": [
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/abc_tokens.npy",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/abc_tokens.npy",
           "bytes": 1036
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/audio.flac",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/audio.flac",
           "bytes": 3193249
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/config.json",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/config.json",
           "bytes": 1919
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/latent.npy",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/latent.npy",
           "bytes": 102528
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/noise.npy",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/noise.npy",
           "bytes": 102528
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/plan.json",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/plan.json",
           "bytes": 6674
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/plan_manifest.json",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/plan_manifest.json",
           "bytes": 341
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/prefix.npy",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/prefix.npy",
           "bytes": 1556
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/request.json",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/request.json",
           "bytes": 912
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/result.json",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/result.json",
           "bytes": 7532
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/score.abc",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/score.abc",
           "bytes": 339
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-mlx-clip-bf16-32/take/semantic.npy",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-mlx-clip-bf16-32/take/semantic.npy",
           "bytes": 1728
         }
       ],

@@ -38,7 +38,7 @@ Facts gathered 2026-09-16 before deciding:
 
 ## D-004 — Where spike code and data live
 
-- Decision: Spike code in a `spike/` Python package in the songloom repo, run via `uv run`. Heavy outputs (audio, `.npy`, logs) go to `spike/runs/` (gitignored). Each measurement's numbers are written as JSON to `spike/results/` (committed). The report is `docs/m0-report.md`. Listening pairs are copied as small FLAC/MP3 files to `spike/listen/` (gitignored, paths listed in the report).
+- Decision: Spike code in a `spike/` Python package in the arcsong repo, run via `uv run`. Heavy outputs (audio, `.npy`, logs) go to `spike/runs/` (gitignored). Each measurement's numbers are written as JSON to `spike/results/` (committed). The report is `docs/m0-report.md`. Listening pairs are copied as small FLAC/MP3 files to `spike/listen/` (gitignored, paths listed in the report).
 - Why: Results must be reproducible and reviewable in git; audio and tensors are large and derived from CC BY-NC weights, so they stay out of git.
 - Rejected: a separate scratch repo (loses history next to the plan); committing audio (licence + size).
 - Reversibility: cheap
@@ -56,7 +56,7 @@ Facts gathered 2026-09-16 before deciding:
 
 ## D-006 — Stack and dependency pinning
 
-- Decision: songloom becomes a `uv` project (Python 3.12). mlx-Yue is a git dependency pinned to `9253ed1`, with weights reused from `~/projects/mlx-Yue/models` via a config path (no re-download). audio.cpp uses the pinned `v0.8.0` macOS arm64 Metal release tarball, sha256 recorded, unpacked into `spike/vendor/` (gitignored). Its GGUF weights (q8_0 main + f16 VAE, plus bf16 main to match the precision comparison) download into `spike/models/` (gitignored). Tests: pytest; lint: ruff.
+- Decision: arcsong becomes a `uv` project (Python 3.12). mlx-Yue is a git dependency pinned to `9253ed1`, with weights reused from `~/projects/mlx-Yue/models` via a config path (no re-download). audio.cpp uses the pinned `v0.8.0` macOS arm64 Metal release tarball, sha256 recorded, unpacked into `spike/vendor/` (gitignored). Its GGUF weights (q8_0 main + f16 VAE, plus bf16 main to match the precision comparison) download into `spike/models/` (gitignored). Tests: pytest; lint: ruff.
 - Why: A pinned git dependency is what PLAN.md intends for M1, so the spike also proves that install path works. The prebuilt binary is how end users would get audio.cpp. Reusing 9.7 GB of existing weights saves time.
 - Rejected: building audio.cpp from source (users wouldn't); importing mlx-Yue from its local checkout by path (hides packaging problems).
 - Reversibility: cheap
@@ -164,7 +164,7 @@ Facts gathered 2026-09-16 before deciding:
 
 ## D-018 — Repository setup
 
-- Decision: `git init` the songloom repo with a `main` branch and a `.gitignore` covering `.venv/`, `spike/runs/`, `spike/vendor/`, `spike/models/`, `spike/listen/`, `*.npy`, `*.flac`, `*.wav`, `*.gguf`, `*.safetensors`. Commit the existing planning files as the initial commit, then work on `feat/m0-engine-spike`.
+- Decision: `git init` the arcsong repo with a `main` branch and a `.gitignore` covering `.venv/`, `spike/runs/`, `spike/vendor/`, `spike/models/`, `spike/listen/`, `*.npy`, `*.flac`, `*.wav`, `*.gguf`, `*.safetensors`. Commit the existing planning files as the initial commit, then work on `feat/m0-engine-spike`.
 - Why: `run-tickets` needs git for branches and per-ticket commits; weights and audio must never be committed.
 - Rejected: none.
 - Reversibility: cheap

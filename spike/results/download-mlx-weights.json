@@ -81,7 +81,7 @@
     {
       "run": 1,
       "outcome": "ok",
-      "temp_dir": "/Users/julian/projects/songloom/spike/runs/download-mlx-weights/run-1/download-s_9qiizx",
+      "temp_dir": "/Users/julian/projects/arcsong/spike/runs/download-mlx-weights/run-1/download-s_9qiizx",
       "sources": [
         {
           "repository": "vanch007/mlx-Yue2-3B",

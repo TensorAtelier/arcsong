@@ -94,26 +94,26 @@
           "take": 1,
           "seed": 831001,
           "run_seconds": 30.764742083847523,
-          "take_dir": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1",
-          "audio_path": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/audio.flac",
+          "take_dir": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1",
+          "audio_path": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/audio.flac",
           "audio_seconds": 15.998666666666667,
           "stage_outputs": {
-            "planning": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/score.abc",
-            "semantic generation": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/semantic.npy",
-            "synthesis": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/latent.npy"
+            "planning": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/score.abc",
+            "semantic generation": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/semantic.npy",
+            "synthesis": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-1/latent.npy"
           }
         },
         {
           "take": 2,
           "seed": 831001,
           "run_seconds": 29.661415833979845,
-          "take_dir": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2",
-          "audio_path": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/audio.flac",
+          "take_dir": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2",
+          "audio_path": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/audio.flac",
           "audio_seconds": 15.998666666666667,
           "stage_outputs": {
-            "planning": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/score.abc",
-            "semantic generation": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/semantic.npy",
-            "synthesis": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/latent.npy"
+            "planning": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/score.abc",
+            "semantic generation": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/semantic.npy",
+            "synthesis": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-1/take-2/latent.npy"
           }
         }
       ],
@@ -135,13 +135,13 @@
           "take": 1,
           "seed": 831001,
           "run_seconds": 30.443878166843206,
-          "take_dir": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1",
-          "audio_path": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/audio.flac",
+          "take_dir": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1",
+          "audio_path": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/audio.flac",
           "audio_seconds": 15.998666666666667,
           "stage_outputs": {
-            "planning": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/score.abc",
-            "semantic generation": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/semantic.npy",
-            "synthesis": "/Users/julian/projects/songloom/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/latent.npy"
+            "planning": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/score.abc",
+            "semantic generation": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/semantic.npy",
+            "synthesis": "/Users/julian/projects/arcsong/spike/runs/repro-mlx-clip-8bit-32-planned/run-2/take-1/latent.npy"
           }
         }
       ],
@@ -252,7 +252,7 @@
   },
   "listening_pair": {
     "comparison": "warm_vs_fresh",
-    "first": "/Users/julian/projects/songloom/spike/listen/repro-mlx-clip-8bit-32-planned/warm-take-1.flac",
-    "second": "/Users/julian/projects/songloom/spike/listen/repro-mlx-clip-8bit-32-planned/fresh-take-1.flac"
+    "first": "/Users/julian/projects/arcsong/spike/listen/repro-mlx-clip-8bit-32-planned/warm-take-1.flac",
+    "second": "/Users/julian/projects/arcsong/spike/listen/repro-mlx-clip-8bit-32-planned/fresh-take-1.flac"
   }
 }

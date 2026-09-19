@@ -1,4 +1,4 @@
-"""The songloom app end to end through a fake Engine in a real worker process."""
+"""The arcsong app end to end through a fake Engine in a real worker process."""
 
 import time
 import wave
@@ -7,10 +7,10 @@ from io import BytesIO
 import pytest
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.engine import EngineSpec
+from arcsong.app import create_app
+from arcsong.engine import EngineSpec
 
-FAKE = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.01})
+FAKE = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.01})
 
 
 @pytest.fixture
@@ -58,7 +58,7 @@ def test_jobs_run_one_at_a_time_in_order(client):
 
 def test_an_engine_failure_marks_the_job_failed_and_the_queue_moves_on(tmp_path):
     failing = EngineSpec(
-        "songloom.fake_engine:FakeEngine", {"stage_seconds": 0.01, "fail_in": "synthesis"}
+        "arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.01, "fail_in": "synthesis"}
     )
     with TestClient(create_app(failing, tmp_path)) as client:
         first = client.post("/api/jobs", json={"style": "a"}).json()

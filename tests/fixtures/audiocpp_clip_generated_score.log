@@ -1,6 +1,6 @@
 0.008 [TRACE ts=20260916-170136] runtime.model.family yue2
 0.008 [TRACE ts=20260916-170136] runtime.model.variant Yue2
-0.008 [TRACE ts=20260916-170136] runtime.model.root /Users/julian/projects/songloom/spike/models/Yue2-3B-GGUF
+0.008 [TRACE ts=20260916-170136] runtime.model.root /Users/julian/projects/arcsong/spike/models/Yue2-3B-GGUF
 0.008 [TRACE ts=20260916-170136] runtime.model.discovered_config_count 4
 0.008 [TRACE ts=20260916-170136] runtime.model.discovered_weight_count 2
 0.008 [TRACE ts=20260916-170136] runtime.model.task_count 1
@@ -215,4 +215,4 @@
 23.731 family=yue2
 23.731 task=gen
 23.731 mode=offline
-23.731 audio_out=/private/tmp/claude-501/-Users-julian-projects-songloom/a664d1f7-f035-4ffb-9e8c-ae5542607873/scratchpad/capture2/audio.wav
+23.731 audio_out=/private/tmp/claude-501/-Users-julian-projects-arcsong/a664d1f7-f035-4ffb-9e8c-ae5542607873/scratchpad/capture2/audio.wav

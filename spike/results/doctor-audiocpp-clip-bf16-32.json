@@ -86,19 +86,19 @@
       "outcome": "ok",
       "load_seconds": 4.120776429772377e-05,
       "run_seconds": 29.818207709118724,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/audio.wav",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/audio.wav",
       "audio_seconds": 15.998666666666667,
       "files": [
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/audio.wav",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/audio.wav",
           "bytes": 3071788
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/audiocpp.log",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/audiocpp.log",
           "bytes": 20150
         },
         {
-          "path": "/Users/julian/projects/songloom/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/score.abc",
+          "path": "/Users/julian/projects/arcsong/spike/runs/doctor-audiocpp-clip-bf16-32/run-1/take/score.abc",
           "bytes": 339
         }
       ],

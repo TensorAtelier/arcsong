@@ -11,13 +11,13 @@ import urllib.request
 import pytest
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.engine import EngineSpec
+from arcsong.app import create_app
+from arcsong.engine import EngineSpec
 from tests.test_app import FAKE, wait_for
 
 
 def fake(**kwargs):
-    return EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.05, **kwargs})
+    return EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.05, **kwargs})
 
 
 def free_port() -> int:
@@ -42,10 +42,10 @@ def alive(pid: int) -> bool:
 
 @pytest.fixture
 def server(tmp_path):
-    """A real `songloom serve --engine fake` process; yields (process, port)."""
+    """A real `arcsong serve --engine fake` process; yields (process, port)."""
     port = free_port()
     process = subprocess.Popen(
-        [sys.executable, "-m", "songloom.cli", "serve", "--engine", "fake",
+        [sys.executable, "-m", "arcsong.cli", "serve", "--engine", "fake",
          "--port", str(port), "--data", str(tmp_path)],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )  # fmt: skip

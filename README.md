@@ -1,7 +1,7 @@
-# Songloom
+# Arcsong
 
 Write a style and some lyrics, get a whole song — vocals and accompaniment — generated on your
-own Mac. Songloom is a local web app around the [YuE2](https://huggingface.co/m-a-p/YuE2-3B)
+own Mac. Arcsong is a local web app around the [YuE2](https://huggingface.co/m-a-p/YuE2-3B)
 music model, running through the [mlx-Yue](https://github.com/vanch007/mlx-Yue) port on Apple
 Silicon. Nothing is sent anywhere: the model, the weights and your songs stay on the machine.
 
@@ -9,7 +9,7 @@ Silicon. Nothing is sent anywhere: the model, the weights and your songs stay on
 
 ## Hear it first
 
-Three songs made with songloom, nothing edited — style and lyrics in, these came out. Each is a
+Three songs made with Arcsong, nothing edited — style and lyrics in, these came out. Each is a
 45-second excerpt of the full take (click to play):
 
 | | Style given to the model |
@@ -48,6 +48,8 @@ usage, re-run, and permanent delete.
 **Covers** (optional): upload a recording, have it transcribed into a Score, and re-sing that
 melody with your own style and lyrics. The recording is deleted as soon as the job ends.
 
+![The Cover panel: a recording, a new style, and a rights confirmation](docs/media/screens/cover.png)
+
 ## Requirements
 
 - macOS on Apple Silicon (M-series). The model peaks at about 11 GiB of unified memory, so
@@ -60,8 +62,8 @@ melody with your own style and lyrics. The recording is deleted as soon as the j
 ## Install
 
 ```sh
-uv tool install git+https://github.com/TensorAtelier/songloom
-songloom serve
+uv tool install git+https://github.com/TensorAtelier/arcsong
+arcsong serve
 ```
 
 Then open <http://127.0.0.1:8840>. The first run opens the Setup page, which checks the machine,
@@ -74,13 +76,13 @@ No Node is needed to run it: the web app ships prebuilt.
 
 | | |
 |---|---|
-| Your songs and settings | `~/Library/Application Support/songloom` (`--data DIR` or `$SONGLOOM_DATA` to move them) |
+| Your songs and settings | `~/Library/Application Support/arcsong` (`--data DIR` or `$ARCSONG_DATA` to move them) |
 | The weights | `<data>/models`, or `--mlx-models DIR` if you keep them elsewhere |
-| The app itself | a private environment under `~/.local/share/uv/tools/songloom`, with a `songloom` command on your PATH |
+| The app itself | a private environment under `~/.local/share/uv/tools/arcsong`, with a `arcsong` command on your PATH |
 
 ```sh
-uv tool upgrade songloom      # pull a newer version
-uv tool uninstall songloom    # remove the app (your songs and weights stay)
+uv tool upgrade arcsong      # pull a newer version
+uv tool uninstall arcsong    # remove the app (your songs and weights stay)
 ```
 
 Nothing is installed system-wide, and removing the tool leaves your data alone — delete the data
@@ -96,7 +98,7 @@ directory yourself if you want the songs and the 11 GB of weights gone too.
   cleans up the metadata files that would otherwise make mlx-Yue reject the directory.
 - **Covers are greyed out.** They need ffmpeg (`brew install ffmpeg`) and their own weights;
   the Covers part of the Setup page checks both and says which is missing.
-- **A song fails with "Another Lyra process owns the GPU".** Another songloom (or another
+- **A song fails with "Another Lyra process owns the GPU".** Another Arcsong (or another
   mlx-Yue job) is already running; only one can hold the GPU at a time.
 
 ## Licences
@@ -105,7 +107,7 @@ The code is Apache-2.0 (see [`LICENSE`](LICENSE)).
 
 **The model weights are not.** YuE2 and the transcription models are
 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — non-commercial use only — and
-Songloom asks you to acknowledge that before it downloads anything. Check the model licence
+Arcsong asks you to acknowledge that before it downloads anything. Check the model licence
 before any commercial use of what you make, and if you upload a recording to cover, you are
 responsible for having the rights to it. Third-party components are listed in
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
@@ -115,7 +117,7 @@ responsible for having the rights to it. Third-party components are listed in
 ```sh
 uv sync                     # Python side
 cd web && npm install       # only if you are changing the page
-uv run songloom serve --engine fake   # no GPU, no weights: scripted stages and a test tone
+uv run arcsong serve --engine fake   # no GPU, no weights: scripted stages and a test tone
 
 uv run pytest -q            # 240 tests, all on the fake engine
 uv run ruff check .
@@ -123,7 +125,7 @@ cd web && npm run typecheck && npm run build   # the build is committed
 ```
 
 Slow tests that need real weights and the GPU are opt-in:
-`SONGLOOM_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py`.
+`ARCSONG_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py`.
 
 Architecture, conventions and the hard-won gotchas are in [`CLAUDE.md`](CLAUDE.md); the roadmap
 and the reasoning behind the design are in [`PLAN.md`](PLAN.md).
@@ -132,5 +134,5 @@ and the reasoning behind the design are in [`PLAN.md`](PLAN.md).
 
 [YuE2](https://huggingface.co/m-a-p/YuE2-3B) and
 [SheetSage2](https://huggingface.co/m-a-p/SheetSage2) by M-A-P; the Apple Silicon port
-[mlx-Yue](https://github.com/vanch007/mlx-Yue) by vanch007. Songloom is an independent front end
+[mlx-Yue](https://github.com/vanch007/mlx-Yue) by vanch007. Arcsong is an independent front end
 and is not affiliated with either.

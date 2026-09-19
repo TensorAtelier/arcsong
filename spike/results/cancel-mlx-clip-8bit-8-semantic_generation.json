@@ -94,7 +94,7 @@
       "cancel_latency_seconds": 0.0019430830143392086,
       "cancelled_by": "InterruptedError",
       "cancel_message": "Cancelled during semantic",
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-mlx-clip-8bit-8-semantic_generation/run-1/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/cancel-mlx-clip-8bit-8-semantic_generation/run-1/take",
       "leftover_files": [],
       "leftover_looks_complete": false,
       "stage_events": [
@@ -136,7 +136,7 @@
           "vae_load_seconds": 0.12520625023171306
         },
         "audio_seconds": 15.998666666666667,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-mlx-clip-8bit-8-semantic_generation/run-1/reuse",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/cancel-mlx-clip-8bit-8-semantic_generation/run-1/reuse",
         "files": [
           {
             "path": "abc_tokens.npy",

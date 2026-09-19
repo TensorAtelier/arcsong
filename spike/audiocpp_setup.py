@@ -66,7 +66,7 @@ def weight_url(weights: dict, path: str) -> str:
 
 def fetch_url(url: str, destination: Path, log: Log = print) -> None:
     """Stream a public URL to a file, reporting progress about every 10 s."""
-    request = urllib.request.Request(url, headers={"User-Agent": "songloom-spike"})
+    request = urllib.request.Request(url, headers={"User-Agent": "arcsong-spike"})
     with urllib.request.urlopen(request) as response, open(destination, "wb") as out:
         total = int(response.headers.get("Content-Length") or 0)
         done, last = 0, time.monotonic()

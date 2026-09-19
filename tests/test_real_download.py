@@ -1,5 +1,5 @@
 """One real weights download from Hugging Face (~10 GB) into a temporary directory, through the
-Setup API. Slow and uses the network, so it only runs with SONGLOOM_REAL_DOWNLOAD=1."""
+Setup API. Slow and uses the network, so it only runs with ARCSONG_REAL_DOWNLOAD=1."""
 
 import os
 import time
@@ -7,18 +7,18 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.engine import EngineSpec
-from songloom.models import MlxYueModels
+from arcsong.app import create_app
+from arcsong.engine import EngineSpec
+from arcsong.models import MlxYueModels
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("SONGLOOM_REAL_DOWNLOAD") != "1", reason="set SONGLOOM_REAL_DOWNLOAD=1"
+    os.environ.get("ARCSONG_REAL_DOWNLOAD") != "1", reason="set ARCSONG_REAL_DOWNLOAD=1"
 )
 
 
 def test_the_real_weights_download_cleans_up_verifies_and_is_ready(tmp_path):
     models = MlxYueModels(tmp_path / "models")
-    spec = EngineSpec("songloom.fake_engine:FakeEngine")  # no GPU: only the weights matter here
+    spec = EngineSpec("arcsong.fake_engine:FakeEngine")  # no GPU: only the weights matter here
     with TestClient(create_app(spec, tmp_path, models=models)) as client:
         client.post("/api/setup/licence")
         assert client.post("/api/setup/download").status_code == 200

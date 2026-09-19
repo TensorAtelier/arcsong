@@ -1,4 +1,4 @@
-# Songloom — local UI for YuE2 music generation
+# Arcsong — local UI for YuE2 music generation
 
 > Working name; rename freely. Plan drafted 2026-09-16.
 
@@ -99,7 +99,7 @@ Key decisions:
   space. "Re-run with these settings" reproduces the same Take (bit-identical in M0) as long
   as precision and Synthesis steps are part of the settings.
 - **Library location:** configurable; defaults to the user data dir via `platformdirs`
-  (`~/Library/Application Support/songloom` on macOS), with a `./data` override for
+  (`~/Library/Application Support/arcsong` on macOS), with a `./data` override for
   development. The install dir gets replaced on upgrade under `uv tool install`.
 - **Localhost only in v1:** bind `127.0.0.1`. LAN/multi-user needs auth and is out of scope
   until v2.
@@ -111,13 +111,13 @@ Key decisions:
   `wavesurfer.js` (waveforms, #6). Both on npm; no CDN at runtime (local-first). Built
   frontend assets ship inside the Python package, so end users never need Node; lay out the
   repo so the build output lands in the package from the start.
-- **Runs under `dev`:** `dev register songloom 8840 --cmd "uv run songloom serve --port 8840" --cwd ~/projects/songloom`.
+- **Runs under `dev`:** `dev register arcsong 8840 --cmd "uv run arcsong serve --port 8840" --cwd ~/projects/arcsong`.
 
 ## Milestones
 
 ### Pre-M0 — Prior-art check — done 2026-09-16, see `docs/prior-art.md`
 **Decision: build standalone.** The field is days old with no clear leader (top standalone UI
-has 31★). Every planned feature already ships somewhere, so songloom competes on
+has 31★). Every planned feature already ships somewhere, so arcsong competes on
 reliability, install experience and sustained maintenance, not on features.
 
 ### M0 — Engine spike (1–2 days) — de-risk before any UI
@@ -191,8 +191,8 @@ and Score export by then (re-evaluate with the spike harness); engine auto-detec
 CUDA machine; document Linux/Windows install.
 
 ### M6 — Release (#11)
-Started 2026-09-17: the project moved to `TensorAtelier/songloom` (org under the personal account, ToS-clean — one free account per person), history rewritten to `julian@tensoratelier.com`, `LICENSE` (Apache-2.0, Julian Wong / Tensor Atelier), README and package metadata at v0.1.0 are done. What a dry run of `uv tool install git+https://github.com/TensorAtelier/songloom` showed, still to fix:
-- **It also installs a global `spike` command** — the M0 measurement harness — because `pyproject.toml` declares both console scripts. The released package should ship `songloom` only.
+Started 2026-09-17: the project moved to `TensorAtelier/arcsong` (org under the personal account, ToS-clean — one free account per person), history rewritten to `julian@tensoratelier.com`, `LICENSE` (Apache-2.0, Julian Wong / Tensor Atelier), README and package metadata at v0.1.0 are done. What a dry run of `uv tool install git+https://github.com/TensorAtelier/arcsong` showed, still to fix:
+- **It also installs a global `spike` command** — the M0 measurement harness — because `pyproject.toml` declares both console scripts. The released package should ship `arcsong` only.
 - **The wheel says `Requires-Python: >=3.12,<3.13`, but uv installed it into Python 3.14.4 and it ran fine** (mlx and Metal included). Either widen the constraint after testing, or find out why it isn't enforced on this path; a user should not land on an untested Python silently.
 - The installed tool is a shim in `~/.local/bin` over a 438 MB private venv holding a frozen copy of the code; `uv tool upgrade` is the update path. Worth saying in the README's install section.
 

@@ -586,10 +586,10 @@ files again (1.3 s).
 <!-- generated:listening-pairs (tables from the results files; `uv run spike report` rewrites this block) -->
 | Measurement | Engine | Pair | Files | Source |
 |---|---|---|---|---|
-| repro | audio.cpp | warm vs fresh | `/Users/julian/projects/songloom/spike/listen/repro-audiocpp-clip-q8_0-32-planned/warm-take-1.flac`<br>`/Users/julian/projects/songloom/spike/listen/repro-audiocpp-clip-q8_0-32-planned/fresh-take-1.flac` | `repro-audiocpp-clip-q8_0-32-planned.json` |
-| repro | mlx-Yue | warm vs fresh | `/Users/julian/projects/songloom/spike/listen/repro-mlx-clip-8bit-32-planned/warm-take-1.flac`<br>`/Users/julian/projects/songloom/spike/listen/repro-mlx-clip-8bit-32-planned/fresh-take-1.flac` | `repro-mlx-clip-8bit-32-planned.json` |
-| draft-final | audio.cpp | draft vs final | `/Users/julian/projects/songloom/spike/listen/draft-final-audiocpp-song-q8_0-8-32/draft-8.flac`<br>`/Users/julian/projects/songloom/spike/listen/draft-final-audiocpp-song-q8_0-8-32/final-32.flac` | `draft-final-audiocpp-song-q8_0-8-32.json` |
-| draft-final | mlx-Yue | draft vs final | `/Users/julian/projects/songloom/spike/listen/draft-final-mlx-song-8bit-8-32/draft-8.flac`<br>`/Users/julian/projects/songloom/spike/listen/draft-final-mlx-song-8bit-8-32/final-32.flac` | `draft-final-mlx-song-8bit-8-32.json` |
+| repro | audio.cpp | warm vs fresh | `/Users/julian/projects/arcsong/spike/listen/repro-audiocpp-clip-q8_0-32-planned/warm-take-1.flac`<br>`/Users/julian/projects/arcsong/spike/listen/repro-audiocpp-clip-q8_0-32-planned/fresh-take-1.flac` | `repro-audiocpp-clip-q8_0-32-planned.json` |
+| repro | mlx-Yue | warm vs fresh | `/Users/julian/projects/arcsong/spike/listen/repro-mlx-clip-8bit-32-planned/warm-take-1.flac`<br>`/Users/julian/projects/arcsong/spike/listen/repro-mlx-clip-8bit-32-planned/fresh-take-1.flac` | `repro-mlx-clip-8bit-32-planned.json` |
+| draft-final | audio.cpp | draft vs final | `/Users/julian/projects/arcsong/spike/listen/draft-final-audiocpp-song-q8_0-8-32/draft-8.flac`<br>`/Users/julian/projects/arcsong/spike/listen/draft-final-audiocpp-song-q8_0-8-32/final-32.flac` | `draft-final-audiocpp-song-q8_0-8-32.json` |
+| draft-final | mlx-Yue | draft vs final | `/Users/julian/projects/arcsong/spike/listen/draft-final-mlx-song-8bit-8-32/draft-8.flac`<br>`/Users/julian/projects/arcsong/spike/listen/draft-final-mlx-song-8bit-8-32/final-32.flac` | `draft-final-mlx-song-8bit-8-32.json` |
 <!-- /generated:listening-pairs -->
 
 The files are in the gitignored `spike/listen/` directory on this Mac.

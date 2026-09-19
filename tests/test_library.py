@@ -7,7 +7,7 @@ import pytest
 import soundfile
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
+from arcsong.app import create_app
 from tests.test_app import FAKE, wait_for
 
 
@@ -69,9 +69,9 @@ def test_deleting_a_song_removes_its_files_song_and_job(client, tmp_path):
 
 
 def test_a_job_that_is_still_running_has_no_song_to_delete(tmp_path):
-    from songloom.engine import EngineSpec
+    from arcsong.engine import EngineSpec
 
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 5})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 5})
     with TestClient(create_app(slow, tmp_path)) as client:
         job = client.post("/api/jobs", json={"style": "a"}).json()
         wait_for(client, job["id"], statuses=("running",))
@@ -89,7 +89,7 @@ def test_a_song_downloads_as_flac_or_wav_named_after_its_style(client, fmt):
     assert response.status_code == 200
     assert response.headers["content-type"] == f"audio/{fmt}"
     disposition = response.headers["content-disposition"]
-    name = f"songloom-{song['song_id']}-english-city-pop-groovy-bass.{fmt}"
+    name = f"arcsong-{song['song_id']}-english-city-pop-groovy-bass.{fmt}"
     assert f'filename="{name}"' in disposition
     audio, rate = soundfile.read(io.BytesIO(response.content))
     assert rate == 48_000 and len(audio) == 48_000

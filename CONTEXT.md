@@ -1,4 +1,4 @@
-# Songloom
+# Arcsong
 
 A local app for generating full songs with the YuE2 music model on the user's own machine.
 

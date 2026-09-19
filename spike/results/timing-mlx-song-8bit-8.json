@@ -102,9 +102,9 @@
       "total_seconds": 240.5361007079482,
       "engine_peak_memory_bytes": 11392596182,
       "audio_seconds": 184.71866666666668,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-8bit-8/run-1/take/audio.flac",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/timing-mlx-song-8bit-8/run-1/take/audio.flac",
       "audio_bytes": 39998986,
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-8bit-8/run-1/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/timing-mlx-song-8bit-8/run-1/take",
       "files": [
         {
           "path": "abc_tokens.npy",
@@ -225,9 +225,9 @@
       "total_seconds": 267.7381812501699,
       "engine_peak_memory_bytes": 11392596182,
       "audio_seconds": 184.71866666666668,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-8bit-8/run-2/take/audio.flac",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/timing-mlx-song-8bit-8/run-2/take/audio.flac",
       "audio_bytes": 39998986,
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-mlx-song-8bit-8/run-2/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/timing-mlx-song-8bit-8/run-2/take",
       "files": [
         {
           "path": "abc_tokens.npy",

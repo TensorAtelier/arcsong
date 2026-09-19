@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.engine import EngineSpec
-from songloom.models import (
+from arcsong.app import create_app
+from arcsong.engine import EngineSpec
+from arcsong.models import (
     CONVERTED_FILES,
     VAE_FILES,
     FakeModels,
@@ -18,7 +18,7 @@ from songloom.models import (
     weights_state,
 )
 
-FAKE = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.01})
+FAKE = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.01})
 
 
 def fake_models(tmp_path, **options):
@@ -31,7 +31,7 @@ def serve(tmp_path, models):
 
 def fake_setup(tmp_path, store):
     """A Setup with only the part a unit test needs."""
-    from songloom.setup import ENGINE, Part, Setup
+    from arcsong.setup import ENGINE, Part, Setup
 
     parts = [Part(ENGINE, "Song model", FakeModels(tmp_path / "models"))]
     return Setup(parts, store, lambda message: None, iter(range(9**9)).__next__)
@@ -230,10 +230,10 @@ def test_mlx_weights_with_a_missing_file_or_hub_metadata_are_not_installed(tmp_p
 
 
 def test_the_models_dir_defaults_into_the_data_dir(tmp_path, monkeypatch):
-    monkeypatch.delenv("SONGLOOM_MLX_MODELS", raising=False)
+    monkeypatch.delenv("ARCSONG_MLX_MODELS", raising=False)
     assert models_dir(tmp_path) == tmp_path / "models"
     assert models_dir(tmp_path, "~/weights") == (tmp_path.home() / "weights").resolve()
-    monkeypatch.setenv("SONGLOOM_MLX_MODELS", str(tmp_path / "env"))
+    monkeypatch.setenv("ARCSONG_MLX_MODELS", str(tmp_path / "env"))
     assert models_dir(tmp_path) == tmp_path / "env"
 
 
@@ -293,9 +293,9 @@ class DeadProcess:
 
 
 def test_a_download_that_exits_right_after_saying_done_counts_as_done(tmp_path):
-    from songloom.db import Store
+    from arcsong.db import Store
 
-    store = Store(tmp_path / "songloom.db")
+    store = Store(tmp_path / "arcsong.db")
     setup = fake_setup(tmp_path, store)
     process = DeadProcess()
     setup._process, setup._downloads["engine"] = process, {"state": "running"}
@@ -307,9 +307,9 @@ def test_a_download_that_exits_right_after_saying_done_counts_as_done(tmp_path):
 
 
 def test_a_cancel_that_lands_while_the_download_finishes_is_kept(tmp_path):
-    from songloom.db import Store
+    from arcsong.db import Store
 
-    store = Store(tmp_path / "songloom.db")
+    store = Store(tmp_path / "arcsong.db")
     setup = fake_setup(tmp_path, store)
 
     class CancelledWhileJoining(DeadProcess):
@@ -393,7 +393,7 @@ def client_app_can_render(setup):
 
 
 def test_the_real_transcription_weights_are_described(tmp_path):
-    from songloom.models import TranscriptionModels
+    from arcsong.models import TranscriptionModels
 
     models = TranscriptionModels(tmp_path)
     state = weights_state(models)
@@ -413,7 +413,7 @@ def test_the_real_transcription_weights_are_described(tmp_path):
 def test_a_parts_progress_counts_only_its_own_files(tmp_path):
     """The covers weights sit beside the song weights, so a part must not count the other's
     files as its own download progress."""
-    from songloom.models import TranscriptionModels, bytes_on_disk
+    from arcsong.models import TranscriptionModels, bytes_on_disk
 
     shared = tmp_path / "models"
     (shared / "converted").mkdir(parents=True)
@@ -440,7 +440,7 @@ def test_a_parts_progress_counts_only_its_own_files(tmp_path):
     assert bytes_on_disk(covers) == weights_state(covers)["bytes_total"]
 
 
-def test_the_licence_names_every_set_of_weights_songloom_downloads(tmp_path):
+def test_the_licence_names_every_set_of_weights_arcsong_downloads(tmp_path):
     with serve_parts(tmp_path) as client:
         licence = client.get("/api/setup").json()["licence"]
 
@@ -452,7 +452,7 @@ def test_the_licence_names_every_set_of_weights_songloom_downloads(tmp_path):
 def test_progress_survives_a_file_the_hub_renames_underneath_it(tmp_path, monkeypatch):
     """The hub renames each file as it completes; a snapshot taken mid-rename must not raise,
     or the thread following the download dies with the part stuck on "running"."""
-    from songloom.models import TranscriptionModels, bytes_on_disk
+    from arcsong.models import TranscriptionModels, bytes_on_disk
 
     models = TranscriptionModels(tmp_path)
     cache = tmp_path / "mert2" / ".cache" / "huggingface" / "download"

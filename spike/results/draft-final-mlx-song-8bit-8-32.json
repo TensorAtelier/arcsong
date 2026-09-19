@@ -91,15 +91,15 @@
       "draft": {
         "steps": 8,
         "seconds": 223.16483416594565,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft",
-        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/audio.flac",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft",
+        "audio_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/audio.flac",
         "audio_seconds": 184.71866666666668,
         "stage_outputs": {
-          "planning": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/score.abc",
-          "semantic generation": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/semantic.npy",
-          "synthesis": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/latent.npy"
+          "planning": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/score.abc",
+          "semantic generation": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/semantic.npy",
+          "synthesis": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/latent.npy"
         },
-        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/noise.npy",
+        "noise_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/noise.npy",
         "lazy_load_seconds": {
           "ar_load_seconds": 0.12889720778912306,
           "conditioning_load_seconds": 0.19335408275946975,
@@ -111,15 +111,15 @@
       "final": {
         "steps": 32,
         "seconds": 360.7617942504585,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final",
-        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/audio.flac",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final",
+        "audio_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/audio.flac",
         "audio_seconds": 184.71866666666668,
         "stage_outputs": {
-          "planning": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/score.abc",
-          "semantic generation": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/semantic.npy",
-          "synthesis": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/latent.npy"
+          "planning": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/score.abc",
+          "semantic generation": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/semantic.npy",
+          "synthesis": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/latent.npy"
         },
-        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/noise.npy",
+        "noise_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/noise.npy",
         "lazy_load_seconds": {},
         "details": {},
         "method": "re-synthesis",
@@ -140,15 +140,15 @@
       "direct": {
         "steps": 32,
         "seconds": 485.5379410828464,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct",
-        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/audio.flac",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct",
+        "audio_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/audio.flac",
         "audio_seconds": 184.71866666666668,
         "stage_outputs": {
-          "planning": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/score.abc",
-          "semantic generation": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/semantic.npy",
-          "synthesis": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/latent.npy"
+          "planning": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/score.abc",
+          "semantic generation": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/semantic.npy",
+          "synthesis": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/latent.npy"
         },
-        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/noise.npy",
+        "noise_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-2/direct/noise.npy",
         "lazy_load_seconds": {
           "ar_load_seconds": 0.13012712495401502,
           "conditioning_load_seconds": 0.22058816719800234,
@@ -179,8 +179,8 @@
       "synthesis noise": {
         "equal": true,
         "files": [
-          "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/noise.npy",
-          "/Users/julian/projects/songloom/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/noise.npy"
+          "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/draft/noise.npy",
+          "/Users/julian/projects/arcsong/spike/runs/draft-final-mlx-song-8bit-8-32/run-1/final/noise.npy"
         ]
       }
     }
@@ -291,7 +291,7 @@
     }
   },
   "listening_pair": {
-    "draft": "/Users/julian/projects/songloom/spike/listen/draft-final-mlx-song-8bit-8-32/draft-8.flac",
-    "final": "/Users/julian/projects/songloom/spike/listen/draft-final-mlx-song-8bit-8-32/final-32.flac"
+    "draft": "/Users/julian/projects/arcsong/spike/listen/draft-final-mlx-song-8bit-8-32/draft-8.flac",
+    "final": "/Users/julian/projects/arcsong/spike/listen/draft-final-mlx-song-8bit-8-32/final-32.flac"
   }
 }

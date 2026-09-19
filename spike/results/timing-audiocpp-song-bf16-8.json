@@ -102,9 +102,9 @@
       "total_seconds": 411.26313650002703,
       "engine_peak_memory_bytes": null,
       "audio_seconds": 204.11866666666666,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-bf16-8/run-1/take/audio.wav",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-bf16-8/run-1/take/audio.wav",
       "audio_bytes": 39190828,
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-bf16-8/run-1/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-bf16-8/run-1/take",
       "files": [
         {
           "path": "audio.wav",
@@ -185,9 +185,9 @@
       "total_seconds": 412.71016950020567,
       "engine_peak_memory_bytes": null,
       "audio_seconds": 204.11866666666666,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-bf16-8/run-2/take/audio.wav",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-bf16-8/run-2/take/audio.wav",
       "audio_bytes": 39190828,
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-bf16-8/run-2/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-bf16-8/run-2/take",
       "files": [
         {
           "path": "audio.wav",

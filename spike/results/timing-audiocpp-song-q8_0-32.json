@@ -102,9 +102,9 @@
       "total_seconds": 794.6385810831562,
       "engine_peak_memory_bytes": null,
       "audio_seconds": 216.31866666666667,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audio.wav",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-q8_0-32/run-1/take/audio.wav",
       "audio_bytes": 41533228,
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-q8_0-32/run-1/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-q8_0-32/run-1/take",
       "files": [
         {
           "path": "audio.wav",
@@ -185,9 +185,9 @@
       "total_seconds": 794.0698335417546,
       "engine_peak_memory_bytes": null,
       "audio_seconds": 216.31866666666667,
-      "audio_path": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-q8_0-32/run-2/take/audio.wav",
+      "audio_path": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-q8_0-32/run-2/take/audio.wav",
       "audio_bytes": 41533228,
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/timing-audiocpp-song-q8_0-32/run-2/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/timing-audiocpp-song-q8_0-32/run-2/take",
       "files": [
         {
           "path": "audio.wav",

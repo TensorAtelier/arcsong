@@ -5,7 +5,7 @@
 
 ## Problem Statement
 
-Before building songloom's UI, the developer doesn't know which Engine to build on (mlx-Yue or audio.cpp), or whether the features PLAN.md depends on work on this Mac at all: cancelling a running Take, seeing progress per Stage, reproducing a Take from its seed, turning a Draft into a Final, fitting in memory, and keeping library size manageable. Guessing wrong means redesigning the M1 worker, queue and library after they're built.
+Before building arcsong's UI, the developer doesn't know which Engine to build on (mlx-Yue or audio.cpp), or whether the features PLAN.md depends on work on this Mac at all: cancelling a running Take, seeing progress per Stage, reproducing a Take from its seed, turning a Draft into a Final, fitting in memory, and keeping library size manageable. Guessing wrong means redesigning the M1 worker, queue and library after they're built.
 
 ## Solution
 

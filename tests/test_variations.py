@@ -9,9 +9,9 @@ import pytest
 import soundfile
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.db import SCHEMA_VERSION, Store
-from songloom.engine import EngineSpec
+from arcsong.app import create_app
+from arcsong.db import SCHEMA_VERSION, Store
+from arcsong.engine import EngineSpec
 from tests.test_app import FAKE, wait_for
 
 REQUEST = {"style": "indie pop", "lyrics": "[Verse]\nhello", "steps": 8}
@@ -111,7 +111,7 @@ PRAGMA user_version = 1;
 
 
 def test_a_v1_database_migrates_with_its_rows_intact(tmp_path):
-    path = tmp_path / "songloom.db"
+    path = tmp_path / "arcsong.db"
     conn = sqlite3.connect(path)
     conn.executescript(V1_SCHEMA)
     conn.execute(
@@ -147,7 +147,7 @@ def make_draft(client, **request):
 
 
 def test_finalize_queues_a_32_step_final_that_runs_only_synthesis_and_decoding(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.3})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.3})
     with TestClient(create_app(slow, tmp_path)) as client:
         draft = make_draft(client, seed=41)
         subscription = client.app.state.runner.broadcaster.subscribe()
@@ -191,7 +191,7 @@ def test_finalize_is_refused_for_a_full_quality_take_and_a_second_final(client):
 
 
 def test_a_cancelled_final_can_be_retried(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.5})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.5})
     with TestClient(create_app(slow, tmp_path)) as client:
         draft = make_draft(client)
         blocker = client.post("/api/jobs", json=REQUEST).json()  # keeps the Final queued
@@ -204,7 +204,7 @@ def test_a_cancelled_final_can_be_retried(tmp_path):
 
 
 def test_a_final_whose_draft_was_deleted_before_it_ran_fails_and_the_queue_moves_on(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.3})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.3})
     with TestClient(create_app(slow, tmp_path)) as client:
         draft = make_draft(client)
         blocker = client.post("/api/jobs", json=REQUEST).json()
@@ -254,7 +254,7 @@ def test_peaks_follow_the_audio_and_variations_differ(client, tmp_path):
 
 
 def test_an_interrupted_migration_leaves_the_v1_schema_untouched(tmp_path):
-    path = tmp_path / "songloom.db"
+    path = tmp_path / "arcsong.db"
     conn = sqlite3.connect(path)
     conn.executescript(V1_SCHEMA)
     # The last ALTER will fail on this column, after the first two have run.
@@ -284,7 +284,7 @@ def test_starring_a_song_deleted_mid_request_is_a_404(client, monkeypatch):
 
 
 def test_the_mlx_final_of_a_deleted_draft_says_so_before_loading_the_model(tmp_path):
-    from songloom.mlx_engine import MlxYueEngine
+    from arcsong.mlx_engine import MlxYueEngine
 
     engine = MlxYueEngine(models=tmp_path / "models")
     request = {**REQUEST, "seed": 1, "mode": "full", "precision": "8bit", "steps": 32}

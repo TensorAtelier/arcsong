@@ -98,7 +98,7 @@ def test_stderr_progress_lines_become_progress_events_while_a_stage_runs(monkeyp
 def test_a_memory_pressure_refusal_is_explained_rather_than_dumped(tmp_path, monkeypatch):
     """mlx-Yue aborts when macOS reports memory pressure; the queue should say what to do about
     it instead of showing a MemoryError from inside the port."""
-    from songloom.mlx_engine import PRESSURE_ERROR, MlxYueEngine
+    from arcsong.mlx_engine import PRESSURE_ERROR, MlxYueEngine
 
     engine = MlxYueEngine(models=tmp_path)
 

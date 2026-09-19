@@ -147,7 +147,7 @@ export default function ScoreView({ source, onJob }: Props) {
   }
 
   const edited = text !== original;
-  const name = `songloom-score-${source.kind}-${source.id}`;
+  const name = `arcsong-score-${source.kind}-${source.id}`;
 
   return (
     <section className="panel score" aria-label="Score">

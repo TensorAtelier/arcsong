@@ -1,5 +1,5 @@
 """One real render through mlx-Yue. Slow and needs weights, AC power and the GPU, so it only
-runs with SONGLOOM_REAL_ENGINE=1."""
+runs with ARCSONG_REAL_ENGINE=1."""
 
 import os
 import time
@@ -9,16 +9,16 @@ import pytest
 import soundfile
 from fastapi.testclient import TestClient
 
-from songloom.app import create_app
-from songloom.engine import EngineSpec
-from songloom.models import MlxYueModels
+from arcsong.app import create_app
+from arcsong.engine import EngineSpec
+from arcsong.models import MlxYueModels
 
 pytestmark = pytest.mark.skipif(
-    os.environ.get("SONGLOOM_REAL_ENGINE") != "1", reason="set SONGLOOM_REAL_ENGINE=1"
+    os.environ.get("ARCSONG_REAL_ENGINE") != "1", reason="set ARCSONG_REAL_ENGINE=1"
 )
 
-MODELS = Path(os.environ.get("SONGLOOM_MLX_MODELS", "~/projects/mlx-Yue/models")).expanduser()
-MLX = EngineSpec("songloom.mlx_engine:MlxYueEngine", {"models": str(MODELS)})
+MODELS = Path(os.environ.get("ARCSONG_MLX_MODELS", "~/projects/mlx-Yue/models")).expanduser()
+MLX = EngineSpec("arcsong.mlx_engine:MlxYueEngine", {"models": str(MODELS)})
 SHORT = {
     "style": "English, warm piano pop, expressive female voice",
     "lyrics": "[Verse]\nNeon fades along the lane\nFootsteps keep the time",
@@ -112,7 +112,7 @@ def test_a_real_take_renders_from_an_edited_score(tmp_path):
 def test_the_real_transcription_weights_download_and_verify(tmp_path):
     """Fetches SheetSage2 and MERT2 into the user's models directory (once; later runs are a
     no-op) and checks them the way mlx-Yue does."""
-    from songloom.models import TranscriptionModels, weights_state
+    from arcsong.models import TranscriptionModels, weights_state
 
     models = TranscriptionModels(MODELS)
     if not weights_state(models)["installed"]:
@@ -125,12 +125,12 @@ def test_the_real_transcription_weights_download_and_verify(tmp_path):
 
 def test_a_real_cover_transcribes_a_take_and_re_sings_it(tmp_path):
     """Renders a short Take, transcribes it back into a Score, and renders a cover from that."""
-    from songloom.models import TranscriptionModels, weights_state
+    from arcsong.models import TranscriptionModels, weights_state
 
     if not weights_state(TranscriptionModels(MODELS))["installed"]:
         pytest.skip("the covers weights are not installed")
     engine = EngineSpec(
-        "songloom.mlx_engine:MlxYueEngine",
+        "arcsong.mlx_engine:MlxYueEngine",
         {"models": str(MODELS), "transcription_models": str(MODELS)},
     )
     app = create_app(

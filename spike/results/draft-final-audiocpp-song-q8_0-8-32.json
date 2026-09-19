@@ -91,11 +91,11 @@
       "draft": {
         "steps": 8,
         "seconds": 499.68829633295536,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft",
-        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/audio.wav",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft",
+        "audio_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/audio.wav",
         "audio_seconds": 216.31866666666667,
         "stage_outputs": {},
-        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
+        "noise_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
         "lazy_load_seconds": {
           "ar_load_seconds": 0.31920375,
           "nar_load_seconds": 0.27738970799999996,
@@ -111,11 +111,11 @@
       "final": {
         "steps": 32,
         "seconds": 772.7820932092145,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/final",
-        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/final/audio.wav",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/final",
+        "audio_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/final/audio.wav",
         "audio_seconds": 216.31866666666667,
         "stage_outputs": {},
-        "noise_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
+        "noise_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
         "lazy_load_seconds": {
           "ar_load_seconds": 0.32144679200000004,
           "nar_load_seconds": 0.253556125,
@@ -124,7 +124,7 @@
         },
         "details": {},
         "method": "full re-run",
-        "noise_source": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
+        "noise_source": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32",
         "render_final_unsupported": "audio.cpp's CLI cannot take a Draft's Semantic tokens back: it neither exports them nor accepts them as input, so a Final means re-running the whole Take"
       },
       "child_wall_seconds": 1272.5784977497533,
@@ -142,8 +142,8 @@
       "direct": {
         "steps": 32,
         "seconds": 776.8852077079937,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-2/direct",
-        "audio_path": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-2/direct/audio.wav",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-2/direct",
+        "audio_path": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-2/direct/audio.wav",
         "audio_seconds": 216.31866666666667,
         "stage_outputs": {},
         "noise_path": null,
@@ -170,7 +170,7 @@
     "reused": {
       "synthesis noise": {
         "supplied_from_draft": true,
-        "file": "/Users/julian/projects/songloom/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32"
+        "file": "/Users/julian/projects/arcsong/spike/runs/draft-final-audiocpp-song-q8_0-8-32/run-1/draft/noise.f32"
       }
     },
     "fallback": {
@@ -271,8 +271,8 @@
     }
   },
   "listening_pair": {
-    "draft": "/Users/julian/projects/songloom/spike/listen/draft-final-audiocpp-song-q8_0-8-32/draft-8.flac",
-    "final": "/Users/julian/projects/songloom/spike/listen/draft-final-audiocpp-song-q8_0-8-32/final-32.flac"
+    "draft": "/Users/julian/projects/arcsong/spike/listen/draft-final-audiocpp-song-q8_0-8-32/draft-8.flac",
+    "final": "/Users/julian/projects/arcsong/spike/listen/draft-final-audiocpp-song-q8_0-8-32/final-32.flac"
   },
   "resummarized_at": "2026-09-17T04:26:45.554908+00:00"
 }

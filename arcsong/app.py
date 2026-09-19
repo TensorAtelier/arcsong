@@ -22,12 +22,12 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
-from songloom.config import data_dir
-from songloom.db import Store
-from songloom.engine import EngineSpec
-from songloom.models import FakeModels, Models
-from songloom.runner import JobRunner
-from songloom.setup import COVERS, ENGINE, Part, Setup
+from arcsong.config import data_dir
+from arcsong.db import Store
+from arcsong.engine import EngineSpec
+from arcsong.models import FakeModels, Models
+from arcsong.runner import JobRunner
+from arcsong.setup import COVERS, ENGINE, Part, Setup
 
 STATIC_DIR = Path(__file__).parent / "static"
 # The vendored piano the Score view plays, inside the package so a clone or a wheel has it
@@ -138,7 +138,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        store = Store(root / "songloom.db")
+        store = Store(root / "arcsong.db")
         options = {"cancel_grace": cancel_grace, "load_retry": load_retry}
         kwargs = {k: v for k, v in options.items() if v is not None}
         runner = JobRunner(store, songs_dir, spec, **kwargs)
@@ -154,7 +154,7 @@ def create_app(
             runner.stop()
             store.close()
 
-    app = FastAPI(title="songloom", lifespan=lifespan)
+    app = FastAPI(title="arcsong", lifespan=lifespan)
     # Set when the server starts shutting down, so open event streams end instead of keeping
     # the server alive (uvicorn waits for open connections before running lifespan shutdown).
     app.state.shutting_down = threading.Event()
@@ -433,7 +433,7 @@ def create_app(
     if SOUNDFONT_DIR.is_dir():
         app.mount("/soundfont", StaticFiles(directory=SOUNDFONT_DIR), name="soundfont")
 
-    # The built web app (web/ -> songloom/static); mounted last so /api routes win.
+    # The built web app (web/ -> arcsong/static); mounted last so /api routes win.
     if (STATIC_DIR / "index.html").exists():
         app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="web")
 
@@ -559,7 +559,7 @@ def _with_size(song: dict) -> dict:
 
 
 def download_name(song_id: int, style: str, extension: str) -> str:
-    """e.g. songloom-12-english-city-pop-groovy-bass.flac (ASCII, at most 6 style words)."""
+    """e.g. arcsong-12-english-city-pop-groovy-bass.flac (ASCII, at most 6 style words)."""
     words = re.findall(r"[a-z0-9]+", style.lower())[:6]
     slug = "-".join(words)
-    return f"songloom-{song_id}{'-' + slug if slug else ''}.{extension}"
+    return f"arcsong-{song_id}{'-' + slug if slug else ''}.{extension}"

@@ -4,7 +4,7 @@ Surveyed 2026-09-16 from GitHub READMEs only (nothing installed or run, so claim
 are unverified). YuE2 was released ~2026-09-08; a GitHub search for "yue2" returned ~45
 repos, ~30 of them updated within the last two days.
 
-## Closest to songloom (Apple Silicon, app/web UI)
+## Closest to arcsong (Apple Silicon, app/web UI)
 
 | Project | Engine | Form | Notable | Stars |
 |---|---|---|---|---|
@@ -45,7 +45,7 @@ repos, ~30 of them updated within the last two days.
 
 ## What this means for the plan
 
-Every songloom differentiator (score edit, draft→final, variations/compare, a clean NVIDIA
+Every arcsong differentiator (score edit, draft→final, variations/compare, a clean NVIDIA
 path) already ships in at least one project, and riff covers nearly the whole roadmap on
 Apple Silicon. No project has much traction yet (the top standalone UI has 31★). The
 winner will likely come down to reliability, install experience and staying maintained,

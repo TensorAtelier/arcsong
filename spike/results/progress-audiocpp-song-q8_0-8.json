@@ -266,7 +266,7 @@
       },
       "stderr_is_tty": false,
       "progress_events": 272,
-      "events_path": "/Users/julian/projects/songloom/spike/runs/progress-audiocpp-song-q8_0-8/run-1/progress-events.jsonl",
+      "events_path": "/Users/julian/projects/arcsong/spike/runs/progress-audiocpp-song-q8_0-8/run-1/progress-events.jsonl",
       "child_wall_seconds": 314.9730955003761,
       "peak_footprint_bytes": 6734226816,
       "lifetime_peak_footprint_bytes": 6740845952,

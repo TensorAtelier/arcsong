@@ -6,9 +6,9 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from songloom.app import MAX_UPLOAD_BYTES, create_app
-from songloom.engine import EngineSpec
-from songloom.models import FakeModels
+from arcsong.app import MAX_UPLOAD_BYTES, create_app
+from arcsong.engine import EngineSpec
+from arcsong.models import FakeModels
 from tests.test_app import FAKE, wait_for
 
 RECORDING = b"RIFF" + b"\0" * 4096
@@ -50,7 +50,7 @@ def test_a_cover_transcribes_the_upload_into_a_score(client, tmp_path):
 
 
 def test_the_upload_goes_when_the_cover_fails_or_is_cancelled(tmp_path):
-    failing = EngineSpec("songloom.fake_engine:FakeEngine", {"fail_transcribe": "no music here"})
+    failing = EngineSpec("arcsong.fake_engine:FakeEngine", {"fail_transcribe": "no music here"})
     with serve(tmp_path, failing) as client:
         job = upload(client).json()
         failed = wait_for(client, job["id"])
@@ -58,7 +58,7 @@ def test_the_upload_goes_when_the_cover_fails_or_is_cancelled(tmp_path):
     assert failed["status"] == "failed" and "no music here" in failed["error"]
     assert list((tmp_path / "uploads").glob("*")) == []
 
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 5.0})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 5.0})
     with serve(tmp_path, slow) as client:
         first = upload(client).json()
         queued = upload(client).json()
@@ -109,7 +109,7 @@ def test_an_oversized_recording_is_refused_and_leaves_nothing_behind(client, tmp
 
 
 def test_a_cover_reports_its_own_stage_and_the_queue_moves_on(tmp_path):
-    slow = EngineSpec("songloom.fake_engine:FakeEngine", {"stage_seconds": 0.6})
+    slow = EngineSpec("arcsong.fake_engine:FakeEngine", {"stage_seconds": 0.6})
     with serve(tmp_path, slow) as client:
         subscription = client.app.state.runner.broadcaster.subscribe()
         cover = upload(client).json()
@@ -148,7 +148,7 @@ def test_a_transcribed_score_renders_a_cover(client):
 
 
 def test_a_refused_upload_leaves_no_job_behind(client, tmp_path):
-    from songloom.app import MAX_UPLOAD_BYTES
+    from arcsong.app import MAX_UPLOAD_BYTES
 
     too_big = upload(client, audio=b"\0" * (MAX_UPLOAD_BYTES + 1024))
     empty = upload(client, audio=b"")
@@ -194,12 +194,12 @@ def test_a_cover_is_refused_while_the_covers_checks_are_still_running(tmp_path):
 
 
 def test_cancelling_a_real_transcription_reads_as_cancelled_not_failed(tmp_path, monkeypatch):
-    """mlx-Yue raises its own InterruptedError; the worker must see songloom's Cancelled, or the
+    """mlx-Yue raises its own InterruptedError; the worker must see arcsong's Cancelled, or the
     queue shows a red failure with a traceback for something the user asked for."""
     import lyra.transcription.pipeline as pipeline
 
-    from songloom.engine import Cancelled
-    from songloom.mlx_engine import MlxYueEngine
+    from arcsong.engine import Cancelled
+    from arcsong.mlx_engine import MlxYueEngine
 
     def interrupted(*args, **kwargs):
         raise InterruptedError("Cancelled during transcription")
@@ -223,8 +223,8 @@ def test_cancelling_while_the_model_loads_also_reads_as_cancelled(tmp_path, monk
     that; it must not surface as a failure either."""
     import lyra.transcription.model as model_module
 
-    from songloom.engine import Cancelled
-    from songloom.mlx_engine import MlxYueEngine
+    from arcsong.engine import Cancelled
+    from arcsong.mlx_engine import MlxYueEngine
 
     def interrupted(*args, **kwargs):
         raise InterruptedError("Cancelled while loading SheetSage2")
@@ -241,12 +241,12 @@ def test_cancelling_while_the_model_loads_also_reads_as_cancelled(tmp_path, monk
 
 def test_a_staged_upload_never_survives(client, tmp_path, monkeypatch):
     """Anything but a clean save leaves no recording behind, and a crash mid-upload is swept."""
-    from songloom.app import STAGED_PREFIX
+    from arcsong.app import STAGED_PREFIX
 
     def explode(self, *args, **kwargs):
         raise OSError("the disk is full")
 
-    monkeypatch.setattr("songloom.db.Store.create_job", explode)
+    monkeypatch.setattr("arcsong.db.Store.create_job", explode)
     with pytest.raises(OSError):
         upload(client)
     assert list((tmp_path / "uploads").glob("*")) == []

@@ -24,7 +24,7 @@ What I checked: I read the full branch diff (`git diff 11b168a...HEAD`) and ever
 - `uv run ruff check .`: All checks passed!
 - `npm run typecheck` (`tsc --noEmit`): exit 0, no errors
 
-A fresh `npx vite build --outDir <scratch>/static` is identical to the committed `songloom/static/` (`diff -r` found no differences).
+A fresh `npx vite build --outDir <scratch>/static` is identical to the committed `arcsong/static/` (`diff -r` found no differences).
 
 I also ran the app with the fake engine on port 8844 and tried everything below with curl:
 - listing songs and the library figures
@@ -34,7 +34,7 @@ I also ran the app with the fake engine on port 8844 and tried everything below 
 - both download formats, their headers, a bad format, and a missing audio file
 - how much memory the WAV conversion of a 3-minute, 48 kHz, 24-bit stereo FLAC (~40 MiB) uses
 
-I did not re-check the page in a browser. Afterwards I stopped the server and deleted the scratch data. The only `spawn_main` process still running belongs to practice-dojo, not songloom.
+I did not re-check the page in a browser. Afterwards I stopped the server and deleted the scratch data. The only `spawn_main` process still running belongs to practice-dojo, not arcsong.
 
 STORIES:
 - 01 (Library API). Delivered.
@@ -51,7 +51,7 @@ STORIES:
     - The path given to `rmtree` always comes from the DB (`audio_path.parent` as the worker reported it), never from the request.
 - 02 (Download). Delivered, with a fidelity defect (1).
   - Both formats return the right content type.
-  - Filenames are ASCII only: `"a"; filename=x.exe` becomes `songloom-5-a-filename-x-exe.wav`, `日本語` becomes `songloom-6.flac`, and at most 6 words are kept. The header can't be injected into.
+  - Filenames are ASCII only: `"a"; filename=x.exe` becomes `arcsong-5-a-filename-x-exe.wav`, `日本語` becomes `arcsong-6.flac`, and at most 6 words are kept. The header can't be injected into.
   - A format other than flac or wav gets 422; an unknown song or missing file gets 404.
   - Memory: converting the 3-minute FLAC took 0.3 s, but the process peaked about 177 MiB higher, because `soundfile.read` decodes to float64 and then the buffer is copied. That is acceptable on this machine.
 - 03 (Library view). Delivered as far as I can tell from reading the code.
@@ -83,7 +83,7 @@ RISKS (ranked):
 7. If the song list fails to load but the job list then loads, `setLoadError(null)` clears the error, and the Library shows "Loading…" forever.
 
 DEFECTS:
-1. songloom/app.py:157 — Converting FLAC to WAV writes subtype="PCM_16", so 24-bit Takes lose bit depth. Reproduce: write a PCM_24 FLAC Take, download with ?format=wav, and soundfile.info(...).subtype is PCM_16. Fix: keep the source subtype, and add an assertion on subtype to the test. Story 02.
+1. arcsong/app.py:157 — Converting FLAC to WAV writes subtype="PCM_16", so 24-bit Takes lose bit depth. Reproduce: write a PCM_24 FLAC Take, download with ?format=wav, and soundfile.info(...).subtype is PCM_16. Fix: keep the source subtype, and add an assertion on subtype to the test. Story 02.
 2. web/src/App.tsx:31-59 and :63-81, web/src/api.ts (Deleted) — Deletions aren't remembered against later REST responses, and the seq on deleted is unused. A /api/songs or /api/jobs response fetched before a delete but arriving after the deleted message puts the song and job back in the page. Fix: keep a set of deleted song and job ids (or the delete seq) and filter reload results with it. Stories 03/04.
 3. web/src/App.tsx:33-37,68 — songs and jobs share one loadError, so a successful jobs load clears a songs failure and the Library stays on "Loading…". Story 03 (minor).
 ```
@@ -116,7 +116,7 @@ From the plan's Notes, ranked costly-and-surprising first:
 
 - **Delete is permanent (no trash)**, confirmed in the page; it removes the Take directory, the song row and its job row, so the queue loses the entry too.
 - **Tickets 03 and 04 share one commit** (one component, checked together).
-- **WAV/FLAC conversion** happens in memory with `soundfile` (about 177 MiB peak for a 3-minute song), keeping the source bit depth; the download name is `songloom-<id>-<style words>.<ext>`.
+- **WAV/FLAC conversion** happens in memory with `soundfile` (about 177 MiB peak for a 3-minute song), keeping the source bit depth; the download name is `arcsong-<id>-<style words>.<ext>`.
 - **The filter runs in the page**; the server returns all songs (fine at this scale).
 - **Size on disk** is each Take directory's total; free space is `shutil.disk_usage` of the data dir.
 - **Re-run sends the stored request unchanged** (seed included), which reproduces the same Take at the same precision and steps (M0).

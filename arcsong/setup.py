@@ -18,9 +18,9 @@ from typing import Any
 
 import psutil
 
-from songloom.db import Store
-from songloom.models import LICENCE, Check, Models, bytes_on_disk, check, weights_state
-from songloom.worker import exit_with_parent
+from arcsong.db import Store
+from arcsong.models import LICENCE, Check, Models, bytes_on_disk, check, weights_state
+from arcsong.worker import exit_with_parent
 
 GIB = 2**30
 # M0: a song peaks at ~10.5–11 GiB of unified memory. The real floor is unmeasured (PLAN open
@@ -176,7 +176,7 @@ class Setup:
             if self._checking:
                 return
             self._checking = True
-        threading.Thread(target=self._check, name="songloom-checks", daemon=True).start()
+        threading.Thread(target=self._check, name="arcsong-checks", daemon=True).start()
 
     def _check(self) -> None:
         results = {}
@@ -227,7 +227,7 @@ class Setup:
         threading.Thread(
             target=self._follow,
             args=(process, events, part_id),
-            name="songloom-download",
+            name="arcsong-download",
             daemon=True,
         ).start()
         self.publish()
@@ -303,7 +303,7 @@ def _ram_check() -> Check:
     label = "Memory"
     if total < RAM_WARN_GIB:
         detail = (
-            f"{total:.0f} GiB. A song peaks at about 11 GiB and songloom is untested below "
+            f"{total:.0f} GiB. A song peaks at about 11 GiB and arcsong is untested below "
             f"{RAM_WARN_GIB} GiB; close other apps and model servers before rendering."
         )
         return check("ram", label, "warn", detail)

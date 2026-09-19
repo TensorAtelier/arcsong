@@ -184,7 +184,7 @@
               "bytes": 36002
             }
           ],
-          "error": "exit code 1:\nTraceback (most recent call last):\n  File \"/Users/julian/projects/songloom/.venv/bin/mlx-yue\", line 10, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/julian/projects/songloom/.venv/lib/python3.12/site-packages/lyra/cli.py\", line 200, in main\n    with _resource_monitor(args):\n         ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/julian/projects/songloom/.venv/lib/python3.12/site-packages/lyra/measure.py\", line 196, in __enter__\n    raise FileExistsError(f\"Resource evidence already exists: {path}\")\nFileExistsError: Resource evidence already exists: /Users/julian/projects/songloom/spike/runs/hygiene-mlx-clip-8bit-8/run-1/cli/take.resources.jsonl"
+          "error": "exit code 1:\nTraceback (most recent call last):\n  File \"/Users/julian/projects/arcsong/.venv/bin/mlx-yue\", line 10, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/julian/projects/arcsong/.venv/lib/python3.12/site-packages/lyra/cli.py\", line 200, in main\n    with _resource_monitor(args):\n         ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/julian/projects/arcsong/.venv/lib/python3.12/site-packages/lyra/measure.py\", line 196, in __enter__\n    raise FileExistsError(f\"Resource evidence already exists: {path}\")\nFileExistsError: Resource evidence already exists: /Users/julian/projects/arcsong/spike/runs/hygiene-mlx-clip-8bit-8/run-1/cli/take.resources.jsonl"
         },
         "reruns_after_cleanup": [
           {

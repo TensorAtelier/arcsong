@@ -21,7 +21,7 @@
   $ uv run ruff check .
   All checks passed!
   $ uv run spike doctor --engine mlx --force
-  ok doctor-mlx-clip-bf16-32 in 29.7s -> /Users/julian/projects/songloom/spike/results/doctor-mlx-clip-bf16-32.json
+  ok doctor-mlx-clip-bf16-32 in 29.7s -> /Users/julian/projects/arcsong/spike/results/doctor-mlx-clip-bf16-32.json
   ```
 - QA verdict: PASS — a real `--force` render produced a readable 16.0 s 48 kHz stereo FLAC and `outcome: ok`; a plain rerun skipped; a missing weights path was recorded as `failed` with exit 0; the FakeEngine tests use a real SIGKILL and abort.
 
@@ -54,7 +54,7 @@
   $ uv run spike setup
   downloaded: nothing (all files in place)
   $ uv run spike doctor --engine audiocpp --force
-  ok doctor-audiocpp-clip-bf16-32 in 29.9s -> /Users/julian/projects/songloom/spike/results/doctor-audiocpp-clip-bf16-32.json
+  ok doctor-audiocpp-clip-bf16-32 in 29.9s -> /Users/julian/projects/arcsong/spike/results/doctor-audiocpp-clip-bf16-32.json
   ```
 - QA verdict: PASS — setup reran with nothing to fetch; a real sha256 mismatch through the CLI exited 1 with nothing left behind; the real GPU doctor made a non-silent 16 s WAV with `outcome: ok`, version 0.8.0; all pins cross-checked against the GitHub digest and the HF LFS hashes.
 

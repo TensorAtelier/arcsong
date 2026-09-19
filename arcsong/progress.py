@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from songloom.engine import Emit
+from arcsong.engine import Emit
 
 # Send at most this many progress updates per second per job (M0: on_token peaks ~71/s).
 PROGRESS_PER_SECOND = 4

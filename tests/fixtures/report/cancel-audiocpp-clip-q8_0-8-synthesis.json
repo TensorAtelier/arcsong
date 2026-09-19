@@ -86,7 +86,7 @@
       "cancel_latency_seconds": 0.06510391738265753,
       "cancelled_by": "Cancelled",
       "cancel_message": "audio.cpp run killed (pid 47694)",
-      "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/take",
+      "take_dir": "/Users/julian/projects/arcsong/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/take",
       "leftover_files": [
         {
           "path": "audiocpp.log",
@@ -117,7 +117,7 @@
           "session_load_seconds": 0.38686254154890776
         },
         "audio_seconds": 15.998666666666667,
-        "take_dir": "/Users/julian/projects/songloom/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/reuse",
+        "take_dir": "/Users/julian/projects/arcsong/spike/runs/cancel-audiocpp-clip-q8_0-8-synthesis/run-1/reuse",
         "files": [
           {
             "path": "audio.wav",

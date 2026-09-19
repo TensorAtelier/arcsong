@@ -433,7 +433,7 @@
       },
       "stderr_is_tty": false,
       "progress_events": 6745,
-      "events_path": "/Users/julian/projects/songloom/spike/runs/progress-mlx-song-8bit-8/run-1/progress-events.jsonl",
+      "events_path": "/Users/julian/projects/arcsong/spike/runs/progress-mlx-song-8bit-8/run-1/progress-events.jsonl",
       "child_wall_seconds": 217.1093270406127,
       "peak_footprint_bytes": 11458517112,
       "lifetime_peak_footprint_bytes": 11870509200,

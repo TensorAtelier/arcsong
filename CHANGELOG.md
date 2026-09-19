@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to songloom. Versions follow [semantic versioning](https://semver.org);
+All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
 ## 0.1.0 — 2026-09-18

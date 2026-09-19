@@ -19,7 +19,7 @@ Parked: none.
 ## Evidence
 
 - `uv run pytest -q`: 204 passed, 3 skipped (opt-in real tests); `ruff check` and `npm run typecheck` are clean.
-- Real engine, on AC, after the review fixes (`SONGLOOM_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py`): 2 passed in 62 s. That covers a full render, plus a Draft finalized from its saved Take. The Final's `semantic.npy`, `noise.npy` and `score.abc` are byte-identical to the Draft's, and its latents differ.
+- Real engine, on AC, after the review fixes (`ARCSONG_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py`): 2 passed in 62 s. That covers a full render, plus a Draft finalized from its saved Take. The Final's `semantic.npy`, `noise.npy` and `score.abc` are byte-identical to the Draft's, and its latents differ.
 - Browser, fake engine (automation tab):
   - Create ×4 at 8 steps queued four seeds, labelled "Take n of 4 · Compare".
   - Compare drew four different waveforms.
@@ -34,7 +34,7 @@ Parked: none.
 
 GOAL VERDICT: MET. All five stories delivered (04 and 05 judged from the code plus the recorded browser checks).
 - **Checked live with curl:** the Setup gate on groups and finalize, a group of 4 with distinct seeds, group lookup and 404, star round trip, both Finalize refusals, and a Draft deleted while its Final was queued (the Final fails with "its Draft was deleted") or running (it completes).
-- **Checked against the source and the build:** the migration on a fresh DB, a v1 test DB and a copy of the real v1 `songloom.db`; the mlx `finalize` against lyra's `load_artifacts`/`save_artifacts` contract; wavesurfer never decoding the full file; stable effect dependencies; and a static build matching `web/src`.
+- **Checked against the source and the build:** the migration on a fresh DB, a v1 test DB and a copy of the real v1 `arcsong.db`; the mlx `finalize` against lyra's `load_artifacts`/`save_artifacts` contract; wavesurfer never decoding the full file; stable effect dependencies; and a static build matching `web/src`.
 
 Defects and what happened to them:
 

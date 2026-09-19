@@ -1,5 +1,5 @@
 """The model weights an Engine needs: where they live, whether they are all there, and how to
-download them. `download()` runs in its own spawned process (see `songloom.setup`), so a
+download them. `download()` runs in its own spawned process (see `arcsong.setup`), so a
 cancel is a kill and the server never imports MLX."""
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any, Protocol
 
-MODELS_ENV = "SONGLOOM_MLX_MODELS"
+MODELS_ENV = "ARCSONG_MLX_MODELS"
 
 # A check the Setup page lists: status is "ok", "warn" or "fail".
 Check = dict[str, str]
@@ -29,7 +29,7 @@ def check(id: str, label: str, status: str, detail: str) -> Check:
 
 
 def models_dir(data: Path, override: str | Path | None = None) -> Path:
-    """The weights directory: an explicit override, else `$SONGLOOM_MLX_MODELS`, else
+    """The weights directory: an explicit override, else `$ARCSONG_MLX_MODELS`, else
     `<data>/models`."""
     chosen = override or os.environ.get(MODELS_ENV)
     return Path(chosen).expanduser().resolve() if chosen else data / "models"
@@ -152,7 +152,7 @@ LICENCE = {
     "id": "CC-BY-NC-4.0",
     "name": "Creative Commons Attribution-NonCommercial 4.0",
     "url": "https://creativecommons.org/licenses/by-nc/4.0/legalcode",
-    # Every set of weights songloom downloads, song and covers alike, under this one licence.
+    # Every set of weights arcsong downloads, song and covers alike, under this one licence.
     "models": [
         "https://huggingface.co/m-a-p/YuE2-3B",
         "https://huggingface.co/m-a-p/YuE2-Vae",
@@ -325,7 +325,7 @@ class TranscriptionModels:
 
 
 def _ffmpeg_check() -> Check:
-    """ffmpeg decodes the upload. It is a separate program with its own licence, so songloom
+    """ffmpeg decodes the upload. It is a separate program with its own licence, so arcsong
     looks for it rather than shipping it."""
     label = "ffmpeg"
     try:

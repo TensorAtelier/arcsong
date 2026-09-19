@@ -1,6 +1,6 @@
 # Cutting a release
 
-Songloom is installed straight from git, so a release is a tag, a set of notes and two built
+Arcsong is installed straight from git, so a release is a tag, a set of notes and two built
 artifacts. There is no PyPI package (see `PLAN.md`, M6) — the version number in
 `pyproject.toml` and the tag are the only places a version lives.
 
@@ -15,17 +15,17 @@ cd web && npm run typecheck && npm run build   # the build is committed; commit 
 On real weights, on AC power, with other model servers closed:
 
 ```sh
-SONGLOOM_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py
+ARCSONG_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py
 ```
 
 Then check the package is what a user gets:
 
 ```sh
 rm -rf dist && uv build
-uv tool install --force "git+https://github.com/TensorAtelier/songloom@main"
-which -a songloom spike        # songloom only; spike must not be installed
-songloom serve                 # Setup page comes up, then stop it
-uv tool uninstall songloom
+uv tool install --force "git+https://github.com/TensorAtelier/arcsong@main"
+which -a arcsong spike        # arcsong only; spike must not be installed
+arcsong serve                 # Setup page comes up, then stop it
+uv tool uninstall arcsong
 ```
 
 ## Tagging
@@ -35,14 +35,14 @@ uv tool uninstall songloom
 3. Tag and push the tag:
 
 ```sh
-git tag -a v0.1.0 -m "songloom v0.1.0"
+git tag -a v0.1.0 -m "arcsong v0.1.0"
 git push origin v0.1.0
 ```
 
 4. Create the release with the built artifacts:
 
 ```sh
-gh release create v0.1.0 dist/* --title "songloom v0.1.0" --notes-file <notes>
+gh release create v0.1.0 dist/* --title "arcsong v0.1.0" --notes-file <notes>
 ```
 
 ## Notes worth keeping in the release text

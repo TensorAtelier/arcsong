@@ -10,8 +10,8 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from songloom.engine import Cancelled, EngineSpec
-from songloom.progress import Coalescer
+from arcsong.engine import Cancelled, EngineSpec
+from arcsong.progress import Coalescer
 
 NO_JOB = -1
 PARENT_CHECK_SECONDS = 1.0

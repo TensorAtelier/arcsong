@@ -125,7 +125,7 @@ Ranked costly-and-surprising first. One line each; full entries in `DECISIONS.md
 - **D-017** — Engine decision rule: UI must-haves (cancel, per-Stage progress, planning alone + re-synthesis) outrank speed and memory; the recommendation is a proposal for you to confirm.
 - **D-005** — audio.cpp driven through its prebuilt CLI (whole runs, log-parsed Stages, cancel = kill), not the C ABI or server; its "unsupported" findings are about that surface at v0.8.0.
 - **D-006** — mlx-Yue pinned as a git dependency at `9253ed1` reusing existing weights; audio.cpp as the pinned v0.8.0 release binary with sha256 plus GGUF weights from `audio-cpp/Yue2-3B-GGUF`.
-- **D-018** — `git init` of songloom on `main`, work on `feat/m0-engine-spike`; weights, audio and tensors gitignored.
+- **D-018** — `git init` of arcsong on `main`, work on `feat/m0-engine-spike`; weights, audio and tensors gitignored.
 - **D-009** — Timing matrix: `song` × 2 precisions × 8/32 steps × 2 runs per Engine (~3 h GPU total).
 - **D-012** — Draft→Final method: mlx re-synthesizes saved Semantic tokens + noise; audio.cpp tried a saved noise file, recorded as unsupported with a same-seed re-run as the workaround.
 - **D-013** — Download check limited to small files + VAE (~530 MB); no full 10 GB re-download. Hygiene tested with kills mid-synthesis.
