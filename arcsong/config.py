@@ -1,4 +1,4 @@
-"""Where arcsong keeps its data."""
+"""Where Arcsong keeps its data."""
 
 from __future__ import annotations
 

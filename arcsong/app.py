@@ -154,7 +154,7 @@ def create_app(
             runner.stop()
             store.close()
 
-    app = FastAPI(title="arcsong", lifespan=lifespan)
+    app = FastAPI(title="Arcsong", lifespan=lifespan)
     # Set when the server starts shutting down, so open event streams end instead of keeping
     # the server alive (uvicorn waits for open connections before running lifespan shutdown).
     app.state.shutting_down = threading.Event()

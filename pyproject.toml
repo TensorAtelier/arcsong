@@ -5,13 +5,15 @@ description = "Local app for generating full songs with the YuE2 music model on 
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 authors = [{ name = "Julian Wong", email = "julian@tensoratelier.com" }]
 keywords = ["music", "generation", "yue2", "mlx", "apple-silicon", "local-first"]
 classifiers = [
   "Environment :: MacOS X",
   "Intended Audience :: End Users/Desktop",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
 ]
 dependencies = [
@@ -44,9 +46,10 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
-# A source release of the app: what you need to build, run and test it — not the M0 spike,
-# the agent notes or the web sources, which live in the repository.
-include = ["arcsong", "tests", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "pyproject.toml"]
+# A source release of the app: what you need to build and run it. The tests are not here
+# because ten of them import the M0 spike harness, which stays in the repository — clone it
+# if you want to run them.
+include = ["arcsong", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "pyproject.toml"]
 
 [tool.hatch.build.targets.wheel]
 # The M0 measurement harness (`spike/`) stays in the repository as evidence, but it is not

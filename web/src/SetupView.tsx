@@ -85,7 +85,7 @@ export default function SetupView({ setup, error, onChanged }: Props) {
       <div className={`setup-section${acknowledged ? "" : " needs-action"}`}>
         <h3>Model licence</h3>
         <p>
-          Every set of weights arcsong downloads — the song model and, if you use covers, the
+          Every set of weights Arcsong downloads — the song model and, if you use covers, the
           transcription models — is licensed under{" "}
           <a href={licence.url} target="_blank" rel="noreferrer">
             {licence.name}

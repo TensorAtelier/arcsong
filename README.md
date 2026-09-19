@@ -9,8 +9,8 @@ Silicon. Nothing is sent anywhere: the model, the weights and your songs stay on
 
 ## Hear it first
 
-Three songs made with Arcsong, nothing edited — style and lyrics in, these came out. Each is a
-45-second excerpt of the full take (click to play):
+Three songs made with Arcsong, nothing edited — style and lyrics in, these came out. Each link
+downloads a 45-second excerpt of the full take (GitHub won't play them in the page):
 
 | | Style given to the model |
 |---|---|
@@ -119,7 +119,7 @@ uv sync                     # Python side
 cd web && npm install       # only if you are changing the page
 uv run arcsong serve --engine fake   # no GPU, no weights: scripted stages and a test tone
 
-uv run pytest -q            # 240 tests, all on the fake engine
+uv run pytest -q            # the whole suite, on the fake engine — no GPU, no weights
 uv run ruff check .
 cd web && npm run typecheck && npm run build   # the build is committed
 ```
