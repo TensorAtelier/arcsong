@@ -3,7 +3,7 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
-## 0.1.0 — 2026-09-18
+## 0.1.0 — 2026-09-19
 
 The first release: everything needed to write, compare, edit and cover songs on an Apple
 Silicon Mac, with the model running locally.
