@@ -1,6 +1,7 @@
 # Arcsong — local UI for YuE2 music generation
 
-> Working name; rename freely. Plan drafted 2026-09-16.
+> Plan drafted 2026-09-16 as "songloom"; renamed Arcsong at release (2026-09-19).
+> Released: [v0.1.0](https://github.com/TensorAtelier/arcsong/releases/tag/v0.1.0).
 
 ## Goal
 
@@ -191,13 +192,13 @@ and Score export by then (re-evaluate with the spike harness); engine auto-detec
 CUDA machine; document Linux/Windows install.
 
 ### M6 — Release (#11)
-Started 2026-09-17: the project moved to `TensorAtelier/arcsong` (org under the personal account, ToS-clean — one free account per person), history rewritten to `julian@tensoratelier.com`, `LICENSE` (Apache-2.0, Julian Wong / Tensor Atelier), README and package metadata at v0.1.0 are done. What a dry run of `uv tool install git+https://github.com/TensorAtelier/arcsong` showed, still to fix:
-- **It also installs a global `spike` command** — the M0 measurement harness — because `pyproject.toml` declares both console scripts. The released package should ship `arcsong` only.
-- **The wheel says `Requires-Python: >=3.12,<3.13`, but uv installed it into Python 3.14.4 and it ran fine** (mlx and Metal included). Either widen the constraint after testing, or find out why it isn't enforced on this path; a user should not land on an untested Python silently.
-- The installed tool is a shim in `~/.local/bin` over a 438 MB private venv holding a frozen copy of the code; `uv tool upgrade` is the update path. Worth saying in the README's install section.
-
-One-command install (`uv tool install` or bootstrap script), versioned releases, README
-with screenshots/audio samples, licence notices.
+Done 2026-09-19 (`.scratch/m6-release/REPORT.md`): **[v0.1.0](https://github.com/TensorAtelier/arcsong/releases/tag/v0.1.0)** — an annotated tag and a GitHub Release carrying the wheel and sdist, verified by installing the published wheel.
+- **Home:** `TensorAtelier/arcsong` — an org under the personal account (GitHub's terms allow one free account per person, so an org is the ToS-clean way to hold a brand), history rewritten to `julian@tensoratelier.com`, Apache-2.0 with Julian Wong (Tensor Atelier) as holder.
+- **Renamed from songloom**, which was too common to release under: Arcsong was free on PyPI, GitHub and the App Store. The rename covered the package, command, environment variables, the data directory (rewriting the absolute paths stored in SQLite), the repository, docs and screenshots.
+- **Packaging:** the wheel ships `arcsong` alone — it used to put the M0 `spike` harness on users' PATH — and the sdist carries the app, its tests and the licences. `requires-python` is `>=3.12`: the old `<3.13` pin had nothing behind it, and the suite passes on 3.12, 3.13 and 3.14.
+- **README** leads with three real songs (45 s MP3 excerpts) and screenshots of the running app, so nobody is asked for an 11 GB download on trust.
+- **No PyPI.** A name there can be yanked but never reclaimed, and the git URL install works; revisit when there are users.
+- Still open: a Homebrew tap, auto-update, a project site, and CI (see the M5 notes for a macOS/Linux/Windows matrix that would pay for itself).
 
 ## Licensing & distribution
 
@@ -222,8 +223,12 @@ Surveyed 2026-09-16 — see `docs/prior-art.md`. None of the originally planned 
 
 ## Open questions
 
-1. Final name.
-2. Minimum RAM for mlx-Yue (does 16 GB work? 24 GB?) — needs a run on a smaller Mac.
+1. Minimum RAM for mlx-Yue (does 16 GB work? 24 GB?) — needs a run on a smaller Mac. The
+   related floor is now known from the other side: mlx-Yue refuses to start when macOS
+   reports memory pressure, whatever the total.
+
+### Resolved (2026-09-19)
+- **Final name:** Arcsong, released under the Tensor Atelier organisation.
 
 ### Resolved (2026-09-17)
 - **Engine:** mlx-Yue (`vanch007/mlx-Yue`, YuE2) for v1, confirmed after the M0 spike
