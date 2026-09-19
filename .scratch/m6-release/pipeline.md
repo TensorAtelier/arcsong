@@ -7,4 +7,4 @@ goal: Build M6 from PLAN.md: a package that installs in one command and ships on
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review — PARTIAL; 5 defects and 2 machine risks fixed, release re-cut (see REPORT.md)
