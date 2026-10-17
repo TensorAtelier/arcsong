@@ -2,6 +2,9 @@
 
 Arcsong has no telemetry, by charter. Everything here is public repository data.
 
+Take a snapshot with `uv run python scripts/metrics.py --note "…"` (needs `gh` with push access):
+it reads all three sources below and writes today's row, replacing it on a rerun.
+
 ## Sources
 
 ### github-repo
@@ -30,4 +33,4 @@ Arcsong has no telemetry, by charter. Everything here is public repository data.
 
 | Date | Stars | Unique cloners (14 d) | Views (14 d, unique) | Release downloads | Notes |
 |---|---|---|---|---|---|
-| 2026-10-17 | 0 | 9 | 3 | 1 (v0.1.0 wheel) | Baseline. Never announced; cloners are mostly CI (first CI runs today) and the owner. |
+| 2026-10-17 | 0 | 9 | 3 | 1 | Baseline. Never announced; cloners are mostly CI (first CI runs today) and the owner. |
