@@ -1,4 +1,5 @@
-"""Song titles: a default from the lyrics, renaming, Finals inheriting it, and schema v5."""
+"""Song names: given when a song is made, else the first sung line; stored for every song
+(schema v6 backfills them); renaming; Finals inheriting their Draft's name."""
 
 import json
 import sqlite3
@@ -133,6 +134,63 @@ def test_a_v4_database_gains_titles_with_its_rows_intact(tmp_path):
     version = store._conn.execute("PRAGMA user_version").fetchone()[0]
     store.close()
 
-    assert version == SCHEMA_VERSION == 5
+    stored = sqlite3.connect(path).execute("SELECT title FROM songs").fetchone()[0]
+    assert version == SCHEMA_VERSION == 6
     assert song["starred"] is True and song["title"] == "Soft morning light"
     assert song["title_set"] is False
+    assert stored == "Soft morning light"  # backfilled: v6 stores every song's name
+
+
+def test_a_v5_database_backfills_every_songs_name_and_keeps_renames(tmp_path):
+    path = tmp_path / "arcsong.db"
+    Store(path).close()
+    conn = sqlite3.connect(path)
+    for job_id, lyrics in ((1, "[Verse]\nFirst light\n"), (2, "[Verse]\nSecond light\n")):
+        conn.execute(
+            "INSERT INTO jobs (status, request_json, created_at, song_id) VALUES ('done', ?, 1, ?)",
+            (json.dumps({**REQUEST, "lyrics": lyrics, "seed": 5}), job_id),
+        )
+    insert = "INSERT INTO songs (job_id, dir, audio_path, created_at, title) VALUES (?, ?, ?, ?, ?)"
+    conn.execute(insert, (1, "/a", "/a/a.flac", 2, None))
+    conn.execute(insert, (2, "/b", "/b/b.flac", 3, "Kept"))
+    conn.execute("PRAGMA user_version = 5")
+    conn.commit()
+    conn.close()
+
+    Store(path).close()
+
+    rows = sqlite3.connect(path).execute("SELECT title FROM songs ORDER BY id").fetchall()
+    assert rows == [("First light",), ("Kept",)]
+
+
+def test_a_named_sketch_carries_its_name_into_every_take(client):
+    created = client.post(
+        "/api/groups", json={**REQUEST, "title": "  Corner Room  ", "count": 2}
+    ).json()
+    done = [wait_for(client, job["id"]) for job in created]
+
+    assert {job["title"] for job in created} == {"Corner Room"}  # named before a song exists
+    songs = {s["id"]: s for s in client.get("/api/songs").json()}
+    assert {songs[job["song_id"]]["title"] for job in done} == {"Corner Room"}
+    assert all(songs[job["song_id"]]["title_set"] for job in done)
+
+
+def test_a_blank_name_falls_back_to_the_first_sung_line(client):
+    job = wait_for(client, client.post("/api/jobs", json={**REQUEST, "title": "   "}).json()["id"])
+
+    assert job["request"]["title"] is None
+    assert job["title"] == "Soft morning light"
+
+
+def test_a_final_keeps_its_drafts_given_name(client):
+    made = client.post("/api/jobs", json={**REQUEST, "title": "Kettle"}).json()
+    draft = wait_for(client, made["id"])
+    final = wait_for(client, client.post(f"/api/songs/{draft['song_id']}/finalize").json()["id"])
+
+    songs = {s["id"]: s for s in client.get("/api/songs").json()}
+    assert songs[final["song_id"]]["title"] == "Kettle"
+
+
+def test_a_score_only_run_takes_its_name(client):
+    score = client.post("/api/scores", json={**REQUEST, "title": "Planned"}).json()
+    assert score["title"] == "Planned"
