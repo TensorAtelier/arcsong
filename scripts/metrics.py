@@ -43,6 +43,7 @@ def snapshot() -> dict:
 
 
 def row(day: str, numbers: dict, note: str) -> str:
+    note = note.replace("|", "\\|")  # a bare pipe would split the table cell
     return (
         f"| {day} | {numbers['stars']} | {numbers['cloners']} | {numbers['views']} "
         f"| {numbers['downloads']} | {note} |"
@@ -51,7 +52,7 @@ def row(day: str, numbers: dict, note: str) -> str:
 
 def write_row(text: str, day: str, line: str) -> str:
     """The metrics file with `line` as `day`'s snapshot: replacing a row for that day, else
-    appended after the table's last row."""
+    appended after the table's last row. A replacement with no note keeps the old row's note."""
     lines = text.splitlines()
     start = next(i for i, current in enumerate(lines) if current.startswith(HEADER))
     end = start + 2  # header and separator
@@ -59,6 +60,9 @@ def write_row(text: str, day: str, line: str) -> str:
         end += 1
     for i in range(start + 2, end):
         if lines[i].startswith(f"| {day} |"):
+            if line.endswith("|  |"):  # no new note: carry the old one over
+                old_note = lines[i].rstrip().removesuffix("|").rsplit(" | ", 1)[-1]
+                line = f"{line[:-3]} {old_note.strip()} |"
             lines[i] = line
             break
     else:
@@ -75,7 +79,8 @@ def main(argv: list[str] | None = None) -> None:
     line = row(day, snapshot(), args.note)
     print(line)
     if not args.dry_run:
-        METRICS.write_text(write_row(METRICS.read_text(), day, line))
+        text = METRICS.read_text(encoding="utf-8")
+        METRICS.write_text(write_row(text, day, line), encoding="utf-8", newline="\n")
         print(f"written to {METRICS}", file=sys.stderr)
 
 

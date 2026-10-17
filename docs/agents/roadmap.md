@@ -5,7 +5,7 @@ landing: merge
 
 ## Features
 
-- [ ] metrics-script      — `scripts/metrics` appends a snapshot row to docs/product/metrics.md from `gh api`
+- [x] metrics-script      — `scripts/metrics.py` writes a snapshot row to docs/product/metrics.md from `gh api` → .scratch/metrics-script/REPORT.md
 - [ ] score-zero-notes    — the Score page's "0 vocal notes" for some songs: find the cause, fix or explain it
 - [ ] readme-v0-2         — README for the redesign: new screenshots and a "Your first song" walkthrough (v0.2.0)
 - [ ] release-qa-script   — release journeys 1–5 on the fake Engine as one command over the DevTools protocol

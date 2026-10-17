@@ -39,3 +39,13 @@ def test_a_rerun_on_the_same_day_replaces_that_row():
     assert "| 2026-10-17 | 4 | 12 | 30 | 2 | rerun |" in out
     assert "Baseline." not in out
     assert out.count("| 2026-10-17 |") == 1
+
+
+def test_a_rerun_without_a_note_keeps_the_days_note():
+    out = metrics.write_row(TABLE, "2026-10-17", metrics.row("2026-10-17", NUMBERS, ""))
+
+    assert "| 2026-10-17 | 4 | 12 | 30 | 2 | Baseline. |" in out
+
+
+def test_a_pipe_in_a_note_does_not_split_the_cell():
+    assert metrics.row("2026-10-24", NUMBERS, "a | b").endswith("| a \\| b |")
