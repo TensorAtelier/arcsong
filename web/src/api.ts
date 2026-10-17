@@ -10,6 +10,7 @@ export type Stage =
   | "transcribing";
 
 export interface CoverRequest {
+  title: string;
   audio: File;
   style: string;
   lyrics: string;
@@ -20,6 +21,8 @@ export interface CoverRequest {
 }
 
 export interface SongRequest {
+  /** The song's name; Create requires one, the API falls back to the first sung line. */
+  title?: string | null;
   style: string;
   lyrics: string;
   mode: Mode;
@@ -247,6 +250,7 @@ export const api = {
   createCover: (request: CoverRequest) => {
     const body = new FormData();
     body.append("audio", request.audio);
+    body.append("title", request.title);
     body.append("style", request.style);
     body.append("lyrics", request.lyrics);
     body.append("mode", request.mode);

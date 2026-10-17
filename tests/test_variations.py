@@ -35,7 +35,8 @@ def test_a_group_queues_count_jobs_that_differ_only_in_seed(client):
     assert len({j["request"]["seed"] for j in jobs}) == 4
     for job in jobs:
         request = {k: v for k, v in job["request"].items() if k != "seed"}
-        assert request == {**REQUEST, "mode": "full", "precision": "8bit", "abc": None}
+        expected = {**REQUEST, "mode": "full", "precision": "8bit", "abc": None, "title": None}
+        assert request == expected
 
     done = [wait_for(client, i) for i in ids]
     assert [j["status"] for j in done] == ["done"] * 4

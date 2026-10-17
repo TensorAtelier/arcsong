@@ -271,7 +271,8 @@ class JobRunner:
             for final in self.store.finals_of(song_id):
                 if final["status"] in ("queued", "running", "done"):
                     return None, f"this Draft already has a Final (job #{final['id']})"
-            request = {**song["request"], "steps": FINAL_STEPS}
+            # The Draft's current name, so a queued Final already shows a rename.
+            request = {**song["request"], "steps": FINAL_STEPS, "title": song["title"]}
             job = self.store.create_job(request, source_song_id=song_id)
         self.publish(job["id"])
         self.dispatch()

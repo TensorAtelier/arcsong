@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS songs (
     audio_seconds REAL,
     created_at REAL NOT NULL,
     starred INTEGER NOT NULL DEFAULT 0,
-    title TEXT                       -- set by the user; NULL means the default from the request
+    title TEXT                       -- the song's name: given or renamed, else its first sung line
 );
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
@@ -62,6 +62,8 @@ MIGRATE_3_TO_4 = ["ALTER TABLE jobs ADD COLUMN source_audio TEXT"]
 
 
 MIGRATE_4_TO_5 = ["ALTER TABLE songs ADD COLUMN title TEXT"]
+# 5 → 6 has no DDL: every song stores its name (`_backfill_names`), where NULL used to mean "the
+# default", so a name never changes under a song if the default rule does.
 
 TITLE_LENGTH = 60
 _TAG = re.compile(r"^\[[^\]]*\]$")
@@ -85,6 +87,12 @@ def default_title(request: dict[str, Any]) -> str:
     return f"{genre[0].upper()}{genre[1:]} (instrumental)"
 
 
+def song_name(request: dict[str, Any]) -> str:
+    """The name a new song gets: the one given when it was made, else the default."""
+    given = (request.get("title") or "").strip()
+    return given or default_title(request)
+
+
 class Store:
     def __init__(self, path: Path):
         self._conn = sqlite3.connect(path, check_same_thread=False)
@@ -103,6 +111,9 @@ class Store:
                 version = 4
             if 0 < version < 5:
                 self._migrate(MIGRATE_4_TO_5, 5)
+                version = 5
+            if 0 < version < 6:
+                self._backfill_names()
             with self._conn:
                 self._conn.executescript(SCHEMA)
                 self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
@@ -115,6 +126,24 @@ class Store:
             for statement in statements:
                 self._conn.execute(statement)
             self._conn.execute(f"PRAGMA user_version = {version}")
+        except BaseException:
+            self._conn.execute("ROLLBACK")
+            raise
+        self._conn.execute("COMMIT")
+
+    def _backfill_names(self) -> None:
+        """Schema 6: store the name each song showed until now (NULL meant the default), and the
+        version, in one transaction."""
+        self._conn.execute("BEGIN")
+        try:
+            rows = self._conn.execute(
+                "SELECT s.id, j.request_json FROM songs s JOIN jobs j ON j.id = s.job_id "
+                "WHERE s.title IS NULL"
+            ).fetchall()
+            for row in rows:
+                name = song_name(json.loads(row["request_json"]))
+                self._conn.execute("UPDATE songs SET title = ? WHERE id = ?", (name, row["id"]))
+            self._conn.execute("PRAGMA user_version = 6")
         except BaseException:
             self._conn.execute("ROLLBACK")
             raise
@@ -190,13 +219,18 @@ class Store:
         return cur.rowcount > 0
 
     def set_title(self, song_id: int, title: str | None) -> bool:
-        """None (or blank) goes back to the default title."""
+        """None (or blank) goes back to the default name, the first sung line."""
         title = title.strip() if title else None
         with self._lock, self._conn:
-            cur = self._conn.execute(
-                "UPDATE songs SET title = ? WHERE id = ?", (title or None, song_id)
-            )
-        return cur.rowcount > 0
+            row = self._conn.execute(
+                "SELECT j.request_json FROM songs s JOIN jobs j ON j.id = s.job_id WHERE s.id = ?",
+                (song_id,),
+            ).fetchone()
+            if row is None:
+                return False
+            name = title or default_title(json.loads(row["request_json"]))
+            self._conn.execute("UPDATE songs SET title = ? WHERE id = ?", (name, song_id))
+        return True
 
     def get_job(self, job_id: int) -> dict[str, Any] | None:
         with self._lock:
@@ -225,12 +259,21 @@ class Store:
         """Index a finished Take and mark its job done, in one transaction."""
         now = time.time()
         with self._lock, self._conn:
-            # A Final keeps the name its Draft was given.
+            job = self._conn.execute(
+                "SELECT request_json, source_song_id FROM jobs WHERE id = ?", (job_id,)
+            ).fetchone()
+            name = song_name(json.loads(job["request_json"]))
+            if job["source_song_id"] is not None:
+                # A Final keeps the name its Draft has now, renamed or not.
+                draft = self._conn.execute(
+                    "SELECT title FROM songs WHERE id = ?", (job["source_song_id"],)
+                ).fetchone()
+                if draft is not None and draft["title"]:
+                    name = draft["title"]
             cur = self._conn.execute(
                 "INSERT INTO songs (job_id, dir, audio_path, audio_seconds, created_at, title) "
-                "VALUES (?, ?, ?, ?, ?, (SELECT d.title FROM jobs j JOIN songs d "
-                "ON d.id = j.source_song_id WHERE j.id = ?))",
-                (job_id, str(directory), str(audio), seconds, now, job_id),
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (job_id, str(directory), str(audio), seconds, now, name),
             )
             self._conn.execute(
                 "UPDATE jobs SET status = 'done', finished_at = ?, song_id = ? WHERE id = ?",
@@ -318,6 +361,8 @@ def _song(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def _title(row: dict[str, Any]) -> None:
-    row["title_set"] = row["title"] is not None
+    """A song's stored name, or for a job with no song yet the name it will get. `title_set`:
+    the name is not the default (the first sung line), so clearing it changes something."""
     if row["title"] is None:
-        row["title"] = default_title(row["request"])
+        row["title"] = song_name(row["request"])
+    row["title_set"] = row["title"] != default_title(row["request"])

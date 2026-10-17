@@ -9,6 +9,7 @@
   - release-qa-script (0.93: I2 C0.7 core2 / E2 Cx0 R0 U1) — cycle 1's scratch journeys as one repo command; this release's QA runs through it.
   - song-name (0.84: I3 C0.7 core2 / E3 Cx1 R1 U0) — owner request; outranks e2e-in-ci (0.84) on the tie because the owner asked.
 - Interpretation (taste anchored in the charter, cheap to undo — decided, not escalated): "song name" = (1) an optional **Song name** field in Create, shared by every take of a sketch, and (2) every song **stores** its name: existing songs are backfilled with the name they show today (their first sung line), so names never shift if the default rule changes. Rename and "blank resets to the default" keep working.
+- Owner, mid-cycle: "i want song name to be required." → the Song name field is required in Create's Write and Plan tabs and in Cover (submit disabled until named). The API keeps `title` optional (falls back to the first sung line), so scripts, old jobs' Retry/Render-again and the test suite keep working. By: owner (requirement), PM (where it is enforced).
 - Passed over: e2e-in-ci (0.84) — next cycle, on top of release-qa-script; lyrics-check (0.67, new: warn on lyrics YuE2 reads badly) — candidate; cloud-engine-modal (0.58).
 - Shipped: (pending)
 - Release QA: (pending)

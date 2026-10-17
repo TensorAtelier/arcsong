@@ -278,10 +278,10 @@ function SongRow({
           Compare the takes
         </a>
       )}
-      <button type="button" role="menuitem" onClick={() => onEdit(request)}>
+      <button type="button" role="menuitem" onClick={() => onEdit({ ...request, title: song.title })}>
         Edit in Create
       </button>
-      <button type="button" role="menuitem" disabled={busy} onClick={() => run(() => api.create(request), onRerun)}>
+      <button type="button" role="menuitem" disabled={busy} onClick={() => run(() => api.create({ ...request, title: song.title }), onRerun)}>
         Render it again
       </button>
       {draft && !finalActive && (

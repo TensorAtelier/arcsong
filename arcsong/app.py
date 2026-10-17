@@ -20,7 +20,7 @@ import soundfile
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from arcsong.config import data_dir
 from arcsong.db import TITLE_LENGTH, Store
@@ -45,7 +45,14 @@ MAX_UPLOAD_BYTES = 200 << 20
 STAGED_PREFIX = "incoming-"
 
 
+def _name(value: str | None) -> str | None:
+    """A blank name is no name: the song then takes its first sung line."""
+    return (value.strip() or None) if value is not None else None
+
+
 class SongRequest(BaseModel):
+    # The song's name. Create requires one; the API leaves it optional for scripts and old requests.
+    title: str | None = Field(default=None, max_length=TITLE_LENGTH * 2)
     style: str = Field(min_length=1)
     lyrics: str = ""
     mode: Literal["full", "melody", "off"] = "full"
@@ -54,6 +61,11 @@ class SongRequest(BaseModel):
     steps: Literal[8, 32] = 32
     # An edited Score to render instead of writing one; upstream needs a planning mode for it.
     abc: str | None = None
+
+    @field_validator("title")
+    @classmethod
+    def _blank_title(cls, value: str | None) -> str | None:
+        return _name(value)
 
     @model_validator(mode="after")
     def _score_needs_a_planning_mode(self):
@@ -67,6 +79,7 @@ class SongRequest(BaseModel):
 class ScoreRequest(BaseModel):
     """A Score-only run: the same Song request, but only the planning Stage runs."""
 
+    title: str | None = Field(default=None, max_length=TITLE_LENGTH * 2)
     style: str = Field(min_length=1)
     lyrics: str = ""
     mode: Literal["full", "melody"] = "full"  # "off" writes no Score
@@ -74,6 +87,11 @@ class ScoreRequest(BaseModel):
     precision: Literal["8bit", "bf16"] = "8bit"
     # Planning ignores this; it is kept so rendering from the Score uses the chosen quality.
     steps: Literal[8, 32] = 32
+
+    @field_validator("title")
+    @classmethod
+    def _blank_title(cls, value: str | None) -> str | None:
+        return _name(value)
 
 
 class CheckScore(BaseModel):
@@ -191,6 +209,7 @@ def create_app(
         steps: Annotated[int, Form()] = 32,
         seed: Annotated[int | None, Form(ge=0, lt=SEED_LIMIT)] = None,
         rights_confirmed: Annotated[bool, Form()] = False,
+        title: Annotated[str, Form(max_length=TITLE_LENGTH * 2)] = "",
     ):
         """Queue a cover: transcribe the upload into a Score to re-sing. The recording is kept
         only while the job runs."""
@@ -210,6 +229,7 @@ def create_app(
             if written == 0:
                 raise HTTPException(422, "That file is empty.")
             request = _cover_request(style, lyrics, mode, seed, precision, steps, audio.filename)
+            request["title"] = _name(title)
             job = app.state.store.create_job(request, kind="cover")
             path = uploads / f"{job['id']}{suffix}"
             staged.replace(path)

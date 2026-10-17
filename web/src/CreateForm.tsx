@@ -31,6 +31,7 @@ interface Props {
 export default function CreateForm({ onCreated, initial, canRender, cover }: Props) {
   const [tab, setTab] = useState<Tab>("write");
   const [kind, setKind] = useState<Kind>(initial && initial.steps === SINGLE_STEPS ? "single" : "sketch");
+  const [name, setName] = useState(initial?.title ?? "");
   const [style, setStyle] = useState(initial?.style ?? "");
   const [lyrics, setLyrics] = useState(initial?.lyrics ?? "");
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "full");
@@ -61,7 +62,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
     if (tab === "plan") return void run(planOnly);
     void run(async () => {
       const steps = kind === "sketch" ? SKETCH_STEPS : SINGLE_STEPS;
-      const request = { style, lyrics, mode, seed: seedValue, precision, steps } as const;
+      const request = { title: name.trim(), style, lyrics, mode, seed: seedValue, precision, steps } as const;
       if (count > 1) (await api.createGroup(request, count)).forEach(onCreated);
       else onCreated(await api.create(request));
     });
@@ -69,6 +70,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
 
   async function planOnly() {
     const job = await api.createScore({
+      title: name.trim(),
       style,
       lyrics,
       mode: mode === "off" ? "full" : mode,
@@ -95,6 +97,20 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
       box.selectionStart = box.selectionEnd = at + insert.length;
     });
   }
+
+  const nameField = (
+    <div className="field">
+      <label htmlFor="song-name">Song name</label>
+      <input
+        id="song-name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="What is this song called?"
+        maxLength={120}
+        required
+      />
+    </div>
+  );
 
   const styleField = (
     <div className="field">
@@ -209,6 +225,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
             </p>
           )}
 
+          {nameField}
           {styleField}
           {lyricsField}
 
@@ -275,7 +292,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
           {notices}
 
           <div className="cta">
-            <button type="submit" className="primary big" disabled={submitting || !style.trim() || !canRender}>
+            <button type="submit" className="primary big" disabled={submitting || !name.trim() || !style.trim() || !canRender}>
               {submitting
                 ? tab === "plan"
                   ? "Planning…"

@@ -14,6 +14,7 @@ interface Props {
 /** Upload a recording, transcribe it into a Score, then re-sing that melody in a new style. */
 export default function CoverForm({ onCreated, ready, checking }: Props) {
   const [file, setFile] = useState<File | null>(null);
+  const [name, setName] = useState("");
   const [style, setStyle] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [mode, setMode] = useState<Mode>("full");
@@ -32,6 +33,7 @@ export default function CoverForm({ onCreated, ready, checking }: Props) {
     setError(null);
     try {
       const job = await api.createCover({
+        title: name.trim(),
         audio: file,
         style,
         lyrics,
@@ -87,6 +89,18 @@ export default function CoverForm({ onCreated, ready, checking }: Props) {
           onChange={(e) => pick(e.target.files)}
         />
       </label>
+
+      <div className="field">
+        <label htmlFor="cover-name">Song name</label>
+        <input
+          id="cover-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="What is your version called?"
+          maxLength={120}
+          required
+        />
+      </div>
 
       <div className="field">
         <label htmlFor="cover-style">New style</label>
@@ -176,7 +190,7 @@ export default function CoverForm({ onCreated, ready, checking }: Props) {
         <button
           type="submit"
           className="primary big"
-          disabled={submitting || !file || !style.trim() || !rights || !ready || checking}
+          disabled={submitting || !file || !name.trim() || !style.trim() || !rights || !ready || checking}
         >
           {submitting ? "Uploading…" : "Transcribe"}
         </button>
