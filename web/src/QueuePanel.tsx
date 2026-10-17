@@ -69,8 +69,12 @@ export default function QueuePanel({ jobs, songs, onChanged, error }: Props) {
   const finished = jobs.filter((job) => job.status === "done").slice(0, FINISHED_SHOWN);
   const byId = new Map((songs ?? []).map((song) => [song.id, song]));
 
-  // The group of the Take rendering now, for "2 of 4 done" and the Compare link.
-  const groupId = running[0]?.group_id ?? queued[0]?.group_id ?? null;
+  // The group of the Take rendering now, for "2 of 4 done" and the Compare link; once nothing
+  // is rendering, the latest sketch, so its Compare link outlives its last take.
+  // (the newest sketch with a finished take: one whose takes were all cancelled has nothing to compare)
+  const latestGroup = jobs.find((job) => job.group_id !== null && job.status === "done")?.group_id ?? null;
+  const active = running[0]?.group_id ?? queued[0]?.group_id ?? null;
+  const groupId = active ?? (running.length === 0 && queued.length === 0 ? latestGroup : null);
   const members = groupId !== null ? jobs.filter((job) => job.group_id === groupId) : [];
   const ready = members.filter((job) => job.status === "done").length;
 
@@ -103,7 +107,9 @@ export default function QueuePanel({ jobs, songs, onChanged, error }: Props) {
         )}
         {groupId !== null && ready > 0 && (
           <a className="compare-link" href={`#/compare/${groupId}`}>
-            Compare the {ready === 1 ? "ready take" : `${ready} ready takes`} →
+            {active === null
+              ? `Compare your last sketch (${ready === 1 ? "1 take" : `${ready} takes`}) →`
+              : `Compare the ${ready === 1 ? "ready take" : `${ready} ready takes`} →`}
           </a>
         )}
       </section>
