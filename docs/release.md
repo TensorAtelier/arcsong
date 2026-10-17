@@ -12,11 +12,15 @@ uv run ruff check .
 cd web && npm run typecheck && npm run build   # the build is committed; commit it if it changed
 ```
 
-On real weights, on AC power, with other model servers closed:
+On real weights, on AC power, with other model servers closed — and any running Arcsong stopped
+(`dev stop arcsong`): its worker loads the model at start and holds mlx-Yue's GPU lock, so every
+real test fails at once with "Another Lyra process owns the GPU":
 
 ```sh
 ARCSONG_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py
 ```
+
+And the browser journeys from `docs/product/product.md` → Release, on the fake Engine (release QA).
 
 Then check the package is what a user gets:
 
@@ -48,7 +52,7 @@ gh release create v0.1.0 dist/* --title "arcsong v0.1.0" --notes-file <notes>
 ## Notes worth keeping in the release text
 
 - What the release needs: macOS on Apple Silicon, ~24 GB memory comfortably, ~11 GB disk for
-  the weights, AC power to render.
+  the weights. Renders run on battery too (slower); `--require-ac` waits for power.
 - That the model weights are CC BY-NC 4.0 and downloaded on first run, not bundled.
 - The install and upgrade commands, since they are the whole distribution story.
 

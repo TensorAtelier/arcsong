@@ -3,7 +3,10 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
-## Unreleased
+## 0.2.0 — 2026-10-17
+
+A new look, song titles and one player for the whole app; renders on battery; tested on macOS,
+Linux and Windows (fake Engine) in CI.
 
 ### Look and feel
 - A redesign in a warm analog style: dark warm greys with one amber accent, a paper-white light
@@ -21,6 +24,10 @@ while the project is at 0.x, minor versions may change behaviour.
 - The Score's notation sits on paper beside the ABC editor, and renders at a chosen quality.
 
 ### Fixes
+- Create keeps a finished sketch's Compare link, instead of dropping it with the last take.
+- The Score page explains a take the model planned with no vocal melody, instead of a bare
+  "0 vocal notes".
+- An orphaned worker exits on Windows too (it watched its parent with `os.getppid()`).
 - After mlx-Yue stopped a render because macOS swapped memory to disk, every later song
   failed at once with the same error until the app restarted. The model is now reloaded for
   the next song, and the message says what happened and what to do.
