@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Release QA: journeys 1–5 from docs/product/product.md in a private headless Chrome against a
+# fresh fake-Engine server (port 8851, a temp data dir). Needs Node and Google Chrome.
+#   scripts/release-qa            # exit 0 when every journey passes
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+repo="$(cd "$here/.." && pwd)"
+chrome="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+port="${CDP_PORT:-9334}"
+profile="$(mktemp -d)"
+"$chrome" --headless=new --remote-debugging-port="$port" --user-data-dir="$profile" \
+  --no-first-run --hide-scrollbars --autoplay-policy=no-user-gesture-required about:blank \
+  >/dev/null 2>&1 &
+browser=$!
+trap 'kill $browser 2>/dev/null; wait $browser 2>/dev/null; rm -rf "$profile"' EXIT
+for _ in $(seq 1 50); do
+  curl -sf "http://127.0.0.1:$port/json/version" >/dev/null && break
+  sleep 0.2
+done
+CDP="http://127.0.0.1:$port" node "$here/release_qa/release-qa.mjs" "$repo"

@@ -1,12 +1,28 @@
-// Release QA: journeys 1–5 from docs/product/product.md on a fresh fake-Engine server.
-// CDP=http://127.0.0.1:9333 node release-qa.mjs <repo>
+// Release QA: journeys 1–5 from docs/product/product.md on a fresh fake-Engine server, in a
+// headless Chrome that `scripts/release-qa` starts. Prints one JSON line per journey and exits
+// non-zero when any journey fails.
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { click, close, consoleErrors, evaluate, go, key, send, shot, sleep } from "./cdp.mjs";
 
 const REPO = process.argv[2];
+const DATA_TONE = mkdtempSync(join(tmpdir(), "arcsong-qa-tone-"));
+const TONE = join(DATA_TONE, "tone.wav");
+writeFileSync(TONE, tone(3));
+
+/** A mono 16-bit WAV of an A440 sine, `seconds` long: the recording journey 5 uploads. */
+function tone(seconds, rate = 22050) {
+  const samples = seconds * rate;
+  const wav = Buffer.alloc(44 + samples * 2);
+  wav.write("RIFF", 0); wav.writeUInt32LE(36 + samples * 2, 4); wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(rate, 24); wav.writeUInt32LE(rate * 2, 28); wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34); wav.write("data", 36); wav.writeUInt32LE(samples * 2, 40);
+  for (let i = 0; i < samples; i++) wav.writeInt16LE(Math.round(8000 * Math.sin((2 * Math.PI * 440 * i) / rate)), 44 + i * 2);
+  return wav;
+}
 const PORT = 8851;
 const BASE = `http://127.0.0.1:${PORT}/`;
 const DATA = mkdtempSync(join(tmpdir(), "arcsong-qa-"));
@@ -78,6 +94,10 @@ try {
     await fill("#style", STYLE);
     await fill("#lyrics", LYRICS);
     await sleep(300);
+    // Edge: a song needs a name before it can be made.
+    const unnamedBlocked = await evaluate(`document.querySelector('.cta button[type=submit]').disabled`);
+    await fill("#song-name", "First Light");
+    await sleep(200);
     await click(".cta button[type=submit]");
     await waitFor(`!!document.querySelector('.finished li')`, 60000, "a finished song");
     const title = await evaluate(`document.querySelector('.finished .row-title').textContent`);
@@ -92,13 +112,16 @@ try {
     await waitFor(`!!document.querySelector('.song-row')`, 15000, "the song after a restart");
     const kept = await evaluate(`document.querySelector('.song-row .song-title').textContent`);
     if (!gated) throw new Error("Create was not gated before Setup");
+    if (!unnamedBlocked) throw new Error("Create submitted without a song name");
+    if (title !== "First Light") throw new Error(`the song is called ${title}, not First Light`);
     if (kept !== title) throw new Error(`after restart: ${kept} vs ${title}`);
-    return { gatedBeforeSetup: gated, title, barClock: playing, keptAfterRestart: kept };
+    return { gatedBeforeSetup: gated, unnamedBlocked, title, barClock: playing, keptAfterRestart: kept };
   });
 
   await journey("J2 sketch and pick [core]", async () => {
     await go(BASE + "#/");
     await sleep(800);
+    await fill("#song-name", "Neon Run");
     await fill("#style", STYLE);
     await fill("#lyrics", LYRICS);
     await sleep(300);
@@ -123,13 +146,15 @@ try {
     await clickText(".take button", "Finalize this take");
     await go(BASE + "#/library");
     await waitFor(`[...document.querySelectorAll('.project .take-name')].some(e => e.textContent.startsWith('Final'))`, 60000, "the Final in the sketch card");
+    const sketchName = await evaluate(`document.querySelector('.project .song-title').textContent`);
+    if (sketchName !== "Neon Run") throw new Error(`the sketch is called ${sketchName}, not Neon Run`);
     // Edge: phone width, no sideways scroll on Compare.
     await go(BASE + "#/compare/" + (await evaluate(`document.querySelector('.project a.button.primary').getAttribute('href').split('/').pop()`)));
     await phone(); await sleep(1200);
     const phoneOverflow = await overflow();
     await shot("qa-phone-compare");
     await desktop();
-    return { finishedLink: linkText, key1: one, key2: two, sharedPlayhead: { t1: +t1.toFixed(2), t2: +t2.toFixed(2) }, spacePaused: !paused.some(Boolean), starred, final: true, phoneOverflow };
+    return { sketchName, finishedLink: linkText, key1: one, key2: two, sharedPlayhead: { t1: +t1.toFixed(2), t2: +t2.toFixed(2) }, spacePaused: !paused.some(Boolean), starred, final: true, phoneOverflow };
   });
 
   await journey("J3 library [core]", async () => {
@@ -177,6 +202,7 @@ try {
     await go(BASE + "#/");
     await sleep(800);
     await clickText(".tabs button", "Plan a melody");
+    await fill("#song-name", "Planned Tune");
     await fill("#style", STYLE);
     await fill("#lyrics", LYRICS);
     await sleep(300);
@@ -202,19 +228,22 @@ try {
     await sleep(300);
     const { root } = await send("DOM.getDocument", { depth: -1 });
     const { nodeId } = await send("DOM.querySelector", { nodeId: root.nodeId, selector: "#recording" });
-    await send("DOM.setFileInputFiles", { nodeId, files: [process.cwd() + "/qa-tone.wav"] });
+    await send("DOM.setFileInputFiles", { nodeId, files: [TONE] });
+    await fill("#cover-name", "Tone Cover");
     await fill("#cover-style", "English, slow jazz trio, brushed drums, warm male vocal");
     await click(".check-label input");
     await sleep(300);
     await waitFor(`!document.querySelector('form[aria-label="Cover a recording"] button[type=submit]').disabled`, 15000, "Transcribe enabled");
     await click('form[aria-label="Cover a recording"] button[type=submit]');
     await waitFor(`location.hash.startsWith('#/score/job/') && !!document.querySelector('.paper svg')`, 60000, "the transcribed Score");
-    return { uploaded: "qa-tone.wav", transcribedScore: true };
+    return { uploaded: "a 3 s generated tone", transcribedScore: true };
   });
 } finally {
   await evaluate(`document.querySelectorAll('audio').forEach(a => a.pause())`).catch(() => {});
   await close();
   if (server) await stopServer().catch(() => {});
   rmSync(DATA, { recursive: true, force: true });
+  rmSync(DATA_TONE, { recursive: true, force: true });
   console.log("SUMMARY", results.map((r) => `${r.pass ? "PASS" : "FAIL"} ${r.name}`).join(" | "));
+  process.exitCode = results.length === 5 && results.every((r) => r.pass) ? 0 : 1;
 }

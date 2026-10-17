@@ -20,7 +20,12 @@ real test fails at once with "Another Lyra process owns the GPU":
 ARCSONG_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py
 ```
 
-And the browser journeys from `docs/product/product.md` → Release, on the fake Engine (release QA).
+And the browser journeys from `docs/product/product.md` → Release, on the fake Engine in a private
+headless Chrome (needs Node and Google Chrome; touches nothing of yours):
+
+```sh
+scripts/release-qa             # exit 0 when journeys 1–5 all pass
+```
 
 Then check the package is what a user gets:
 
