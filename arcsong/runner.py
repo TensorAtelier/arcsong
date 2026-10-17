@@ -280,11 +280,19 @@ class JobRunner:
     def star_song(self, song_id: int, starred: bool) -> dict[str, Any] | None:
         if not self.store.set_starred(song_id, starred):
             return None
+        return self._song_changed(song_id)
+
+    def title_song(self, song_id: int, title: str | None) -> dict[str, Any] | None:
+        if not self.store.set_title(song_id, title):
+            return None
+        return self._song_changed(song_id)
+
+    def _song_changed(self, song_id: int) -> dict[str, Any] | None:
         song = self.store.get_song(song_id)
         if song is None:
             return None  # deleted between the update and this read
         self.publish_message({"type": "song", "song": song, "seq": self.next_seq()})
-        # The job snapshot carries the star too.
+        # The job snapshot carries the star and title too.
         self.publish(song["job_id"])
         return song
 

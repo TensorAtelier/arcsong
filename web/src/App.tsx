@@ -5,8 +5,12 @@ import CoverForm from "./CoverForm";
 import ScoreView from "./ScoreView";
 import CreateForm from "./CreateForm";
 import LibraryView from "./LibraryView";
+import { player, usePlayer } from "./player";
+import { GearIcon } from "./icons";
+import { NowPlaying } from "./PlayerUI";
 import QueuePanel from "./QueuePanel";
 import SetupView from "./SetupView";
+import { setTheme, THEMES, useTheme } from "./theme";
 
 type View = "create" | "library" | "setup" | "compare" | "score";
 
@@ -118,11 +122,12 @@ export default function App() {
     setSongs((current) => current && current.map((s) => (s.id === song.id ? { ...s, ...song, bytes: s.bytes } : s)));
     setJobs((current) => {
       const job = current.get(song.job_id);
-      return job ? new Map(current).set(job.id, { ...job, starred: song.starred }) : current;
+      return job ? new Map(current).set(job.id, { ...job, starred: song.starred, title: song.title }) : current;
     });
   }, []);
 
   const removeDeleted = useCallback((deleted: Deleted) => {
+    player.forget(deleted.song_id);
     deletedJobs.current.add(deleted.job_id);
     deletedSongs.current.add(deleted.song_id);
     setJobs((current) => {
@@ -172,74 +177,112 @@ export default function App() {
   }, [upsert, removeDeleted, reloadSongs, updateSetup, updateSong]);
 
   const ordered = [...jobs.values()].sort((a, b) => b.id - a.id);
+  const { track } = usePlayer();
 
   return (
-    <main>
-      <header className="top">
-        <div>
+    <>
+      <header className="app-header">
+        <div className="brand">
           <h1>Arcsong</h1>
-          <p className="muted">Write a style and lyrics; YuE2 makes the song on this Mac.</p>
+          <p>Songs from your words, made privately on this Mac</p>
         </div>
-        <nav aria-label="Views">
-          <a href="#/" aria-current={view === "create" ? "page" : undefined}>
-            Create
-          </a>
-          <a href="#/library" aria-current={view === "library" ? "page" : undefined}>
-            Library{songs ? ` (${songs.length})` : ""}
-          </a>
-          <a href="#/setup" aria-current={view === "setup" ? "page" : undefined}>
-            Setup
-            {setup && !setup.ready && (
-              <span className="attention" aria-label="needs attention">
-                {" "}
-                !
-              </span>
-            )}
-          </a>
-        </nav>
+        <div className="header-right">
+          <nav className="views" aria-label="Views">
+            <a href="#/" aria-current={view === "create" ? "page" : undefined}>
+              Create
+            </a>
+            <a href="#/library" aria-current={view === "library" ? "page" : undefined}>
+              Library{songs && <span className="count">{songs.length}</span>}
+            </a>
+            <a
+              href="#/setup"
+              className="icon"
+              title="Setup"
+              aria-label={setup && !setup.ready ? "Setup, needs attention" : "Setup"}
+              aria-current={view === "setup" ? "page" : undefined}
+            >
+              <GearIcon />
+              {setup && !setup.ready && <span className="attention" />}
+            </a>
+          </nav>
+          <ThemeSwitch />
+        </div>
       </header>
-      {view === "setup" ? (
-        <SetupView setup={setup} error={setupError} onChanged={updateSetup} />
-      ) : view === "score" && score !== null ? (
-        // Keyed, so opening another Score starts from its own text rather than this one's.
-        <ScoreView key={`${score.kind}/${score.id}`} source={score} onJob={upsert} />
-      ) : view === "compare" && groupId !== null ? (
-        <CompareView groupId={groupId} jobs={ordered} songs={songs} onJob={upsert} onSong={updateSong} />
-      ) : view === "create" ? (
-        <div className="layout">
-          <div className="stack">
+      <main className={track ? "page with-player" : "page"}>
+        {view === "setup" ? (
+          <SetupView setup={setup} error={setupError} onChanged={updateSetup} />
+        ) : view === "score" && score !== null ? (
+          // Keyed, so opening another Score starts from its own text rather than this one's.
+          <ScoreView
+            key={`${score.kind}/${score.id}`}
+            source={score}
+            title={
+              score.kind === "song"
+                ? songs?.find((song) => song.id === score.id)?.title
+                : jobs.get(score.id)?.title
+            }
+            onJob={upsert}
+          />
+        ) : view === "compare" && groupId !== null ? (
+          <CompareView groupId={groupId} jobs={ordered} songs={songs} onJob={upsert} onSong={updateSong} />
+        ) : view === "create" ? (
+          <div className="create-layout">
             <CreateForm
               key={draft?.version ?? 0}
               initial={draft?.request}
               onCreated={upsert}
               canRender={setup?.can_render ?? true}
+              cover={
+                <CoverForm
+                  onCreated={upsert}
+                  ready={coversPart(setup)?.usable ?? false}
+                  checking={setup !== null && coversPart(setup)?.checked === false}
+                />
+              }
             />
-            <CoverForm
-              onCreated={upsert}
-              ready={coversPart(setup)?.usable ?? false}
-              checking={setup !== null && coversPart(setup)?.checked === false}
-            />
+            <QueuePanel jobs={ordered} songs={songs} onChanged={upsert} error={jobsError} />
           </div>
-          <QueuePanel jobs={ordered} onChanged={upsert} error={jobsError} />
-        </div>
-      ) : (
-        <LibraryView
-          songs={songs}
-          jobs={ordered}
-          onJob={upsert}
-          onSong={updateSong}
-          error={songsError}
-          onDeleted={removeDeleted}
-          onRerun={(job) => {
-            upsert(job);
-            go("create");
-          }}
-          onEdit={(request) => {
-            setDraft((current) => ({ request, version: (current?.version ?? 0) + 1 }));
-            go("create");
-          }}
-        />
-      )}
-    </main>
+        ) : (
+          <LibraryView
+            songs={songs}
+            jobs={ordered}
+            onJob={upsert}
+            onSong={updateSong}
+            error={songsError}
+            onDeleted={removeDeleted}
+            onRerun={(job) => {
+              upsert(job);
+              go("create");
+            }}
+            onEdit={(request) => {
+              setDraft((current) => ({ request, version: (current?.version ?? 0) + 1 }));
+              go("create");
+            }}
+          />
+        )}
+      </main>
+      <NowPlaying songs={songs} />
+    </>
+  );
+}
+
+/** System / Light / Dark; System follows macOS. */
+function ThemeSwitch() {
+  const theme = useTheme();
+  return (
+    <div className="theme-switch" role="group" aria-label="Theme">
+      {THEMES.map((choice) => (
+        <button
+          key={choice.value}
+          type="button"
+          title={choice.label}
+          aria-label={choice.label}
+          aria-pressed={theme === choice.value}
+          onClick={() => setTheme(choice.value)}
+        >
+          {choice.icon}
+        </button>
+      ))}
+    </div>
   );
 }

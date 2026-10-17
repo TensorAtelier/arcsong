@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import threading
 import time
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -34,7 +35,8 @@ CREATE TABLE IF NOT EXISTS songs (
     audio_path TEXT NOT NULL,
     audio_seconds REAL,
     created_at REAL NOT NULL,
-    starred INTEGER NOT NULL DEFAULT 0
+    starred INTEGER NOT NULL DEFAULT 0,
+    title TEXT                       -- set by the user; NULL means the default from the request
 );
 CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
@@ -59,6 +61,30 @@ MIGRATE_2_TO_3 = [
 MIGRATE_3_TO_4 = ["ALTER TABLE jobs ADD COLUMN source_audio TEXT"]
 
 
+MIGRATE_4_TO_5 = ["ALTER TABLE songs ADD COLUMN title TEXT"]
+
+TITLE_LENGTH = 60
+_TAG = re.compile(r"^\[[^\]]*\]$")
+
+
+def default_title(request: dict[str, Any]) -> str:
+    """The first sung line, else the style's genre marked instrumental.
+
+    YuE styles lead with the language ("English, indie pop, …"), so a one-word first part is
+    skipped when there is more to go on."""
+    for line in request.get("lyrics", "").splitlines():
+        line = line.strip()
+        if line and not _TAG.match(line):
+            return line if len(line) <= TITLE_LENGTH else line[: TITLE_LENGTH - 1].rstrip() + "…"
+    parts = [part.strip() for part in request.get("style", "").split(",") if part.strip()]
+    if len(parts) > 1 and " " not in parts[0]:
+        parts = parts[1:]
+    if not parts:
+        return "Untitled"
+    genre = parts[0][:TITLE_LENGTH]
+    return f"{genre[0].upper()}{genre[1:]} (instrumental)"
+
+
 class Store:
     def __init__(self, path: Path):
         self._conn = sqlite3.connect(path, check_same_thread=False)
@@ -74,6 +100,9 @@ class Store:
                 version = 3
             if 0 < version < 4:
                 self._migrate(MIGRATE_3_TO_4, 4)
+                version = 4
+            if 0 < version < 5:
+                self._migrate(MIGRATE_4_TO_5, 5)
             with self._conn:
                 self._conn.executescript(SCHEMA)
                 self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
@@ -160,6 +189,15 @@ class Store:
             )
         return cur.rowcount > 0
 
+    def set_title(self, song_id: int, title: str | None) -> bool:
+        """None (or blank) goes back to the default title."""
+        title = title.strip() if title else None
+        with self._lock, self._conn:
+            cur = self._conn.execute(
+                "UPDATE songs SET title = ? WHERE id = ?", (title or None, song_id)
+            )
+        return cur.rowcount > 0
+
     def get_job(self, job_id: int) -> dict[str, Any] | None:
         with self._lock:
             row = self._conn.execute(f"{JOB_SELECT} WHERE j.id = ?", (job_id,)).fetchone()
@@ -187,10 +225,12 @@ class Store:
         """Index a finished Take and mark its job done, in one transaction."""
         now = time.time()
         with self._lock, self._conn:
+            # A Final keeps the name its Draft was given.
             cur = self._conn.execute(
-                "INSERT INTO songs (job_id, dir, audio_path, audio_seconds, created_at) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (job_id, str(directory), str(audio), seconds, now),
+                "INSERT INTO songs (job_id, dir, audio_path, audio_seconds, created_at, title) "
+                "VALUES (?, ?, ?, ?, ?, (SELECT d.title FROM jobs j JOIN songs d "
+                "ON d.id = j.source_song_id WHERE j.id = ?))",
+                (job_id, str(directory), str(audio), seconds, now, job_id),
             )
             self._conn.execute(
                 "UPDATE jobs SET status = 'done', finished_at = ?, song_id = ? WHERE id = ?",
@@ -252,7 +292,8 @@ class Store:
 
 
 JOB_SELECT = (
-    "SELECT j.*, s.audio_seconds, s.starred FROM jobs j LEFT JOIN songs s ON s.id = j.song_id"
+    "SELECT j.*, s.audio_seconds, s.starred, s.title FROM jobs j "
+    "LEFT JOIN songs s ON s.id = j.song_id"
 )
 SONG_SELECT = (
     "SELECT s.*, j.request_json, j.group_id, j.source_song_id "
@@ -264,6 +305,7 @@ def _job(row: sqlite3.Row) -> dict[str, Any]:
     job = dict(row)
     job["request"] = json.loads(job.pop("request_json"))
     job["starred"] = bool(job["starred"])
+    _title(job)
     return job
 
 
@@ -271,4 +313,11 @@ def _song(row: sqlite3.Row) -> dict[str, Any]:
     song = dict(row)
     song["request"] = json.loads(song.pop("request_json"))
     song["starred"] = bool(song["starred"])
+    _title(song)
     return song
+
+
+def _title(row: dict[str, Any]) -> None:
+    row["title_set"] = row["title"] is not None
+    if row["title"] is None:
+        row["title"] = default_title(row["request"])

@@ -3,6 +3,30 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
+## Unreleased
+
+### Look and feel
+- A redesign in a warm analog style: dark warm greys with one amber accent, a paper-white light
+  version, and bundled fonts (Bricolage Grotesque, Instrument Sans, JetBrains Mono), so nothing
+  loads from the network. A System / Light / Dark switch sits in the header.
+- Create has three tabs: **Write a song** (Sketch, a few quick takes, or Single, one take at
+  full quality), **Plan a melody** (Score only) and **Cover a recording** (now with drag and
+  drop). Style suggestions and section tags insert with a click; a dice button picks a seed.
+- Beside it, the queue shows what is rendering stage by stage, failed jobs with Retry, and what
+  just finished.
+- The Library groups a sketch's takes and their Finals in one card, with filters for starred
+  songs, drafts and Finals, and a ⋯ menu per song for rename, the Score, downloads and delete.
+- Compare shows the shared playhead and takes keyboard shortcuts: 1–9 switch take, Space plays
+  or pauses, S stars.
+- The Score's notation sits on paper beside the ABC editor, and renders at a chosen quality.
+
+### Titles and playback
+- Every song has a title: its first sung line, or the style's genre for an instrumental.
+  Rename it in place; a Final inherits its Draft's title, and downloads are named after it.
+- One player for the whole page: a song keeps playing across views in a bar along the bottom,
+  with waveforms you can click to seek, Space to play or pause, and the Mac's media keys.
+  Compare and the Score preview pause it, and it pauses them.
+
 ## 0.1.0 — 2026-09-19
 
 The first release: everything needed to write, compare, edit and cover songs on an Apple

@@ -4,8 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arcsong</title>
-    <script type="module" crossorigin src="/assets/index-D48w_PKn.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-B7cbWcqr.css">
+    <script>
+      // The header's theme choice, applied before the first paint (see src/theme.ts).
+      try {
+        const theme = localStorage.getItem("arcsong.theme");
+        if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
+    <script type="module" crossorigin src="/assets/index-4tinrGwJ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BWaEVUg2.css">
   </head>
   <body>
     <div id="root"></div>

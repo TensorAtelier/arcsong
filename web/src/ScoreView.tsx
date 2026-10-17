@@ -1,6 +1,9 @@
 import abcjs from "abcjs";
 import { useEffect, useRef, useState } from "react";
 import { api, type Job, type ScoreCheck, type SongRequest } from "./api";
+import { PauseIcon, PlayIcon } from "./icons";
+import { claimAudio, onAudioClaimed } from "./player";
+import { formatClock } from "./PlayerUI";
 
 /** The vendored FluidR3 piano (see THIRD_PARTY_NOTICES.md); abcjs appends the instrument file. */
 const SOUNDFONT_URL = "/soundfont/";
@@ -8,15 +11,18 @@ const CHECK_DELAY = 300;
 
 interface Props {
   source: { kind: "job" | "song"; id: number };
+  /** The song's title, as the Library or the queue knows it. */
+  title: string | undefined;
   onJob: (job: Job) => void;
 }
 
 /** The Score a run planned: notation, a melody preview, and an editor that renders a new song.
  * Editing never writes back — rendering queues a new job from the edited text. */
-export default function ScoreView({ source, onJob }: Props) {
+export default function ScoreView({ source, title, onJob }: Props) {
   const [original, setOriginal] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [request, setRequest] = useState<(SongRequest & { seed: number }) | null>(null);
+  const [steps, setSteps] = useState<8 | 32>(32);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
@@ -54,6 +60,7 @@ export default function ScoreView({ source, onJob }: Props) {
         setStatus(loaded.status);
         setJobError(loaded.error);
         setRequest(loaded.request);
+        setSteps(loaded.request.steps);
         setOriginal((current) => {
           // Only the first Score to arrive seeds the editor; a reload must not undo edits.
           if (!current && loaded.abc) setText(loaded.abc);
@@ -108,7 +115,7 @@ export default function ScoreView({ source, onJob }: Props) {
 
   if (!loaded && loadError === null) {
     return (
-      <section className="panel score" aria-label="Score">
+      <section className="card score" aria-label="Score">
         <h2>Score</h2>
         {loadError ? (
           <p className="error">Could not load this Score: {loadError}</p>
@@ -121,8 +128,8 @@ export default function ScoreView({ source, onJob }: Props) {
 
   if (!original || loadError !== null) {
     return (
-      <section className="panel score" aria-label="Score">
-        <h2>Score</h2>
+      <section className="card score" aria-label="Score">
+        <h2>{title ?? "Score"}</h2>
         {loadError && <p className="error">Could not load this Score: {loadError}</p>}
         {!loadError && (
           <>
@@ -148,32 +155,38 @@ export default function ScoreView({ source, onJob }: Props) {
 
   const edited = text !== original;
   const name = `arcsong-score-${source.kind}-${source.id}`;
+  const report = check?.report;
 
   return (
-    <section className="panel score" aria-label="Score">
-      <div className="library-head">
-        <h2>Score</h2>
-        {check?.report && (
-          <p className="muted small">
-            {check.report.bpm} BPM · {Math.round(check.report.duration_seconds)} s ·{" "}
-            {check.report.voices.Vocal.sounding_notes} vocal notes ·{" "}
-            {check.report.voices.Vocal.chords} chords
-          </p>
+    <section className="score" aria-label="Score">
+      <div className="score-head">
+        <div>
+          <span className="eyebrow">Score</span>
+          <h1>{title ?? "Untitled"}</h1>
+        </div>
+        {report && (
+          <div className="facts">
+            <span>{report.bpm} BPM</span>
+            <span>{formatClock(report.duration_seconds)}</span>
+            <span>
+              {report.voices.Vocal.sounding_notes} vocal notes · {report.voices.Ins.chords || report.voices.Vocal.chords} chords
+            </span>
+          </div>
         )}
       </div>
       {request && (
-        <p className="compare-style" title={request.style}>
+        <p className="muted subtitle" title={request.style} style={{ margin: 0 }}>
           {request.style}
         </p>
       )}
 
-      <Notation abc={check?.ok === false ? original : text} valid={check?.ok !== false} onTune={setTune} />
-
       <div className="score-panes">
-        <div>
+        <Notation abc={check?.ok === false ? original : text} valid={check?.ok !== false} onTune={setTune} />
+
+        <aside className="card score-side" aria-label="Edit the Score">
           <div className="label-row">
             <label htmlFor="abc">ABC</label>
-            <span className="muted small">{edited ? "edited" : "as planned"}</span>
+            <span className={`badge${edited ? " draft" : ""}`}>{edited ? "edited" : "as planned"}</span>
           </div>
           <textarea
             id="abc"
@@ -183,58 +196,62 @@ export default function ScoreView({ source, onJob }: Props) {
             rows={14}
             onChange={(e) => setText(e.target.value)}
           />
-        </div>
-        <div className="score-side">
-          {check?.ok === false && (
-            <p className="error small" role="alert">
-              {check.error}
-            </p>
-          )}
-          {check?.ok && check.diff && (
-            <p className="small">
-              {check.diff.match ? (
-                <span className="muted">Same melody and meter as the original.</span>
-              ) : (
-                <>
-                  <strong>Changed:</strong>
-                  <ul className="diff">
-                    {check.diff.differences.map((difference) => (
-                      <li key={difference}>{difference}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </p>
-          )}
+          <div className="validity" role="status">
+            {check?.ok === false ? (
+              <span className="error">{check.error}</span>
+            ) : check?.ok ? (
+              <>
+                <span className="ok">✓ Valid score</span>
+                {check.diff &&
+                  (check.diff.match ? (
+                    <span className="muted">Same melody and meter as the plan.</span>
+                  ) : (
+                    <>
+                      <span className="muted">Changed from the plan:</span>
+                      <ul className="diff">
+                        {check.diff.differences.map((difference) => (
+                          <li key={difference}>{difference}</li>
+                        ))}
+                      </ul>
+                    </>
+                  ))}
+              </>
+            ) : (
+              <span className="muted">Checking…</span>
+            )}
+          </div>
           <div className="actions">
+            <button type="button" disabled={busy || !edited} onClick={() => setText(original)}>
+              Undo changes
+            </button>
             <button
               type="button"
               disabled={busy || check?.ok === false}
               onClick={() => act(() => api.stripChords(text), (result) => setText(result.abc))}
             >
-              Remove chords
-            </button>
-            <button type="button" disabled={busy || !edited} onClick={() => setText(original)}>
-              Reset
+              Strip chords
             </button>
             <button type="button" onClick={() => download(`${name}.abc`, new Blob([text]))}>
-              ABC
+              .abc
             </button>
-            <button
-              type="button"
-              disabled={check?.ok === false}
-              onClick={() => setActionError(exportMidi(tune, name))}
-            >
+            <button type="button" disabled={check?.ok === false} onClick={() => setActionError(exportMidi(tune, name))}>
               MIDI
             </button>
-            {request && (
+          </div>
+          {request && (
+            <div className="render">
+              <label htmlFor="quality">Render this Score</label>
+              <select id="quality" value={steps} onChange={(e) => setSteps(Number(e.target.value) as 8 | 32)}>
+                <option value={8}>Quick draft · 8 steps</option>
+                <option value={32}>Full quality · 32 steps</option>
+              </select>
               <button
                 type="button"
-                className="primary"
+                className="primary big"
                 disabled={busy || check?.ok === false}
                 onClick={() =>
                   act(
-                    () => api.create({ ...request, abc: text }),
+                    () => api.create({ ...request, steps, abc: text }),
                     (job) => {
                       onJob(job);
                       window.location.hash = "#/";
@@ -242,12 +259,13 @@ export default function ScoreView({ source, onJob }: Props) {
                   )
                 }
               >
-                Render song from this Score
+                Render the song
               </button>
-            )}
-          </div>
+              <span className="muted">The Score fixes the melody; the voice and arrangement come from the style.</span>
+            </div>
+          )}
           {actionError && <p className="error small">{actionError}</p>}
-        </div>
+        </aside>
       </div>
     </section>
   );
@@ -314,6 +332,18 @@ function Notation({ abc, valid, onTune }: NotationProps) {
     };
   }, []);
 
+  // The player bar or a Compare Take starting stops the preview.
+  useEffect(
+    () =>
+      onAudioClaimed("score", () => {
+        synth.current?.stop();
+        synth.current = null;
+        clearTimeout(ending.current);
+        setPlaying(false);
+      }),
+    [],
+  );
+
   function stop() {
     synth.current?.stop();
     synth.current = null;
@@ -324,6 +354,7 @@ function Notation({ abc, valid, onTune }: NotationProps) {
   async function play() {
     if (playing) return stop();
     if (!tune) return;
+    claimAudio("score");
     setPreparing(true);
     setError(null);
     try {
@@ -349,15 +380,16 @@ function Notation({ abc, valid, onTune }: NotationProps) {
   }
 
   return (
-    <div className="notation">
-      <div ref={paper} className={`paper${valid ? "" : " stale"}`} aria-label="Notation" />
+    <section className="notation" aria-label="Notation">
       <div className="player-bar">
-        <button type="button" disabled={!tune || preparing} onClick={() => void play()}>
-          {playing ? "❚❚ Stop" : preparing ? "Loading…" : "▶ Play melody"}
+        <button type="button" disabled={!tune || preparing} onClick={() => void play()} aria-pressed={playing}>
+          <span style={{ width: 12, height: 12, display: "inline-grid" }}>{playing ? <PauseIcon /> : <PlayIcon />}</span>
+          {playing ? "Stop" : preparing ? "Loading…" : "Melody on piano"}
         </button>
-        {!valid && <span className="muted small">Showing the last valid Score.</span>}
+        {!valid && <span className="muted">Showing the last valid Score.</span>}
         {error && <span className="error small">{error}</span>}
       </div>
-    </div>
+      <div ref={paper} className={`paper${valid ? "" : " stale"}`} />
+    </section>
   );
 }

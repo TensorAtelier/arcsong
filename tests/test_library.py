@@ -81,15 +81,16 @@ def test_a_job_that_is_still_running_has_no_song_to_delete(tmp_path):
 
 
 @pytest.mark.parametrize("fmt", ["flac", "wav"])
-def test_a_song_downloads_as_flac_or_wav_named_after_its_style(client, fmt):
-    song = make_song(client, style="English, City Pop, groovy bass!")
+def test_a_song_downloads_as_flac_or_wav_named_after_its_title(client, fmt):
+    song = make_song(client)
+    client.put(f"/api/songs/{song['song_id']}/title", json={"title": "City Pop, groovy bass!"})
 
     response = client.get(f"/api/songs/{song['song_id']}/download", params={"format": fmt})
 
     assert response.status_code == 200
     assert response.headers["content-type"] == f"audio/{fmt}"
     disposition = response.headers["content-disposition"]
-    name = f"arcsong-{song['song_id']}-english-city-pop-groovy-bass.{fmt}"
+    name = f"arcsong-{song['song_id']}-city-pop-groovy-bass.{fmt}"
     assert f'filename="{name}"' in disposition
     audio, rate = soundfile.read(io.BytesIO(response.content))
     assert rate == 48_000 and len(audio) == 48_000

@@ -1,17 +1,32 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useRef, useState } from "react";
 import { api, type Job, type Mode, type Precision, type SongRequest } from "./api";
+import { DiceIcon } from "./icons";
 
-const LYRICS_TEMPLATE = `[Verse]
+type Tab = "write" | "plan" | "cover";
 
+const TABS: { id: Tab; label: string }[] = [
+  { id: "write", label: "Write a song" },
+  { id: "plan", label: "Plan a melody" },
+  { id: "cover", label: "Cover a recording" },
+];
 
-[Chorus]
+const STYLE_CHIPS = [
+  "lo-fi soul",
+  "city pop",
+  "indie folk",
+  "dream pop",
+  "warm Rhodes",
+  "brushed drums",
+  "soft male vocal",
+  "breathy female vocal",
+];
 
+const SECTION_TAGS = ["Intro", "Verse", "Chorus", "Bridge", "Outro"];
 
-[Verse]
-
-
-[Chorus]
-`;
+/** Sketch renders quick drafts with different seeds; Single renders one Take at full quality. */
+type Kind = "sketch" | "single";
+const SKETCH_STEPS = 8;
+const SINGLE_STEPS = 32;
 
 interface Props {
   onCreated: (job: Job) => void;
@@ -19,31 +34,31 @@ interface Props {
   initial?: SongRequest;
   /** False until Setup has installed the model weights. */
   canRender: boolean;
+  /** The Cover tab's form. */
+  cover: ReactNode;
 }
 
-export default function CreateForm({ onCreated, initial, canRender }: Props) {
+export default function CreateForm({ onCreated, initial, canRender, cover }: Props) {
+  const [tab, setTab] = useState<Tab>("write");
+  const [kind, setKind] = useState<Kind>(initial && initial.steps === SINGLE_STEPS ? "single" : "sketch");
   const [style, setStyle] = useState(initial?.style ?? "");
   const [lyrics, setLyrics] = useState(initial?.lyrics ?? "");
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "full");
   const [seed, setSeed] = useState(initial?.seed != null ? String(initial.seed) : "");
   const [precision, setPrecision] = useState<Precision>(initial?.precision ?? "8bit");
-  const [steps, setSteps] = useState<8 | 32>(initial?.steps ?? 32);
-  const [takes, setTakes] = useState(1);
+  const [takes, setTakes] = useState(4);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [planning, setPlanning] = useState(false);
+  const lyricsBox = useRef<HTMLTextAreaElement>(null);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  const seedValue = seed === "" ? null : Number(seed);
+  const count = kind === "sketch" ? takes : 1;
+
+  async function run(action: () => Promise<void>) {
     setSubmitting(true);
     setError(null);
     try {
-      const request = { style, lyrics, mode, seed: seed === "" ? null : Number(seed), precision, steps };
-      if (takes > 1) {
-        (await api.createGroup(request, takes)).forEach(onCreated);
-      } else {
-        onCreated(await api.create(request));
-      }
+      await action();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -51,32 +66,52 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
     }
   }
 
-  async function planOnly() {
-    setPlanning(true);
-    setError(null);
-    try {
-      const job = await api.createScore({
-        style,
-        lyrics,
-        mode: mode === "off" ? "full" : mode,
-        seed: seed === "" ? null : Number(seed),
-        precision,
-        steps,  // planning ignores it; rendering from the Score keeps this quality
-      });
-      onCreated(job);
-      window.location.hash = `#/score/job/${job.id}`;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setPlanning(false);
-    }
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (tab === "plan") return void run(planOnly);
+    void run(async () => {
+      const steps = kind === "sketch" ? SKETCH_STEPS : SINGLE_STEPS;
+      const request = { style, lyrics, mode, seed: seedValue, precision, steps } as const;
+      if (count > 1) (await api.createGroup(request, count)).forEach(onCreated);
+      else onCreated(await api.create(request));
+    });
   }
 
-  return (
-    <form className="panel" onSubmit={submit} aria-label="Create a song">
-      <h2>Create</h2>
-      {initial && <p className="hint">Loaded from the Library. Change anything, then Generate.</p>}
+  async function planOnly() {
+    const job = await api.createScore({
+      style,
+      lyrics,
+      mode: mode === "off" ? "full" : mode,
+      seed: seedValue,
+      precision,
+      steps: SINGLE_STEPS, // planning ignores it; rendering from the Score keeps this quality
+    });
+    onCreated(job);
+    window.location.hash = `#/score/job/${job.id}`;
+  }
 
+  function addToStyle(chip: string) {
+    setStyle((text) => (text.trim() ? `${text.trim().replace(/,$/, "")}, ${chip}` : chip));
+  }
+
+  /** Put `[Tag]` on its own line at the cursor, keeping the cursor after it. */
+  function insertTag(tag: string) {
+    const box = lyricsBox.current;
+    const at = box ? box.selectionStart : lyrics.length;
+    const before = lyrics.slice(0, at);
+    const after = lyrics.slice(at);
+    const lead = before === "" || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    const insert = `${lead}[${tag}]\n`;
+    setLyrics(before + insert + after);
+    requestAnimationFrame(() => {
+      if (!box) return;
+      box.focus();
+      box.selectionStart = box.selectionEnd = at + insert.length;
+    });
+  }
+
+  const styleField = (
+    <div className="field">
       <label htmlFor="style">Style</label>
       <input
         id="style"
@@ -85,103 +120,193 @@ export default function CreateForm({ onCreated, initial, canRender }: Props) {
         placeholder="English, indie pop, bright acoustic guitar, warm female vocal"
         required
       />
+      <div className="chips">
+        <span className="lead">Add</span>
+        {STYLE_CHIPS.map((chip) => (
+          <button key={chip} type="button" className="chip" onClick={() => addToStyle(chip)}>
+            + {chip}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
+  const lyricsField = (
+    <div className="field">
       <div className="label-row">
         <label htmlFor="lyrics">Lyrics</label>
-        <button
-          type="button"
-          className="link"
-          onClick={() => setLyrics((text) => (text.trim() ? `${text}\n\n${LYRICS_TEMPLATE}` : LYRICS_TEMPLATE))}
-        >
-          Insert section tags
-        </button>
+        <div className="chips" role="group" aria-label="Insert a section tag at the cursor">
+          {SECTION_TAGS.map((tag) => (
+            <button key={tag} type="button" className="tag" onClick={() => insertTag(tag)}>
+              [{tag}]
+            </button>
+          ))}
+        </div>
       </div>
       <textarea
         id="lyrics"
+        ref={lyricsBox}
         value={lyrics}
         onChange={(e) => setLyrics(e.target.value)}
-        rows={12}
+        rows={tab === "plan" ? 7 : 10}
         placeholder={"[Verse]\nSoft morning light is touching the window\n\n[Chorus]\nStay with the rhythm, let it carry us home"}
       />
-      <p className="hint">Section tags like [Verse] and [Chorus] shape the song. Leave empty for an instrumental.</p>
+      <span className="muted small">Section tags shape the song. Leave empty for an instrumental.</span>
+    </div>
+  );
 
-      <details open={initial !== undefined}>
-        <summary>Advanced</summary>
-        <div className="grid">
-          <div>
-            <label htmlFor="mode">Planning</label>
-            <select id="mode" value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
-              <option value="full">Melody + chords (recommended)</option>
-              <option value="melody">Melody only</option>
-              <option value="off">Off (no Score)</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="steps">Quality</label>
-            <select id="steps" value={steps} onChange={(e) => setSteps(Number(e.target.value) as 8 | 32)}>
-              <option value={32}>Standard (32 steps)</option>
-              <option value={8}>Quick draft (8 steps)</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="precision">Precision</label>
-            <select id="precision" value={precision} onChange={(e) => setPrecision(e.target.value as Precision)}>
-              <option value="8bit">8-bit (faster)</option>
-              <option value="bf16">bf16</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="seed">Seed</label>
-            <input
-              id="seed"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={seed}
-              onChange={(e) => setSeed(e.target.value.replace(/\D/g, ""))}
-              placeholder="random"
-            />
-          </div>
-        </div>
-        <p className="hint">The same seed, precision and quality reproduce the same song.</p>
-      </details>
-
-      <div className="takes-row">
-        <label htmlFor="takes">Takes</label>
-        <select id="takes" value={takes} onChange={(e) => setTakes(Number(e.target.value))}>
-          <option value={1}>1</option>
-          <option value={2}>2 variations</option>
-          <option value={4}>4 variations</option>
-          <option value={8}>8 variations</option>
-        </select>
-      </div>
-      {takes > 1 && (
-        <p className="hint">
-          {takes} Takes with different seeds{seed !== "" && ` (${seed}, ${Number(seed) + 1}, …)`}, compared side by side.
-          {steps === 32
-            ? " Quick draft (8 steps) under Advanced makes them much faster; Finalize the one you like."
-            : " Finalize the one you like at full quality."}
+  const notices = (
+    <>
+      {error && (
+        <p className="error" role="alert">
+          {error}
         </p>
       )}
-
-      {error && <p className="error" role="alert">{error}</p>}
       {!canRender && (
         <p className="notice" role="status">
           The model weights aren’t ready yet. <a href="#/setup">Finish Setup</a> to make songs.
         </p>
       )}
-      <button type="submit" className="primary" disabled={submitting || !style.trim() || !canRender}>
-        {submitting ? "Adding…" : takes > 1 ? `Generate ×${takes}` : "Generate"}
-      </button>
-      <button
-        type="button"
-        disabled={submitting || planning || !style.trim() || !canRender}
-        onClick={() => void planOnly()}
-      >
-        {planning ? "Planning…" : "Score only"}
-      </button>
-      <p className="hint">
-        Score only writes the melody in seconds, to read, edit and render from — no audio yet.
-      </p>
-    </form>
+    </>
+  );
+
+  return (
+    <section className="panel create-main" aria-label="Create">
+      <div className="tabs" role="tablist" aria-label="What to make">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`tab-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "cover" ? (
+        <div role="tabpanel" id="panel-cover" aria-labelledby="tab-cover">
+          {cover}
+        </div>
+      ) : (
+        <form
+          className="form-body"
+          role="tabpanel"
+          id={`panel-${tab}`}
+          aria-labelledby={`tab-${tab}`}
+          onSubmit={submit}
+        >
+          {initial && <p className="muted small">Loaded from the Library. Change anything, then render.</p>}
+
+          {tab === "write" ? (
+            <div className="modes" role="radiogroup" aria-label="How to render">
+              <button type="button" role="radio" className="mode" aria-checked={kind === "sketch"} onClick={() => setKind("sketch")}>
+                <strong>Sketch · {takes} takes</strong>
+                <span>Quick drafts with different seeds, side by side. Finalize the one you like.</span>
+              </button>
+              <button type="button" role="radio" className="mode" aria-checked={kind === "single"} onClick={() => setKind("single")}>
+                <strong>Single song</strong>
+                <span>One take at full quality, {SINGLE_STEPS} steps. Best once you know the sound.</span>
+              </button>
+            </div>
+          ) : (
+            <p className="intro">
+              Arcsong writes the melody and chords in a few seconds, as notation you can read, play on a piano and
+              edit. Render audio from it when it sounds right.
+            </p>
+          )}
+
+          {styleField}
+          {lyricsField}
+
+          <div className="seed-row">
+            <div className="field">
+              <label htmlFor="seed">Seed</label>
+              <div className="controls">
+                <input
+                  id="seed"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={seed}
+                  onChange={(e) => setSeed(e.target.value.replace(/\D/g, ""))}
+                  placeholder="random"
+                />
+                <button
+                  type="button"
+                  className="dice"
+                  aria-label="New random seed"
+                  title="New random seed"
+                  onClick={() => setSeed(String(Math.floor(Math.random() * 100000)))}
+                >
+                  <DiceIcon />
+                </button>
+              </div>
+            </div>
+            <details className="advanced" open={initial !== undefined && initial.mode !== "full"}>
+              <summary>
+                Advanced: {mode === "full" ? "melody + chords" : mode === "melody" ? "melody only" : "no Score"} ·{" "}
+                {precision === "8bit" ? "8-bit" : "bf16"}
+                {tab === "write" && kind === "sketch" && ` · ${takes} takes`}
+              </summary>
+              <div className="grid">
+                <div>
+                  <label htmlFor="mode">Planning</label>
+                  <select id="mode" value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
+                    <option value="full">Melody + chords (recommended)</option>
+                    <option value="melody">Melody only</option>
+                    {tab === "write" && <option value="off">Off (no Score)</option>}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="precision">Precision</label>
+                  <select id="precision" value={precision} onChange={(e) => setPrecision(e.target.value as Precision)}>
+                    <option value="8bit">8-bit (faster)</option>
+                    <option value="bf16">bf16</option>
+                  </select>
+                </div>
+                {tab === "write" && kind === "sketch" && (
+                  <div>
+                    <label htmlFor="takes">Takes in a sketch</label>
+                    <select id="takes" value={takes} onChange={(e) => setTakes(Number(e.target.value))}>
+                      <option value={2}>2</option>
+                      <option value={4}>4</option>
+                      <option value={8}>8</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              <p className="hint">The same seed, precision and quality reproduce the same song.</p>
+            </details>
+          </div>
+
+          {notices}
+
+          <div className="cta">
+            <button type="submit" className="primary big" disabled={submitting || !style.trim() || !canRender}>
+              {submitting
+                ? tab === "plan"
+                  ? "Planning…"
+                  : "Adding…"
+                : tab === "plan"
+                  ? "Plan the melody"
+                  : kind === "sketch"
+                    ? `Sketch ${takes} takes`
+                    : "Make the song"}
+            </button>
+            <span className="muted">
+              {tab === "plan"
+                ? "A few seconds · no audio yet"
+                : kind === "sketch"
+                  ? `Quick drafts at ${SKETCH_STEPS} steps${seed !== "" ? `, seeds ${seed}–${Number(seed) + takes - 1}` : ""} · keep writing while they render`
+                  : `Full quality at ${SINGLE_STEPS} steps`}
+            </span>
+          </div>
+        </form>
+      )}
+    </section>
   );
 }

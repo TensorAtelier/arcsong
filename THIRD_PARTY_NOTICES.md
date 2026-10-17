@@ -18,6 +18,10 @@ The built page in `arcsong/static/` bundles [React](https://react.dev) (MIT),
 [abcjs](https://www.abcjs.net) (MIT) and [wavesurfer.js](https://wavesurfer.xyz) (BSD-3-Clause).
 Their licence texts ship inside their npm packages, listed in `web/package.json`.
 
+It also bundles three fonts, all under the SIL Open Font License 1.1, from their
+[Fontsource](https://fontsource.org) packages: Bricolage Grotesque, Instrument Sans and
+JetBrains Mono. The page loads them from `arcsong/static/assets/`, never from a CDN.
+
 ## Model weights
 
 The weights arcsong downloads are **not** covered by this repository's licence. All of them are

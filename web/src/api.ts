@@ -86,6 +86,8 @@ export interface Job {
   /** A Final: the Draft song it was made from. */
   source_song_id: number | null;
   starred: boolean | null;
+  /** The song's title, or the default one from the request (first sung line). */
+  title: string;
   /** Grows with every snapshot the server takes; keep the job with the highest. */
   seq: number;
 }
@@ -111,6 +113,9 @@ export interface Song {
   group_id: number | null;
   source_song_id: number | null;
   starred: boolean;
+  /** The title the user gave it, else the default from the request. */
+  title: string;
+  title_set: boolean;
 }
 
 export interface Peaks {
@@ -228,6 +233,13 @@ export const api = {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ starred }),
+    }).then((r) => json<Song>(r)),
+  /** Null (or blank) goes back to the default title. */
+  rename: (songId: number, title: string | null) =>
+    fetch(`/api/songs/${songId}/title`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title }),
     }).then((r) => json<Song>(r)),
   finalize: (songId: number) => post<Job>(`/api/songs/${songId}/finalize`),
   peaks: (songId: number, buckets: number) =>

@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
 from arcsong.config import data_dir
-from arcsong.db import Store
+from arcsong.db import TITLE_LENGTH, Store
 from arcsong.engine import EngineSpec
 from arcsong.models import FakeModels, Models
 from arcsong.runner import JobRunner
@@ -94,6 +94,11 @@ class GroupRequest(SongRequest):
 
 class Star(BaseModel):
     starred: bool
+
+
+class Title(BaseModel):
+    # Blank or null goes back to the default title.
+    title: str | None = Field(default=None, max_length=TITLE_LENGTH * 2)
 
 
 def variation_seeds(seed: int | None, count: int) -> list[int]:
@@ -393,14 +398,20 @@ def create_app(
             raise HTTPException(404, "no such song")
         return _with_size(song)
 
+    @app.put("/api/songs/{song_id}/title")
+    def title_song(song_id: int, body: Title):
+        song = app.state.runner.title_song(song_id, body.title)
+        if song is None:
+            raise HTTPException(404, "no such song")
+        return _with_size(song)
+
     @app.get("/api/songs/{song_id}/download")
     def download_song(song_id: int, format: Literal["flac", "wav"] = "flac"):
         song = app.state.store.get_song(song_id)
         path = Path(song["audio_path"]) if song else None
         if path is None or not path.exists():
             raise HTTPException(404, "no such song")
-        job = app.state.store.get_job(song["job_id"])
-        name = download_name(song_id, job["request"]["style"] if job else "", format)
+        name = download_name(song_id, song["title"], format)
         disposition = {"Content-Disposition": f'attachment; filename="{name}"'}
         if path.suffix == f".{format}":
             return FileResponse(path, media_type=AUDIO_TYPES[path.suffix], headers=disposition)
@@ -562,8 +573,8 @@ def _with_size(song: dict) -> dict:
     return {**song, "bytes": _directory_bytes(Path(song["dir"]))}
 
 
-def download_name(song_id: int, style: str, extension: str) -> str:
-    """e.g. arcsong-12-english-city-pop-groovy-bass.flac (ASCII, at most 6 style words)."""
-    words = re.findall(r"[a-z0-9]+", style.lower())[:6]
+def download_name(song_id: int, title: str, extension: str) -> str:
+    """e.g. arcsong-12-stay-with-the-rhythm.flac (ASCII, at most 6 title words)."""
+    words = re.findall(r"[a-z0-9]+", title.lower())[:6]
     slug = "-".join(words)
     return f"arcsong-{song_id}{'-' + slug if slug else ''}.{extension}"
