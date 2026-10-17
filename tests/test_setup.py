@@ -435,8 +435,10 @@ def test_a_parts_progress_counts_only_its_own_files(tmp_path):
     assert bytes_on_disk(covers) == 2060 + 1000
     assert bytes_on_disk(covers) < weights_state(covers)["bytes_total"]
 
-    # Half-written files never push a part past its own total.
-    in_flight.write_bytes(b"z" * (weights_state(covers)["bytes_total"] * 2))
+    # Half-written files never push a part past its own total. Only the size matters, so set it
+    # without writing ~5 GB (sparse on APFS and ext4; writing it filled a Windows runner's disk).
+    with in_flight.open("r+b") as half:
+        half.truncate(weights_state(covers)["bytes_total"] * 2)
     assert bytes_on_disk(covers) == weights_state(covers)["bytes_total"]
 
 
