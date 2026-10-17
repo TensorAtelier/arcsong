@@ -5,7 +5,8 @@ own Mac. Arcsong is a local web app around the [YuE2](https://huggingface.co/m-a
 music model, running through the [mlx-Yue](https://github.com/vanch007/mlx-Yue) port on Apple
 Silicon. Nothing is sent anywhere: the model, the weights and your songs stay on the machine.
 
-> **Status: v0.1.0, early.** Apple Silicon only. NVIDIA support is planned but not started.
+> **Status: v0.2.0, early.** Apple Silicon only. Rendering on your own cloud GPU (Modal, RunPod)
+> is being explored for Windows, Linux and smaller Macs.
 
 ## Hear it first
 
@@ -22,33 +23,37 @@ Each took two to four minutes to render on an M5 Pro, at 32 synthesis steps.
 
 ## What it does
 
-**Write a song** from a style description and lyrics, with section tags (`[Verse]`, `[Chorus]`),
-a seed, precision and quality settings, and live per-stage progress you can cancel.
+**Write a song** from a style and lyrics. Click style suggestions and section tags (`[Verse]`,
+`[Chorus]`) in, sketch a few quick takes or make one at full quality, and watch each stage render
+in the column beside the form — you can keep writing meanwhile.
 
-![The Create page, with a style and lyrics filled in](docs/media/screens/create.png)
+![Create: the song form with a style and lyrics, and the queue column](docs/media/screens/create.png)
 
-**Compare variations.** Queue 2–8 takes of one request with different seeds, then play them
-against each other: one shared playhead, so pressing Play on another take continues from the
-same moment. Star the one you want, and **Finalize** turns a quick 8-step draft into a full
-32-step render that keeps the same music.
+**Compare takes.** A sketch's takes play against one shared playhead, so switching take keeps
+your place in the song. Keys: `1`–`9` switch take, `Space` plays or pauses, `S` stars. **Finalize**
+turns the quick 8-step draft you starred into a full 32-step render with the same music.
 
-![Two takes side by side with waveforms](docs/media/screens/compare.png)
+![Compare: two takes side by side, one playing](docs/media/screens/compare.png)
 
-**Read and edit the Score.** The model plans a melody before it sings; you can see it as
-notation, play it, edit the ABC with live validation and a diff against the original, and render
-a song from your edit. Export ABC or MIDI.
+**Keep what you make.** Songs get a title (their first sung line — rename them), a cover from
+their seed, and a place in the Library, where a sketch's takes and Finals stay together. One
+player follows you across the app, with waveforms to seek in and your Mac's media keys. FLAC and
+WAV downloads are named after the song.
 
-![The Score view: notation above, ABC editor below](docs/media/screens/score.png)
+![The Library, with a sketch's two takes and the player bar along the bottom](docs/media/screens/library.png)
 
-**Keep what you make.** Everything lands in a library with playback, FLAC and WAV download, disk
-usage, re-run, and permanent delete.
+**Read and edit the Score.** The model plans a melody before it sings: see it as notation, play it
+on a piano, edit the ABC beside it with live validation and a diff against the plan, and render a
+song from your edit. Export ABC or MIDI.
 
-![The Library, listing five songs](docs/media/screens/library.png)
+![The Score: notation on paper, the ABC editor beside it](docs/media/screens/score.png)
 
 **Covers** (optional): upload a recording, have it transcribed into a Score, and re-sing that
 melody with your own style and lyrics. The recording is deleted as soon as the job ends.
 
-![The Cover panel: a recording, a new style, and a rights confirmation](docs/media/screens/cover.png)
+![Cover a recording: drop a file, a new style, a rights confirmation](docs/media/screens/cover.png)
+
+Dark, light, or following macOS — the switch is in the header.
 
 ## Requirements
 
@@ -90,6 +95,23 @@ uv tool uninstall arcsong    # remove the app (your songs and weights stay)
 Nothing is installed system-wide, and removing the tool leaves your data alone — delete the data
 directory yourself if you want the songs and the 11 GB of weights gone too.
 
+## Your first song
+
+1. **Create → Write a song.** Type a style — a language, a genre, a few instruments and a voice,
+   e.g. *English, late-night lo-fi soul, warm Rhodes, brushed drums, soft male vocal* — or click
+   the suggestions under the box. Write lyrics with section tags (the `[Verse]`, `[Chorus]` …
+   buttons insert them at the cursor). Leave the lyrics empty for an instrumental.
+2. **Sketch 4 takes.** Four quick drafts with different seeds, 8 synthesis steps each. They
+   render one after another while you keep writing; the column on the right shows each stage.
+3. **Compare & pick.** Play the takes against each other: `1`–`4` switch take at the same
+   moment in the song, `Space` plays or pauses, `S` stars the one you like.
+4. **Finalize** the starred take. It re-synthesizes the same music at full quality (32 steps);
+   nothing about the melody or the voice changes.
+5. **Library.** Every take, grouped by sketch, newest first. The ⋯ menu renames a song, opens its
+   Score, downloads FLAC or WAV (named after the title) and deletes it.
+
+Already know the sound you want? Pick **Single song** instead of Sketch: one take at full quality.
+
 ## When something goes wrong
 
 - **"Songs can't be made on battery."** The app was started with `--require-ac` (or
@@ -98,6 +120,9 @@ directory yourself if you want the songs and the 11 GB of weights gone too.
 - **"macOS is short of memory."** A song needs about 11 GiB while it renders, and mlx-Yue stops
   rather than push the machine into swapping. Quit other local model servers — ComfyUI and
   LM Studio are the usual culprits — and start the job again.
+- **"macOS moved memory to disk while the song rendered."** mlx-Yue stops a render when
+  anything on the Mac swaps more than 64 MiB out, even with memory free — the count is
+  system-wide. Close apps you aren't using and render again; the model reloads for the next song.
 - **The Setup page says the weights are incomplete.** Press Download again: it resumes, and it
   cleans up the metadata files that would otherwise make mlx-Yue reject the directory.
 - **Covers are greyed out.** They need ffmpeg (`brew install ffmpeg`) and their own weights;
