@@ -46,6 +46,47 @@ class MlxYueEngine:
         self._generation_config: Any = None
         self._precision: str | None = None
 
+    def _discard(self) -> None:
+        """Close the pipeline after mlx-Yue's memory guard stopped it. The guard's monitor lives
+        as long as the pipeline and keeps re-raising its first error, so a kept pipeline would
+        fail every later job instantly with that one stale error. The next job reloads."""
+        pipe, self._pipe, self._precision = self._pipe, None, None
+        if pipe is not None and hasattr(pipe, "close"):
+            try:
+                pipe.close()
+            except Exception:
+                pass  # it is being dropped either way
+
+    def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
+        try:
+            return self._plan_only(request, cancelled, emit)
+        except MemoryError:
+            self._discard()
+            raise
+
+    def render(
+        self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
+    ) -> TakeOutput:
+        try:
+            return self._render(request, out_dir, cancelled, emit)
+        except MemoryError:
+            self._discard()
+            raise
+
+    def finalize(
+        self,
+        source_dir: Path,
+        request: dict[str, Any],
+        out_dir: Path,
+        cancelled: CancelCheck,
+        emit: Emit,
+    ) -> TakeOutput:
+        try:
+            return self._finalize(source_dir, request, out_dir, cancelled, emit)
+        except MemoryError:
+            self._discard()
+            raise
+
     def load(self, precision: str = "8bit") -> None:
         if self._pipe is not None and self._precision == precision:
             return
@@ -112,7 +153,9 @@ class MlxYueEngine:
             )
         return self._sheetsage
 
-    def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
+    def _plan_only(
+        self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit
+    ) -> ScoreOutput:
         """The planning Stage alone: seconds, and nothing is written to disk."""
         self.load(request["precision"])
         # Like render(): start from the weights' settings, not a previous Final's.
@@ -125,7 +168,7 @@ class MlxYueEngine:
             raise ValueError("this planning mode writes no Score")
         return ScoreOutput(plan.abc)
 
-    def render(
+    def _render(
         self, request: dict[str, Any], out_dir: Path, cancelled: CancelCheck, emit: Emit
     ) -> TakeOutput:
         from lyra.pipeline import initial_noise
@@ -154,7 +197,7 @@ class MlxYueEngine:
             latents = guard(pipe.synthesize, semantic, cancelled=cancelled, noise=noise)
         return self._decode_and_save(semantic, noise, latents, out_dir, cancelled, emit)
 
-    def finalize(
+    def _finalize(
         self,
         source_dir: Path,
         request: dict[str, Any],
@@ -271,6 +314,14 @@ PRESSURE_ADVICE = (
     "11 GiB: quit other model servers (ComfyUI, LM Studio) and memory-hungry apps, then try "
     "again."
 )
+# It also stops when anything on the Mac swaps more than 64 MiB out during a render: the count
+# is system-wide, so another app can trip it with plenty of memory free.
+SWAP_ERROR = "Stopping GPU workload after new swapping"
+SWAP_ADVICE = (
+    "macOS moved memory to disk while the song rendered, so mlx-Yue stopped it to keep the Mac "
+    "responsive. Any app swapping counts, not just this one: close apps you aren't using, then "
+    "try again."
+)
 
 
 def _cancel_guard(cancelled: CancelCheck):
@@ -285,6 +336,8 @@ def _cancel_guard(cancelled: CancelCheck):
                 raise Cancelled(method.__name__) from None
             if PRESSURE_ERROR in str(error):
                 raise MemoryError(PRESSURE_ADVICE) from error
+            if SWAP_ERROR in str(error):
+                raise MemoryError(SWAP_ADVICE) from error
             raise
 
     return call

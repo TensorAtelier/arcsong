@@ -20,6 +20,11 @@ while the project is at 0.x, minor versions may change behaviour.
   or pauses, S stars.
 - The Score's notation sits on paper beside the ABC editor, and renders at a chosen quality.
 
+### Fixes
+- After mlx-Yue stopped a render because macOS swapped memory to disk, every later song
+  failed at once with the same error until the app restarted. The model is now reloaded for
+  the next song, and the message says what happened and what to do.
+
 ### Power
 - Songs render on battery by default, more slowly. `--require-ac` (or `ARCSONG_REQUIRE_AC=1`)
   brings back the old behaviour of waiting for AC power; `--allow-battery` is no longer needed

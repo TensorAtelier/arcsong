@@ -124,3 +124,57 @@ def test_a_memory_pressure_refusal_is_explained_rather_than_dumped(tmp_path, mon
 
     assert "quit other model servers" in str(raised.value)
     assert "11 GiB" in str(raised.value)
+
+
+def guard_trips(tmp_path, monkeypatch, message: str):
+    """An engine whose pipeline's planning raises `message` as mlx-Yue's guard does."""
+    from arcsong.mlx_engine import MlxYueEngine
+
+    engine = MlxYueEngine(models=tmp_path)
+
+    @dataclasses.dataclass
+    class Config:
+        ode_steps: int = 8
+
+    class Pipe:
+        generation_config = Config()
+        closed = False
+
+        def plan(self, *args, **kwargs):
+            raise MemoryError(message)
+
+        def close(self):
+            Pipe.closed = True
+
+    monkeypatch.setattr(engine, "load", lambda *a, **k: None)
+    engine._pipe = Pipe()
+    engine._generation_config = Config()
+    request = {"style": "x", "lyrics": "", "mode": "full", "seed": 1, "precision": "8bit",
+               "steps": 8}  # fmt: skip
+    with pytest.raises(MemoryError) as raised:
+        engine.render(request, tmp_path / "out", lambda: False, lambda event: None)
+    return engine, Pipe, raised.value
+
+
+@pytest.mark.needs_mlx
+def test_a_swap_stop_is_explained_as_any_app_swapping(tmp_path, monkeypatch):
+    from arcsong.mlx_engine import SWAP_ERROR
+
+    _, _, error = guard_trips(
+        tmp_path, monkeypatch, f"{SWAP_ERROR}: 126.3 MiB out, -1528.6 MiB used growth"
+    )
+
+    assert "moved memory to disk" in str(error)
+    assert "Any app swapping counts" in str(error)
+
+
+@pytest.mark.needs_mlx
+def test_a_guard_stop_drops_the_pipeline_so_the_next_job_reloads(tmp_path, monkeypatch):
+    """The guard's monitor latches its first error for as long as the pipeline lives, so a kept
+    pipeline failed every later job at once with that one stale error."""
+    from arcsong.mlx_engine import SWAP_ERROR
+
+    engine, pipe, _ = guard_trips(tmp_path, monkeypatch, f"{SWAP_ERROR}: 126.3 MiB out")
+
+    assert pipe.closed
+    assert engine._pipe is None and engine._precision is None
