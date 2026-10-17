@@ -194,3 +194,14 @@ def test_a_final_keeps_its_drafts_given_name(client):
 def test_a_score_only_run_takes_its_name(client):
     score = client.post("/api/scores", json={**REQUEST, "title": "Planned"}).json()
     assert score["title"] == "Planned"
+
+
+def test_a_queued_final_already_shows_its_drafts_new_name(client):
+    made = client.post("/api/jobs", json={**REQUEST, "title": "Kettle"}).json()
+    draft = wait_for(client, made["id"])
+    client.put(f"/api/songs/{draft['song_id']}/title", json={"title": "Renamed"})
+
+    final = client.post(f"/api/songs/{draft['song_id']}/finalize").json()
+
+    assert final["title"] == "Renamed"
+    wait_for(client, final["id"])
