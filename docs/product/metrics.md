@@ -33,4 +33,4 @@ it reads all three sources below and writes today's row, replacing it on a rerun
 
 | Date | Stars | Unique cloners (14 d) | Views (14 d, unique) | Release downloads | Notes |
 |---|---|---|---|---|---|
-| 2026-10-17 | 0 | 9 | 3 | 1 | Baseline. Never announced; cloners are mostly CI (first CI runs today) and the owner. |
+| 2026-10-17 | 0 | 9 | 3 | 1 | Baseline. Never announced; cloners are mostly CI (first CI runs today) and the owner. v0.2.0 shipped the same day. |

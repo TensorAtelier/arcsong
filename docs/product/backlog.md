@@ -8,7 +8,10 @@ First scoring 2026-10-17, against the draft charter (north star: stars; nothing 
 | metrics-script — `scripts/metrics` appends a `metrics.md` row from `gh api` (traffic is lost after 14 days) | metrics | 3 | 1 | 1 | 1 | 0 | 0 | 1 | 1.50 | shipped cycle 1 |
 | cloud-spike — X-001: YuE2 (`yue2`, already inside mlx-Yue) on a Modal L4, one song: time, cost, cold start | research (owner ask) | 4 | 0.5 | 2 | 2 | 1 | 0 | 0 | 1.33 | done 2026-10-17: kept (see X-001) |
 | score-zero-notes — Score of song 5 shows "0 vocal notes" (from the UI review) | defect | 2 | 0.5 | 1 | 1 | 0 | 0 | 0 | 1.00 | shipped cycle 1 |
-| release-qa-script — scripted journeys 1–5 on the fake Engine over CDP (grown from the scratch driver) | testing (owner ask) | 2 | 0.7 | 2 | 2 | 0 | 0 | 1 | 0.93 | candidate |
+| style-dice — remove the style chips; a dice button next to Style fills a random tag-form style | owner request | 2 | 0.7 | 2 | 1 | 0 | 0 | 1 | 1.40 | picked cycle 2 |
+| song-name — a Song name field in Create; every song stores its name; existing songs backfilled | owner request | 3 | 0.7 | 2 | 3 | 1 | 1 | 0 | 0.84 | picked cycle 2 |
+| lyrics-check — under Lyrics, flag what YuE2 reads badly: no section labels, no blank line between sections, stage directions | owner question 2026-10-17 | 2 | 0.5 | 2 | 2 | 0 | 0 | 1 | 0.67 | candidate |
+| release-qa-script — scripted journeys 1–5 on the fake Engine over CDP (grown from the scratch driver) | testing (owner ask) | 2 | 0.7 | 2 | 2 | 0 | 0 | 1 | 0.93 | picked cycle 2 |
 | e2e-in-ci — the same journeys headless in CI (Playwright, fake Engine) | testing (owner ask) | 3 | 0.7 | 2 | 3 | 1 | 0 | 1 | 0.84 | after release-qa-script |
 | v0.2.0-and-announce — README screenshots + "Your first song", tag v0.2.0, announce | roadmap (M6 leftovers) | 5 | 0.5 | 1 | 2 | 0 | 1 | 0 | 0.83 | README + tag in cycle 1; post is the owner's |
 | song-metadata — FLAC/MP3 tags (title, artist "Arcsong", art from the seed gradient) on download | feature | 1 | 0.5 | 2 | 1 | 0 | 0 | 0 | 1.00 | candidate |

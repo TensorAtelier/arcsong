@@ -1,5 +1,19 @@
 # Decisions
 
+## 2026-10-17 — cycle 2
+
+- North star: 0 stars (Δ 0; same day as v0.2.0; announcement not posted yet)
+- Owner requests (in the `/pm` call): a song name, with existing songs backfilled; a random-style button next to Style; remove the style suggestion chips (too much space).
+- Picked (chain 3, one release, v0.3.0):
+  - style-dice (1.40: I2 C0.7 core2 / E1 Cx0 R0 U1) — owner request; chips removed, a dice button fills a random tag-form style (genre, mood, instruments, voice) in the shape YuE2 was trained on.
+  - release-qa-script (0.93: I2 C0.7 core2 / E2 Cx0 R0 U1) — cycle 1's scratch journeys as one repo command; this release's QA runs through it.
+  - song-name (0.84: I3 C0.7 core2 / E3 Cx1 R1 U0) — owner request; outranks e2e-in-ci (0.84) on the tie because the owner asked.
+- Interpretation (taste anchored in the charter, cheap to undo — decided, not escalated): "song name" = (1) an optional **Song name** field in Create, shared by every take of a sketch, and (2) every song **stores** its name: existing songs are backfilled with the name they show today (their first sung line), so names never shift if the default rule changes. Rename and "blank resets to the default" keep working.
+- Passed over: e2e-in-ci (0.84) — next cycle, on top of release-qa-script; lyrics-check (0.67, new: warn on lyrics YuE2 reads badly) — candidate; cloud-engine-modal (0.58).
+- Shipped: (pending)
+- Release QA: (pending)
+- Next: (pending)
+
 ## 2026-10-17 — cycle 1
 
 - North star: 0 stars (Δ 0 since the 2026-10-17 baseline, same day)
