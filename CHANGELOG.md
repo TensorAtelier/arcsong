@@ -3,6 +3,12 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
+## Unreleased
+
+- **Song names.** Create and Cover ask for a song name, and every take of a sketch shares it.
+  Every song now stores its name; existing songs keep the name they showed (schema 6).
+- A dice beside Style rolls a random style; the suggestion chips under it are gone.
+
 ## 0.2.0 — 2026-10-17
 
 A new look, song titles and one player for the whole app; renders on battery; tested on macOS,
