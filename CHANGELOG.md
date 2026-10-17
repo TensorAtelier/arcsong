@@ -3,11 +3,15 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
-## Unreleased
+## 0.3.0 — 2026-10-17
+
+Songs have names, and Style gets a dice.
 
 - **Song names.** Create and Cover ask for a song name, and every take of a sketch shares it.
   Every song now stores its name; existing songs keep the name they showed (schema 6).
 - A dice beside Style rolls a random style; the suggestion chips under it are gone.
+- A queued Final shows its Draft's current name.
+- `scripts/release-qa` runs the release journeys in a private headless Chrome (for contributors).
 
 ## 0.2.0 — 2026-10-17
 
