@@ -93,13 +93,19 @@ class MlxYueEngine:
         from lyra import YuE2Pipeline
 
         self._pipe = None  # release the old weights before loading new ones
-        self._pipe = YuE2Pipeline.from_pretrained(
-            str(self.models / "converted"),
-            vae=str(self.models / "vae"),
-            precision=precision,
-            local_files_only=True,
-            require_ac=self.require_ac,
-        )
+        try:
+            self._pipe = YuE2Pipeline.from_pretrained(
+                str(self.models / "converted"),
+                vae=str(self.models / "vae"),
+                precision=precision,
+                local_files_only=True,
+                require_ac=self.require_ac,
+            )
+        except RuntimeError as error:
+            # The AC guard refuses as the pipeline is built, before any Stage runs.
+            if AC_ERROR in str(error):
+                raise RuntimeError(AC_ADVICE) from error
+            raise
         # The weights' own settings; a Final swaps in its Draft's, so renders start from these.
         self._generation_config = self._pipe.generation_config
         self._precision = precision
@@ -317,6 +323,13 @@ PRESSURE_ADVICE = (
 # It also stops when anything on the Mac swaps more than 64 MiB out during a render: the count
 # is system-wide, so another app can trip it with plenty of memory free.
 SWAP_ERROR = "Stopping GPU workload after new swapping"
+# With --require-ac, mlx-Yue refuses to start on battery in its benchmark harness's words.
+AC_ERROR = "AC power is required"
+AC_ADVICE = (
+    "Arcsong was started with --require-ac, so songs wait for AC power. Plug the Mac in, or "
+    "start Arcsong without --require-ac (and without ARCSONG_REQUIRE_AC) to render on battery, "
+    "more slowly."
+)
 SWAP_ADVICE = (
     "macOS moved memory to disk while the song rendered, so mlx-Yue stopped it to keep the Mac "
     "responsive. Any app swapping counts, not just this one: close apps you aren't using, then "

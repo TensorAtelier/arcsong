@@ -14,7 +14,7 @@ const STAGES: { key: Stage; label: string }[] = [
 
 const FINISHED_SHOWN = 5;
 const FAILURES_SHOWN = 3;
-// A failure is news for a day; after that the Library and a retry are the record.
+// A failure is news for a day; after that it leaves the column (the job row stays in the database).
 const FAILURE_SHOWN_SECONDS = 24 * 60 * 60;
 const DISMISSED_KEY = "arcsong.dismissedFailures";
 

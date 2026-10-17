@@ -30,12 +30,12 @@ in the column beside the form — you can keep writing meanwhile.
 ![Create: the song form with a style and lyrics, and the queue column](docs/media/screens/create.png)
 
 **Compare takes.** A sketch's takes play against one shared playhead, so switching take keeps
-your place in the song. Keys: `1`–`9` switch take, `Space` plays or pauses, `S` stars. **Finalize**
+your place in the song. Keys: `1`–`8` switch take, `Space` plays or pauses, `S` stars. **Finalize**
 turns the quick 8-step draft you starred into a full 32-step render with the same music.
 
 ![Compare: two takes side by side, one playing](docs/media/screens/compare.png)
 
-**Keep what you make.** Songs get a title (their first sung line — rename them), a cover from
+**Keep what you make.** Songs get a title (their first sung line — rename them), artwork from
 their seed, and a place in the Library, where a sketch's takes and Finals stay together. One
 player follows you across the app, with waveforms to seek in and your Mac's media keys. FLAC and
 WAV downloads are named after the song.
@@ -114,9 +114,9 @@ Already know the sound you want? Pick **Single song** instead of Sketch: one tak
 
 ## When something goes wrong
 
-- **"Songs can't be made on battery."** The app was started with `--require-ac` (or
-  `ARCSONG_REQUIRE_AC=1`). Plug the Mac in, or start it without that flag; renders are slower
-  unplugged, and the memory a song needs is unchanged.
+- **"Arcsong was started with --require-ac, so songs wait for AC power."** Plug the Mac in, or
+  start it without that flag (and without `ARCSONG_REQUIRE_AC`); renders are slower unplugged,
+  and the memory a song needs is unchanged.
 - **"macOS is short of memory."** A song needs about 11 GiB while it renders, and mlx-Yue stops
   rather than push the machine into swapping. Quit other local model servers — ComfyUI and
   LM Studio are the usual culprits — and start the job again.
