@@ -11,9 +11,18 @@
 - Passed over: release-qa-script (0.93) — next cycle; this cycle's release QA is run by hand with the CDP driver. song-metadata, length-estimate (1.00 each, impact 1) — tie on score with score-zero-notes but move nothing a new user sees first.
 - Pipeline size: lite for all three (`--lite`) — each is about an hour; the full spec/ticket/agent pipeline would cost more than the work.
 - Landing: merge — solo repo, no PR workflow, CI on main.
-- Shipped: (pending)
-- Release QA: (pending)
-- Next: (pending)
+- Shipped: **v0.2.0** (https://github.com/TensorAtelier/arcsong/releases/tag/v0.2.0) — metrics-script, score-zero-notes, readme-v0-2, and sketch-ready-link (a release-QA fix); plus the work since v0.1.0 (redesign, titles, player, battery default, CI on three OSes, swap-stop fix). CI green on de80f52; wheel checked (no `spike`, fonts and soundfont inside); the tag installs with `uvx --from git+…@v0.2.0` and serves the same bundle.
+- Release QA: verify green (271 passed, ruff, tsc). Journeys on a fresh fake-Engine server in a headless browser, no console errors:
+  - J1 first song [core]: pass — Create gated before Setup; licence → download → Single song → bar plays (0:02/0:20) → still in the Library after a server restart.
+  - J2 sketch and pick [core]: **failed, then pass** — the Compare link vanished when the sketch finished (fixed: sketch-ready-link); keys 1/2 switch at the shared time (1.91 → 2.27 s), Space pauses, S stars, Finalize lands in the sketch card; no overflow at 390 px.
+  - J3 library [core]: pass — empty search message, Starred filter, rename via ⋯, download named `arcsong-1-kettle-song-take-one.flac`, delete with confirm; no overflow at 390 px.
+  - J4 score: pass — plan → notation + valid check → edit (badge) → render queued.
+  - J5 cover: pass — covers download → upload a WAV → transcribed Score.
+  - J6 real weights: pass — 6/6 in 164 s (first attempt failed: the owner's running Arcsong held the GPU lock; stopped it, reran, restarted it; `docs/release.md` now says to stop it).
+- X-001: **kept** — 3-minute song at 32 steps ≈ $0.045 and ≈ 200 s from a cold Modal L4 (success line: ≤ $0.10, ≤ 12 min). cloud-engine-modal rescored 0.36 → 0.58.
+- Metrics: 0 stars, 9 unique cloners, 3 unique views, 1 download (Δ 0, same day as the baseline).
+- Shortcuts: release QA ran from scratch scripts, saved as `.scratch/release-qa-script/seed/` — repay when release-qa-script lands (next cycle). Real-weights tests need the owner's Mac — repay never (by design), documented in `docs/release.md`.
+- Next: release-qa-script (0.93) then e2e-in-ci (0.84) — make journeys 1–5 one command and run them on CI; then cloud-engine-modal (0.58), which will need a decision on how users authenticate Modal from inside Arcsong. The owner's announcement post (`docs/product/announcement-v0.2.0.md`) starts the clock on the kill criteria: if it goes out, next run's snapshot is the first real data point. A RunPod API key will be asked for when runpod-serverless is picked.
 
 ## 2026-10-17 — N-003: v0.2.0 and announcement
 

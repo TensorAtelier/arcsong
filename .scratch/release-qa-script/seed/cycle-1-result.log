@@ -1,0 +1,6 @@
+{"name":"J1 first song [core]","pass":true,"evidence":{"gatedBeforeSetup":true,"title":"Rain against the window of the corner room","barClock":"0:02 / 0:20","keptAfterRestart":"Rain against the window of the corner room"},"errors":[]}
+{"name":"J2 sketch and pick [core]","pass":true,"evidence":{"finishedLink":"Compare your last sketch (4 takes) →","key1":[true,false,false,false],"key2":[false,true,false,false],"sharedPlayhead":{"t1":1.91,"t2":2.27},"spacePaused":true,"starred":"true","final":true,"phoneOverflow":false},"errors":[]}
+{"name":"J3 library [core]","pass":true,"evidence":{"emptySearch":"No songs match “zzz-no-such-song”.","starredRows":1,"renamed":true,"download":"attachment; filename=\"arcsong-1-kettle-song-take-one.flac\"","deleted":true,"phoneOverflow":false},"errors":[]}
+{"name":"J4 score","pass":true,"evidence":{"notation":true,"valid":true,"edited":true,"rendered":true},"errors":[]}
+{"name":"J5 cover","pass":true,"evidence":{"uploaded":"qa-tone.wav","transcribedScore":true},"errors":[]}
+SUMMARY PASS J1 first song [core] | PASS J2 sketch and pick [core] | PASS J3 library [core] | PASS J4 score | PASS J5 cover
