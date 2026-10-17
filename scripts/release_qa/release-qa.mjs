@@ -2,7 +2,7 @@
 // headless Chrome that `scripts/release-qa` starts. Prints one JSON line per journey and exits
 // non-zero when any journey fails.
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { click, close, consoleErrors, evaluate, go, key, send, shot, sleep } from "./cdp.mjs";
@@ -26,6 +26,8 @@ function tone(seconds, rate = 22050) {
 const PORT = 8851;
 const BASE = `http://127.0.0.1:${PORT}/`;
 const DATA = mkdtempSync(join(tmpdir(), "arcsong-qa-"));
+// Screenshots (phone width, failures) go here, kept after the run; the path is printed.
+const SHOTS = mkdtempSync(join(tmpdir(), "arcsong-qa-shots-"));
 const results = [];
 let server;
 
@@ -33,8 +35,10 @@ function startServer() {
   server = spawn("uv", ["run", "arcsong", "serve", "--engine", "fake", "--port", String(PORT), "--data", DATA], { cwd: REPO, stdio: "ignore" });
 }
 async function stopServer() {
+  if (server.exitCode !== null || server.signalCode !== null) return; // already gone
+  const exited = new Promise((r) => server.once("exit", r));
   server.kill("SIGTERM");
-  await new Promise((r) => server.once("exit", r));
+  await exited;
 }
 async function waitFor(expr, ms = 30000, what = expr) {
   const end = Date.now() + ms;
@@ -44,7 +48,16 @@ async function waitFor(expr, ms = 30000, what = expr) {
   }
   throw new Error(`timed out waiting for ${what}`);
 }
-const up = async () => { for (let i = 0; i < 60; i++) { try { await fetch(BASE + "api/jobs"); return; } catch { await sleep(500); } } throw new Error("server did not start"); };
+const answering = () => fetch(BASE + "api/jobs").then(() => true, () => false);
+/** Wait for our own server; fail at once if it exits (e.g. the port is taken). */
+async function up() {
+  for (let i = 0; i < 60; i++) {
+    if (server.exitCode !== null || server.signalCode !== null) throw new Error(`the server exited (${server.exitCode ?? server.signalCode})`);
+    if (await answering()) return;
+    await sleep(500);
+  }
+  throw new Error("the server did not start within 30 s");
+}
 const clickText = (selector, text) => evaluate(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find(e => e.textContent.trim().startsWith(${JSON.stringify(text)})); if (!el) return false; el.click(); return true; })()`);
 const fill = (selector, value) => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)});
   const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -61,7 +74,7 @@ async function journey(name, fn) {
     const errors = consoleErrors.slice(before);
     results.push({ name, pass: errors.length === 0, evidence, errors });
   } catch (e) {
-    await shot(`qa-fail-${name.split(" ")[0]}`).catch(() => {});
+    await shot(join(SHOTS, `fail-${name.split(" ")[0]}.png`)).catch(() => {});
     results.push({ name, pass: false, evidence: String(e.message ?? e), errors: consoleErrors.slice(before) });
   }
   console.log(JSON.stringify(results.at(-1)));
@@ -71,6 +84,7 @@ const STYLE = "English, late-night lo-fi soul, warm Rhodes, brushed drums, soft 
 const LYRICS = "[Verse]\nRain against the window of the corner room\n\n[Chorus]\nStay a little longer, let the record play";
 
 try {
+  if (await answering()) throw new Error(`port ${PORT} is already in use: stop whatever runs there first`);
   startServer();
   await up();
   await desktop();
@@ -152,7 +166,7 @@ try {
     await go(BASE + "#/compare/" + (await evaluate(`document.querySelector('.project a.button.primary').getAttribute('href').split('/').pop()`)));
     await phone(); await sleep(1200);
     const phoneOverflow = await overflow();
-    await shot("qa-phone-compare");
+    await shot(join(SHOTS, "phone-compare.png"));
     await desktop();
     return { sketchName, finishedLink: linkText, key1: one, key2: two, sharedPlayhead: { t1: +t1.toFixed(2), t2: +t2.toFixed(2) }, spacePaused: !paused.some(Boolean), starred, final: true, phoneOverflow };
   });
@@ -238,12 +252,16 @@ try {
     await waitFor(`location.hash.startsWith('#/score/job/') && !!document.querySelector('.paper svg')`, 60000, "the transcribed Score");
     return { uploaded: "a 3 s generated tone", transcribedScore: true };
   });
+} catch (error) {
+  console.log(JSON.stringify({ name: "setup", pass: false, evidence: String(error.message ?? error) }));
 } finally {
   await evaluate(`document.querySelectorAll('audio').forEach(a => a.pause())`).catch(() => {});
   await close();
   if (server) await stopServer().catch(() => {});
   rmSync(DATA, { recursive: true, force: true });
   rmSync(DATA_TONE, { recursive: true, force: true });
+  if (readdirSync(SHOTS).length) console.log("screenshots:", SHOTS);
+  else rmSync(SHOTS, { recursive: true, force: true });
   console.log("SUMMARY", results.map((r) => `${r.pass ? "PASS" : "FAIL"} ${r.name}`).join(" | "));
   process.exitCode = results.length === 5 && results.every((r) => r.pass) ? 0 : 1;
 }

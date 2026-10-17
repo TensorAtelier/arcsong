@@ -1,6 +1,8 @@
-// Minimal CDP driver for the debug Chrome on :9222: one new tab, closed at the end.
+// A minimal DevTools-protocol driver: one new tab in the Chrome at $CDP (scripts/release-qa starts
+// a private headless one), closed at the end. CDP is required, so it never drives a browser by accident.
 import { writeFileSync } from "node:fs";
-const base = process.env.CDP ?? "http://127.0.0.1:9222";
+const base = process.env.CDP;
+if (!base) throw new Error("set CDP to a DevTools URL, e.g. via scripts/release-qa");
 const target = await (await fetch(`${base}/json/new?about:blank`, { method: "PUT" })).json();
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((r) => ws.addEventListener("open", r, { once: true }));
@@ -25,9 +27,9 @@ export const evaluate = async (expression) => {
   if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? "eval failed");
   return r.result.value;
 };
-export const shot = async (name) => {
+export const shot = async (path) => {
   const { data } = await send("Page.captureScreenshot", { format: "png" });
-  writeFileSync(`${name}.png`, Buffer.from(data, "base64"));
+  writeFileSync(path, Buffer.from(data, "base64"));
 };
 /** Click the centre of the first element matching `selector` with a real mouse event. */
 export const click = async (selector) => {
