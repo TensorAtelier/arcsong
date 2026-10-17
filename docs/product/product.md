@@ -1,23 +1,22 @@
 # Arcsong — product charter
 
-> Draft 2026-10-17 by `/pm` (charter mode). Fields marked `(inferred)` wait for the owner;
-> see `NEEDS-YOU.md`.
+> Drafted 2026-10-17 by `/pm`; confirmed by the owner the same day (N-001), with `ship: auto`.
 
 ## Goal
 
 Arcsong lets AI-music tinkerers make full songs with YuE2 privately, on their own hardware: write
 a style and lyrics, sketch a few takes, pick one, finalize it, keep a library. It wins on
 reliability, install experience and a calm, music-first interface, not on features — every
-feature it has also ships in some other YuE2 front end (`docs/prior-art.md`). (inferred)
+feature it has also ships in some other YuE2 front end (`docs/prior-art.md`).
 
 Business model: none-yet — attention for Tensor Atelier (GitHub org, Patreon, tensoratelier.com).
-The weights are CC BY-NC 4.0, so Arcsong never sells generation or hosts it for others. (inferred)
+The weights are CC BY-NC 4.0, so Arcsong never sells generation or hosts it for others.
 
 ## North star
 
-Metric: GitHub stars on `TensorAtelier/arcsong` (inferred)
+Metric: GitHub stars on `TensorAtelier/arcsong`
 Source: `github-repo` in `metrics.md`
-Current: 0 (2026-10-17, never announced)   Target: 100 by 2027-01-31 (inferred)
+Current: 0 (2026-10-17, never announced)   Target: 100 by 2027-01-31
 
 Supporting: unique cloners (14-day window), release asset downloads, open issues from people
 other than the owner.
@@ -31,12 +30,12 @@ Must be excellent. Release QA tests these hardest; their fixes score core = 2.
 
 1. A new user installs Arcsong and makes a first song — quality bar: from `uv tool install` to a
    playing song with no step outside the app except the install command; Setup says plainly what
-   is missing and why. (inferred)
+   is missing and why.
 2. A songwriter sketches takes, compares them and finalizes the best — quality bar: sketching 4
    takes is one click, Compare switches takes at the same moment, Finalize keeps the music.
-   (inferred)
+  
 3. A user finds, plays, renames and downloads past songs — quality bar: the Library opens on the
-   newest work, playback continues across views, downloads are named after the song. (inferred)
+   newest work, playback continues across views, downloads are named after the song.
 
 ## Good enough
 
@@ -67,14 +66,15 @@ counter-example: energy in the interface competes with the user's songs.
 ## Kill criteria
 
 Fewer than 25 stars 8 weeks after the first public announcement → maintenance mode (fixes and
-dependency bumps only) and an options memo. (inferred)
+dependency bumps only) and an options memo.
 maintenance_below: 0.3
 
 ## Autonomy
 
-ship: ask        # a release is public (inferred)
+ship: auto       # owner, 2026-10-17 (N-001); announcing stays the owner's (it posts as them)
 chain: 3
-spend: never     # money is always the owner's — including cloud GPU time for Modal/RunPod work
+spend: never     # beyond Modal's $30 monthly credit, approved for X-001 (N-002); anything that
+                 # would bill a card is the owner's
 
 ## Release
 
