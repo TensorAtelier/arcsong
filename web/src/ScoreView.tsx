@@ -156,6 +156,10 @@ export default function ScoreView({ source, title, onJob }: Props) {
   const edited = text !== original;
   const name = `arcsong-score-${source.kind}-${source.id}`;
   const report = check?.report;
+  // The model sometimes plans a take's vocal voice as rests only, lyrics or not: the song then
+  // has no sung melody to follow. Count it as a property of this take, not a broken summary.
+  const noVocal = report !== null && report !== undefined && report.voices.Vocal.sounding_notes === 0;
+  const unsung = noVocal && request !== null && hasSungLyrics(request.lyrics);
 
   return (
     <section className="score" aria-label="Score">
@@ -169,7 +173,8 @@ export default function ScoreView({ source, title, onJob }: Props) {
             <span>{report.bpm} BPM</span>
             <span>{formatClock(report.duration_seconds)}</span>
             <span>
-              {report.voices.Vocal.sounding_notes} vocal notes · {report.voices.Ins.chords || report.voices.Vocal.chords} chords
+              {noVocal ? "no vocal melody" : `${report.voices.Vocal.sounding_notes} vocal notes`} ·{" "}
+              {report.voices.Ins.chords || report.voices.Vocal.chords} chords
             </span>
           </div>
         )}
@@ -177,6 +182,14 @@ export default function ScoreView({ source, title, onJob }: Props) {
       {request && (
         <p className="muted subtitle" title={request.style} style={{ margin: 0 }}>
           {request.style}
+        </p>
+      )}
+
+      {unsung && (
+        <p className="notice" role="note">
+          The model planned no vocal melody for this take: the Vocal line is rests from start to end, so the
+          lyrics have no notes to be sung on. That comes from the seed, not from your words. Render another
+          seed, or write a melody into the Vocal voice in the ABC editor and render from this Score.
         </p>
       )}
 
@@ -269,6 +282,11 @@ export default function ScoreView({ source, title, onJob }: Props) {
       </div>
     </section>
   );
+}
+
+/** Any line that is not empty and not a `[Section]` tag (the rule `db.default_title` uses). */
+function hasSungLyrics(lyrics: string): boolean {
+  return lyrics.split("\n").some((line) => line.trim() !== "" && !/^\[[^\]]*\]$/.test(line.trim()));
 }
 
 function download(filename: string, blob: Blob) {
