@@ -264,7 +264,7 @@ export default function ScoreView({ source, title, onJob }: Props) {
                 disabled={busy || check?.ok === false}
                 onClick={() =>
                   act(
-                    () => api.create({ ...request, steps, abc: text }),
+                    () => api.create({ ...request, steps, abc: text, title: title ?? request.title }),
                     (job) => {
                       onJob(job);
                       window.location.hash = "#/";

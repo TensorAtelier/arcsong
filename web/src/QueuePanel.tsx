@@ -247,10 +247,10 @@ function Failure({ job, onChanged, onDismiss }: { job: Job; onChanged: (job: Job
     try {
       onChanged(
         job.kind === "score"
-          ? await api.createScore(job.request)
+          ? await api.createScore({ ...job.request, title: job.title })
           : job.source_song_id !== null
             ? await api.finalize(job.source_song_id)
-            : await api.create(job.request),
+            : await api.create({ ...job.request, title: job.title }),
       );
       onDismiss();
     } catch (e) {

@@ -14,7 +14,7 @@ the migration and the inheritance.
 ## Tickets
 
 - [x] 01 — Server: `title` on requests (optional at the API, blank → none), job/song name = given name else first sung line, stored when the song is indexed; Final inherits; schema v6 backfills stored names; rename blank stores the default; tests.
-- [ ] 02 — Create and Cover: a required Song name field (Write, Plan, Cover); Edit in Create pre-fills the song's current name; Retry/Render again keep names; check in the browser.
+- [x] 02 — Create and Cover: a required Song name field (Write, Plan, Cover); Edit in Create pre-fills the song's current name; Retry/Render again keep names; check in the browser.
 
 ## Notes
 
