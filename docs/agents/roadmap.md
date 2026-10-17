@@ -6,7 +6,7 @@ landing: merge
 ## Features
 
 - [x] metrics-script      — `scripts/metrics.py` writes a snapshot row to docs/product/metrics.md from `gh api` → .scratch/metrics-script/REPORT.md
-- [ ] score-zero-notes    — the Score page's "0 vocal notes" for some songs: find the cause, fix or explain it
+- [x] score-zero-notes    — the Score page explains a take the model planned with no vocal melody → .scratch/score-zero-notes/REPORT.md
 - [ ] readme-v0-2         — README for the redesign: new screenshots and a "Your first song" walkthrough (v0.2.0)
 - [ ] release-qa-script   — release journeys 1–5 on the fake Engine as one command over the DevTools protocol
 - [ ] e2e-in-ci           — the same journeys headless on CI                                    (needs: release-qa-script)
@@ -17,6 +17,7 @@ landing: merge
 
 - song-metadata: title, artist and cover art written into downloaded files.
 - length-estimate: expected song length from the lyrics.
+- vocal-less takes flagged in Compare and the Library (from score-zero-notes: needs the Score per take).
 - swap-limit: an option to raise mlx-Yue's 64 MiB swap-out stop, if the stop keeps tripping.
 - Homebrew tap; a project page on tensoratelier.com.
 
