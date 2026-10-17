@@ -11,9 +11,15 @@
 - Interpretation (taste anchored in the charter, cheap to undo — decided, not escalated): "song name" = (1) an optional **Song name** field in Create, shared by every take of a sketch, and (2) every song **stores** its name: existing songs are backfilled with the name they show today (their first sung line), so names never shift if the default rule changes. Rename and "blank resets to the default" keep working.
 - Owner, mid-cycle: "i want song name to be required." → the Song name field is required in Create's Write and Plan tabs and in Cover (submit disabled until named). The API keeps `title` optional (falls back to the first sung line), so scripts, old jobs' Retry/Render-again and the test suite keep working. By: owner (requirement), PM (where it is enforced).
 - Passed over: e2e-in-ci (0.84) — next cycle, on top of release-qa-script; lyrics-check (0.67, new: warn on lyrics YuE2 reads badly) — candidate; cloud-engine-modal (0.58).
-- Shipped: (pending)
-- Release QA: (pending)
-- Next: (pending)
+- Shipped: **v0.3.0** (https://github.com/TensorAtelier/arcsong/releases/tag/v0.3.0) — style-dice, song-name (with the owner's mid-cycle "required"), release-qa-script. CI green on 0a06fe8; the tag installs with `uvx --from git+…@v0.3.0` and serves the committed bundle.
+- Backfill on the owner's library: backed up `arcsong.db` (`arcsong.db.before-v6-20261017-135349`), restarted → schema 6; all six songs store the names they showed.
+- Release QA: verify green (277 passed, ruff, tsc). `scripts/release-qa` (now a repo command): J1–J5 pass — unnamed song refused, "First Light" kept after restart, sketch "Neon Run" with its Final, rename/download/delete, Score, cover. Manual steps listed in product.md (piano preview, play across views, cover render, keys 3–4, Setup progress) not re-walked: no code they use changed this cycle. J6 real weights: **not run** — the Mac was on battery (release.md asks for AC); risk judged low (the only engine-facing change is an extra `title` key the engine never reads, checked by QA).
+- Incidents:
+  - A merge (feat/song-name) landed a failing test: the gate was `pytest | tail`, which hides pytest's exit code. Fixed in the next commit (1b6bc23); lesson saved to the PM's memory (gate on pytest's own exit code).
+  - Windows CI ran out of disk twice in `test_a_parts_progress_counts_only_its_own_files` (it wrote ~5 GB); now sized with truncate.
+- Metrics: same day as the last snapshot (0 stars, 9 cloners, 3 views, 1 download); no new row.
+- Shortcuts: J6 not run — repay before the announcement, on AC power (`dev stop arcsong` first). Manual release steps not re-walked — repay next cycle that touches Score, playback or covers.
+- Next: e2e-in-ci (0.84) — `scripts/release-qa` on CI (macOS runner has Chrome); lyrics-check (0.67, warn on lyrics YuE2 reads badly); cloud-engine-modal (0.58). The owner's announcement post is still the biggest lever on the north star; nothing measures until it goes out.
 
 ## 2026-10-17 — cycle 1
 
