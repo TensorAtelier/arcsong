@@ -1,6 +1,7 @@
 import { type FormEvent, type ReactNode, useRef, useState } from "react";
 import { api, type Job, type Mode, type Precision, type SongRequest } from "./api";
 import { DiceIcon } from "./icons";
+import { randomStyle } from "./styles";
 
 type Tab = "write" | "plan" | "cover";
 
@@ -8,17 +9,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "write", label: "Write a song" },
   { id: "plan", label: "Plan a melody" },
   { id: "cover", label: "Cover a recording" },
-];
-
-const STYLE_CHIPS = [
-  "lo-fi soul",
-  "city pop",
-  "indie folk",
-  "dream pop",
-  "warm Rhodes",
-  "brushed drums",
-  "soft male vocal",
-  "breathy female vocal",
 ];
 
 const SECTION_TAGS = ["Intro", "Verse", "Chorus", "Bridge", "Outro"];
@@ -90,10 +80,6 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
     window.location.hash = `#/score/job/${job.id}`;
   }
 
-  function addToStyle(chip: string) {
-    setStyle((text) => (text.trim() ? `${text.trim().replace(/,$/, "")}, ${chip}` : chip));
-  }
-
   /** Put `[Tag]` on its own line at the cursor, keeping the cursor after it. */
   function insertTag(tag: string) {
     const box = lyricsBox.current;
@@ -113,20 +99,23 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
   const styleField = (
     <div className="field">
       <label htmlFor="style">Style</label>
-      <input
-        id="style"
-        value={style}
-        onChange={(e) => setStyle(e.target.value)}
-        placeholder="English, indie pop, bright acoustic guitar, warm female vocal"
-        required
-      />
-      <div className="chips">
-        <span className="lead">Add</span>
-        {STYLE_CHIPS.map((chip) => (
-          <button key={chip} type="button" className="chip" onClick={() => addToStyle(chip)}>
-            + {chip}
-          </button>
-        ))}
+      <div className="with-dice">
+        <input
+          id="style"
+          value={style}
+          onChange={(e) => setStyle(e.target.value)}
+          placeholder="English, indie pop, bright acoustic guitar, warm female vocal"
+          required
+        />
+        <button
+          type="button"
+          className="dice"
+          aria-label="Random style"
+          title="Random style"
+          onClick={() => setStyle(randomStyle())}
+        >
+          <DiceIcon />
+        </button>
       </div>
     </div>
   );

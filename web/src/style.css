@@ -182,9 +182,6 @@ button.icon-button:hover:not(:disabled) { background: var(--raised); }
 button.star { border: none; width: 40px; height: 40px; padding: 0; border-radius: 999px; font-size: 19px; color: var(--muted); }
 button.star.on { color: var(--accent-ink); }
 
-.chip {
-  background: var(--raised); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; font-size: 13px;
-}
 .tag {
   background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent-ink);
   border-radius: 6px; padding: 3px 10px; font-family: var(--mono); font-size: 12px;
@@ -231,12 +228,13 @@ button.star.on { color: var(--accent-ink); }
 .mode strong { display: block; font-size: 16px; }
 .mode span { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; font-weight: 400; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.chips .lead { color: var(--muted); font-size: 12px; margin-right: 4px; }
+.with-dice { display: flex; gap: 6px; }
+.with-dice input { flex: 1; min-width: 0; }
+button.dice { width: 46px; flex-shrink: 0; padding: 0; background: var(--raised); }
 .seed-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .seed-row .controls { display: flex; gap: 6px; }
 .seed-row input { width: 130px; font-family: var(--mono); }
 .seed-row button { height: 46px; }
-.seed-row button.dice { width: 46px; padding: 0; background: var(--raised); }
 .seed-row button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); }
 .advanced { margin: 0; }
 .advanced summary { font-weight: 400; color: var(--muted); font-size: 14px; }
