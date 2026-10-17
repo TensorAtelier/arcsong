@@ -83,7 +83,7 @@ class Setup:
         store: Store,
         publish: Callable[[dict[str, Any]], None],
         seq: Callable[[], int],
-        allow_battery: bool = False,
+        allow_battery: bool = True,
     ):
         """`publish` broadcasts a message to the page; `seq` numbers snapshots (see
         `JobRunner.next_seq`) so the page keeps the newest one. `allow_battery` matches the
@@ -313,7 +313,7 @@ def _ram_check() -> Check:
     return check("ram", label, "ok", f"{total:.0f} GiB (a song peaks at about 11 GiB)")
 
 
-def _power_check(allow_battery: bool = False) -> Check:
+def _power_check(allow_battery: bool = True) -> Check:
     label = "Power"
     try:
         out = subprocess.run(
@@ -327,7 +327,9 @@ def _power_check(allow_battery: bool = False) -> Check:
         # The render will run; it is just slower, and the battery drains under a GPU load
         # that lasts minutes.
         return check("power", label, "ok", "on battery: allowed, but slower than on AC power")
-    return check("power", label, "warn", "on battery: mlx-Yue refuses to render until plugged in")
+    return check(
+        "power", label, "warn", "on battery: started with --require-ac, so songs wait for AC power"
+    )
 
 
 def _disk_check(directory: Path, weights: dict[str, Any]) -> Check:

@@ -34,7 +34,7 @@ class MlxYueEngine:
     def __init__(
         self,
         models: str | Path,
-        require_ac: bool = True,
+        require_ac: bool = False,
         transcription_models: str | Path | None = None,
     ):
         self.models = Path(models).expanduser()

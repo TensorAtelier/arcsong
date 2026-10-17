@@ -14,7 +14,7 @@ ENGINES = {
     "fake": "arcsong.fake_engine:FakeEngine",
 }
 
-BATTERY_ENV = "ARCSONG_ALLOW_BATTERY"
+REQUIRE_AC_ENV = "ARCSONG_REQUIRE_AC"
 TRUTHY = {"1", "true", "yes", "on"}
 
 
@@ -31,20 +31,23 @@ def main(argv: list[str] | None = None) -> None:
         help="mlx-Yue weights (default: $ARCSONG_MLX_MODELS or <data>/models)",
     )
     serve.add_argument(
-        "--allow-battery",
+        "--require-ac",
         action="store_true",
         default=None,
         help=(
-            "Render without AC power (default: $ARCSONG_ALLOW_BATTERY, else off). "
-            "Songs are slower on battery and still need ~11 GiB of memory."
+            "Refuse to render on battery, as mlx-Yue's guard does (default: "
+            "$ARCSONG_REQUIRE_AC, else off: songs render on battery, more slowly)."
         ),
     )
+    # Rendering on battery was opt-in until it became the default; old scripts still pass it.
+    serve.add_argument("--allow-battery", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    allow_battery = (
-        args.allow_battery
-        if args.allow_battery is not None
-        else os.environ.get(BATTERY_ENV, "").strip().lower() in TRUTHY
+    require_ac = (
+        args.require_ac
+        if args.require_ac is not None
+        else os.environ.get(REQUIRE_AC_ENV, "").strip().lower() in TRUTHY
     )
+    allow_battery = not require_ac or args.allow_battery
 
     from arcsong.app import create_app
     from arcsong.config import data_dir
@@ -55,8 +58,7 @@ def main(argv: list[str] | None = None) -> None:
         directory = models_dir(data, args.mlx_models)
         models = MlxYueModels(directory)
         covers = TranscriptionModels(directory)
-        # mlx-Yue's own default is require_ac=False; arcsong asks for the guard unless
-        # the user turns it off.
+        # Songs render on battery unless the user asks for mlx-Yue's AC guard.
         kwargs = {"models": str(directory), "require_ac": not allow_battery}
     else:
         # Fake weights to download, so the Setup page can be tried without a GPU or network.

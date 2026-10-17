@@ -57,9 +57,9 @@ melody with your own style and lyrics. The recording is deleted as soon as the j
 - About 11 GB of disk for the song weights, downloaded from the Setup page on first run.
 - For covers: [ffmpeg](https://ffmpeg.org) (`brew install ffmpeg`) and a further ~2.6 GiB of
   transcription weights.
-- Songs are rendered on AC power by default — mlx-Yue refuses to run on battery. Pass
-  `--allow-battery` (or set `ARCSONG_ALLOW_BATTERY=1`) to render unplugged; it is slower
-  and needs the same ~11 GiB.
+- Songs render on battery too, more slowly, and a song is minutes of sustained GPU load.
+  Start the app with `--require-ac` (or set `ARCSONG_REQUIRE_AC=1`) to only render when the
+  Mac is plugged in.
 
 ## Install
 
@@ -92,9 +92,9 @@ directory yourself if you want the songs and the 11 GB of weights gone too.
 
 ## When something goes wrong
 
-- **"Songs can't be made on battery."** mlx-Yue refuses to render unless the Mac is on AC
-  power. Start the app with `arcsong serve --allow-battery` to lift that; renders are slower
-  unplugged, the memory a song needs is unchanged, and a song is minutes of sustained GPU load.
+- **"Songs can't be made on battery."** The app was started with `--require-ac` (or
+  `ARCSONG_REQUIRE_AC=1`). Plug the Mac in, or start it without that flag; renders are slower
+  unplugged, and the memory a song needs is unchanged.
 - **"macOS is short of memory."** A song needs about 11 GiB while it renders, and mlx-Yue stops
   rather than push the machine into swapping. Quit other local model servers — ComfyUI and
   LM Studio are the usual culprits — and start the job again.

@@ -115,7 +115,7 @@ def create_app(
     load_retry: float | None = None,
     models: Models | None = None,
     covers: Models | None = None,
-    allow_battery: bool = False,
+    allow_battery: bool = True,
 ) -> FastAPI:
     """`models` are the weights the Engine needs and `covers` the optional transcription ones;
     by default both are fake weights that are already installed, so tests of other features
