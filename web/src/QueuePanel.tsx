@@ -71,7 +71,8 @@ export default function QueuePanel({ jobs, songs, onChanged, error }: Props) {
 
   // The group of the Take rendering now, for "2 of 4 done" and the Compare link; once nothing
   // is rendering, the latest sketch, so its Compare link outlives its last take.
-  const latestGroup = jobs.find((job) => job.group_id !== null)?.group_id ?? null;
+  // (the newest sketch with a finished take: one whose takes were all cancelled has nothing to compare)
+  const latestGroup = jobs.find((job) => job.group_id !== null && job.status === "done")?.group_id ?? null;
   const active = running[0]?.group_id ?? queued[0]?.group_id ?? null;
   const groupId = active ?? (running.length === 0 && queued.length === 0 ? latestGroup : null);
   const members = groupId !== null ? jobs.filter((job) => job.group_id === groupId) : [];

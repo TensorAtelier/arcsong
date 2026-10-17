@@ -8,6 +8,7 @@ landing: merge
 - [x] metrics-script      — `scripts/metrics.py` writes a snapshot row to docs/product/metrics.md from `gh api` → .scratch/metrics-script/REPORT.md
 - [x] score-zero-notes    — the Score page explains a take the model planned with no vocal melody → .scratch/score-zero-notes/REPORT.md
 - [x] readme-v0-2         — README for the redesign: new screenshots and a "Your first song" walkthrough (v0.2.0) → .scratch/readme-v0-2/REPORT.md
+- [x] sketch-ready-link   — Create keeps the latest sketch's Compare link after it finishes (release QA fix) → .scratch/sketch-ready-link/REPORT.md
 - [ ] release-qa-script   — release journeys 1–5 on the fake Engine as one command over the DevTools protocol
 - [ ] e2e-in-ci           — the same journeys headless on CI                                    (needs: release-qa-script)
 - [ ] cloud-engine-modal  — render on the user's own Modal account: a CUDA Engine over `yue2` behind a remote worker (needs: X-001 result)
