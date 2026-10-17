@@ -9,7 +9,7 @@ landing: merge
 - [x] score-zero-notes    — the Score page explains a take the model planned with no vocal melody → .scratch/score-zero-notes/REPORT.md
 - [x] readme-v0-2         — README for the redesign: new screenshots and a "Your first song" walkthrough (v0.2.0) → .scratch/readme-v0-2/REPORT.md
 - [x] sketch-ready-link   — Create keeps the latest sketch's Compare link after it finishes (release QA fix) → .scratch/sketch-ready-link/REPORT.md
-- [ ] style-dice          — no style chips; a dice button next to Style fills a random tag-form style
+- [x] style-dice          — no style chips; a dice button next to Style fills a random tag-form style → .scratch/style-dice/REPORT.md
 - [ ] release-qa-script   — release journeys 1–5 on the fake Engine as one command over the DevTools protocol
 - [ ] song-name           — a Song name in Create, shared by a sketch's takes; every song stores its name (existing ones backfilled)
 - [ ] e2e-in-ci           — the same journeys headless on CI                                    (needs: release-qa-script)

@@ -235,7 +235,6 @@ button.dice { width: 46px; flex-shrink: 0; padding: 0; background: var(--raised)
 .seed-row .controls { display: flex; gap: 6px; }
 .seed-row input { width: 130px; font-family: var(--mono); }
 .seed-row button { height: 46px; }
-.seed-row button.dice { width: 46px; padding: 0; background: var(--raised); }
 .seed-row button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); }
 .advanced { margin: 0; }
 .advanced summary { font-weight: 400; color: var(--muted); font-size: 14px; }
