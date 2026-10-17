@@ -14,6 +14,28 @@ const STAGES: { key: Stage; label: string }[] = [
 
 const FINISHED_SHOWN = 5;
 const FAILURES_SHOWN = 3;
+// A failure is news for a day; after that it leaves the column (the job row stays in the database).
+const FAILURE_SHOWN_SECONDS = 24 * 60 * 60;
+const DISMISSED_KEY = "arcsong.dismissedFailures";
+
+/** Dismissed failures, kept in this browser so a reload doesn't bring them back. */
+function loadDismissed(): Set<number> {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "[]");
+    return new Set(Array.isArray(saved) ? saved.filter((id) => typeof id === "number") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDismissed(ids: Set<number>) {
+  try {
+    // Only the newest few matter: older failures age out of the column anyway.
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids].sort((a, b) => b - a).slice(0, 200)));
+  } catch {
+    // Private windows and blocked storage: dismissing still works for this visit.
+  }
+}
 
 interface Props {
   jobs: Job[];
@@ -24,8 +46,14 @@ interface Props {
 
 /** Create's right-hand column: what is rendering, what went wrong, and what just finished. */
 export default function QueuePanel({ jobs, songs, onChanged, error }: Props) {
-  // Failures the user has dismissed this session.
-  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<number>>(loadDismissed);
+  const dismiss = (id: number) =>
+    setDismissed((current) => {
+      const next = new Set(current).add(id);
+      saveDismissed(next);
+      return next;
+    });
+  const recent = Date.now() / 1000 - FAILURE_SHOWN_SECONDS;
   // Group id -> member ids, oldest first, to label "Take 2 of 4".
   const groups = new Map<number, number[]>();
   for (const job of [...jobs].sort((a, b) => a.id - b.id)) {
@@ -35,7 +63,9 @@ export default function QueuePanel({ jobs, songs, onChanged, error }: Props) {
 
   const running = jobs.filter((job) => job.status === "running").sort((a, b) => a.id - b.id);
   const queued = jobs.filter((job) => job.status === "queued").sort((a, b) => a.id - b.id);
-  const failed = jobs.filter((job) => job.status === "failed" && !dismissed.has(job.id)).slice(0, FAILURES_SHOWN);
+  const failed = jobs
+    .filter((job) => job.status === "failed" && !dismissed.has(job.id) && (job.finished_at ?? job.created_at) > recent)
+    .slice(0, FAILURES_SHOWN);
   const finished = jobs.filter((job) => job.status === "done").slice(0, FINISHED_SHOWN);
   const byId = new Map((songs ?? []).map((song) => [song.id, song]));
 
@@ -83,7 +113,7 @@ export default function QueuePanel({ jobs, songs, onChanged, error }: Props) {
           key={job.id}
           job={job}
           onChanged={onChanged}
-          onDismiss={() => setDismissed((current) => new Set(current).add(job.id))}
+          onDismiss={() => dismiss(job.id)}
         />
       ))}
 

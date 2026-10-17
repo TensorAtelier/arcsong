@@ -13,10 +13,10 @@ while the project is at 0.x, minor versions may change behaviour.
   full quality), **Plan a melody** (Score only) and **Cover a recording** (now with drag and
   drop). Style suggestions and section tags insert with a click; a dice button picks a seed.
 - Beside it, the queue shows what is rendering stage by stage, failed jobs with Retry, and what
-  just finished.
+  just finished. Dismissed failures stay dismissed, and a failure older than a day stops showing.
 - The Library groups a sketch's takes and their Finals in one card, with filters for starred
   songs, drafts and Finals, and a ⋯ menu per song for rename, the Score, downloads and delete.
-- Compare shows the shared playhead and takes keyboard shortcuts: 1–9 switch take, Space plays
+- Compare shows the shared playhead and takes keyboard shortcuts: 1–8 switch take, Space plays
   or pauses, S stars.
 - The Score's notation sits on paper beside the ABC editor, and renders at a chosen quality.
 
@@ -26,6 +26,8 @@ while the project is at 0.x, minor versions may change behaviour.
   the next song, and the message says what happened and what to do.
 
 ### Power
+- With `--require-ac`, a song refused on battery now says so and how to render anyway,
+  instead of mlx-Yue's "AC power is required for an acceptance benchmark".
 - Songs render on battery by default, more slowly. `--require-ac` (or `ARCSONG_REQUIRE_AC=1`)
   brings back the old behaviour of waiting for AC power; `--allow-battery` is no longer needed
   but still accepted.

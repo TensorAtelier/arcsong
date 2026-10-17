@@ -178,3 +178,23 @@ def test_a_guard_stop_drops_the_pipeline_so_the_next_job_reloads(tmp_path, monke
 
     assert pipe.closed
     assert engine._pipe is None and engine._precision is None
+
+
+@pytest.mark.needs_mlx
+def test_an_ac_refusal_says_how_to_render_on_battery(tmp_path, monkeypatch):
+    """mlx-Yue's AC guard refuses while the pipeline is built, in its benchmark's words."""
+    import lyra
+
+    from arcsong.mlx_engine import MlxYueEngine
+
+    def refuse(*args, **kwargs):
+        raise RuntimeError("AC power is required for an acceptance benchmark")
+
+    monkeypatch.setattr(lyra.YuE2Pipeline, "from_pretrained", refuse)
+    engine = MlxYueEngine(models=tmp_path, require_ac=True)
+
+    with pytest.raises(RuntimeError) as raised:
+        engine.load("8bit")
+
+    assert "--require-ac" in str(raised.value)
+    assert "acceptance benchmark" not in str(raised.value)
