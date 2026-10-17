@@ -160,7 +160,8 @@ def test_finalize_queues_a_32_step_final_that_runs_only_synthesis_and_decoding(t
         songs = client.get("/api/songs").json()
 
     assert final["source_song_id"] == draft["song_id"]
-    assert final["request"] == {**draft["request"], "steps": 32}
+    # The same request at 32 steps, carrying the Draft's current name.
+    assert final["request"] == {**draft["request"], "steps": 32, "title": draft["title"]}
     assert done["status"] == "done", done["error"]
     stages = []
     while not subscription.empty():
