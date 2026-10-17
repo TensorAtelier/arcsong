@@ -85,10 +85,12 @@ fake weights download); real-weights journeys on the owner's Mac (`dev start arc
 production: https://github.com/TensorAtelier/arcsong/releases (install: `uv tool install git+https://github.com/TensorAtelier/arcsong`)
 health: CI on `main` (`gh run list --limit 1`) — macOS, Linux, Windows on the fake Engine
 
-Journeys (end-to-end, in priority order):
+Journeys (end-to-end, in priority order). `scripts/release-qa` scripts the core of 1–5; still by hand
+per release: Setup's checks and progress (1), keys 3–4 (2), play across views (3), the piano preview
+and diff (4), and rendering the cover (5).
 
 1. [core] First song — fresh data dir → Setup checks → licence → download (fake) → Create, Single
-   song → progress → plays in the bar → in the Library tomorrow (after a restart).
+   song (refused until named) → progress → plays in the bar → in the Library tomorrow (after a restart).
 2. [core] Sketch and pick — Sketch 4 takes → Compare: 1–4 switch at the same moment, Space,
    S stars → Finalize → the Final appears in the sketch's Library card.
 3. [core] Library — search, filter Starred, rename from ⋯, play across views, download FLAC named
