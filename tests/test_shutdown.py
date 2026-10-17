@@ -1,6 +1,5 @@
 """Stopping, killing and restarting the server; model load failures; Takes saved at shutdown."""
 
-import os
 import signal
 import socket
 import subprocess
@@ -8,6 +7,7 @@ import sys
 import time
 import urllib.request
 
+import psutil
 import pytest
 from fastapi.testclient import TestClient
 
@@ -27,17 +27,17 @@ def free_port() -> int:
 
 
 def children(pid: int) -> list[int]:
-    out = subprocess.run(["pgrep", "-P", str(pid)], capture_output=True, text=True).stdout
-    return [int(p) for p in out.split()]
+    try:
+        return [child.pid for child in psutil.Process(pid).children()]
+    except psutil.NoSuchProcess:
+        return []
 
 
 def alive(pid: int) -> bool:
     try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
+        return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+    except psutil.NoSuchProcess:
         return False
-    return subprocess.run(["ps", "-p", str(pid), "-o", "stat="], capture_output=True,
-                          text=True).stdout.strip() not in ("", "Z")  # fmt: skip
 
 
 @pytest.fixture
@@ -65,6 +65,7 @@ def server(tmp_path):
         process.wait()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows has no SIGTERM to stop gracefully")
 def test_the_server_stops_promptly_with_an_event_stream_open(server):
     process, port = server
     worker = children(process.pid)[0]

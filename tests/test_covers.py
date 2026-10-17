@@ -193,6 +193,7 @@ def test_a_cover_is_refused_while_the_covers_checks_are_still_running(tmp_path):
     assert later.status_code == 201
 
 
+@pytest.mark.needs_mlx
 def test_cancelling_a_real_transcription_reads_as_cancelled_not_failed(tmp_path, monkeypatch):
     """mlx-Yue raises its own InterruptedError; the worker must see arcsong's Cancelled, or the
     queue shows a red failure with a traceback for something the user asked for."""
@@ -218,6 +219,7 @@ def test_cancelling_a_real_transcription_reads_as_cancelled_not_failed(tmp_path,
         engine.transcribe(audio, {}, tmp_path / "out", lambda: False, lambda event: None)
 
 
+@pytest.mark.needs_mlx
 def test_cancelling_while_the_model_loads_also_reads_as_cancelled(tmp_path, monkeypatch):
     """The first cover spends minutes loading 2.4 GB of weights, and mlx-Yue can cancel inside
     that; it must not surface as a failure either."""

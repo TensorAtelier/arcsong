@@ -10,6 +10,8 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
+import psutil
+
 from arcsong.engine import Cancelled, EngineSpec
 from arcsong.progress import Coalescer
 
@@ -23,10 +25,22 @@ def _is_cancelled(cancel_job, job_id: int) -> bool:
 
 def exit_with_parent(parent_pid: int) -> None:
     """If the server dies without stopping us (e.g. SIGKILL), exit rather than keep the model
-    and the GPU lock. Runs in a daemon thread, so it also works mid-render."""
+    and the GPU lock. Runs in a daemon thread, so it also works mid-render.
+
+    psutil rather than `os.getppid()`: on Windows a dead parent's id is never replaced, and
+    `is_running()` also compares start times, so a reused pid doesn't keep us alive."""
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        os._exit(0)
     while True:
         time.sleep(PARENT_CHECK_SECONDS)
-        if os.getppid() != parent_pid:
+        try:
+            # A killed parent can linger as a zombie until its own parent reaps it.
+            alive = parent.is_running() and parent.status() != psutil.STATUS_ZOMBIE
+        except psutil.Error:
+            alive = False
+        if not alive:
             os._exit(0)
 
 

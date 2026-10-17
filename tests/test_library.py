@@ -62,8 +62,10 @@ def test_deleting_a_song_removes_its_files_song_and_job(client, tmp_path):
     assert [s["id"] for s in client.get("/api/songs").json()] == [kept["song_id"]]
     assert client.get(f"/api/jobs/{gone['id']}").status_code == 404
     assert client.get(f"/api/songs/{gone['song_id']}/audio").status_code == 404
+    # A late update about either job can be queued ahead of the delete.
     message = subscription.get(timeout=5)
-    assert message["type"] == "deleted"
+    while message["type"] != "deleted":
+        message = subscription.get(timeout=5)
     assert (message["job_id"], message["song_id"]) == (gone["id"], gone["song_id"])
     assert client.delete(f"/api/songs/{gone['song_id']}").status_code == 404
 
