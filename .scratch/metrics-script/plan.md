@@ -8,7 +8,7 @@
 ## Tickets
 
 - [x] 01 — Snapshot row from `gh api`: stars, unique cloners, unique views, release downloads; `--dry-run` prints it; check by running it.
-- [ ] 02 — Write the row into `metrics.md`: append, or replace today's row; keeps the note column; unit test on a sample table.
+- [x] 02 — Write the row into `metrics.md`: append, or replace today's row; keeps the note column; unit test on a sample table.
 
 ## Notes
 
