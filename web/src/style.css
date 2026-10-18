@@ -231,6 +231,10 @@ button.star.on { color: var(--accent-ink); }
 .with-dice { display: flex; gap: 6px; }
 .with-dice input { flex: 1; min-width: 0; }
 button.dice { width: 46px; flex-shrink: 0; padding: 0; background: var(--raised); }
+.lyrics-help { display: flex; flex-direction: column; gap: 6px; }
+.lyrics-notes { list-style: none; margin: 0; padding: 8px 12px; border-left: 2px solid var(--warn); background: var(--field); border-radius: 0 8px 8px 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.lyrics-notes .line { font-family: var(--mono); font-size: 12px; color: var(--warn); margin-right: 8px; }
+.lyrics-notes .more { color: var(--muted); }
 .seed-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .seed-row .controls { display: flex; gap: 6px; }
 .seed-row input { width: 130px; font-family: var(--mono); }

@@ -1,6 +1,7 @@
 import { type FormEvent, type ReactNode, useRef, useState } from "react";
 import { api, type Job, type Mode, type Precision, type SongRequest } from "./api";
 import { DiceIcon } from "./icons";
+import { formatEstimate, lengthEstimate, lyricsNotes } from "./lyrics";
 import { randomStyle } from "./styles";
 
 type Tab = "write" | "plan" | "cover";
@@ -156,7 +157,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
         rows={tab === "plan" ? 7 : 10}
         placeholder={"[Verse]\nSoft morning light is touching the window\n\n[Chorus]\nStay with the rhythm, let it carry us home"}
       />
-      <span className="muted small">Section tags shape the song. Leave empty for an instrumental.</span>
+      <LyricsHelp lyrics={lyrics} />
     </div>
   );
 
@@ -314,5 +315,33 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
         </form>
       )}
     </section>
+  );
+}
+
+const NOTES_SHOWN = 3;
+
+/** The length the lyrics suggest, and what YuE2 is likely to misread. Advice only. */
+function LyricsHelp({ lyrics }: { lyrics: string }) {
+  const estimate = lengthEstimate(lyrics);
+  const notes = lyricsNotes(lyrics);
+  return (
+    <div className="lyrics-help" aria-live="polite">
+      <span className="muted small">
+        {estimate
+          ? `Song length: ${formatEstimate(estimate)} from these lyrics.`
+          : "Empty lyrics make an instrumental; the model picks its length."}
+      </span>
+      {notes.length > 0 && (
+        <ul className="lyrics-notes">
+          {notes.slice(0, NOTES_SHOWN).map((note) => (
+            <li key={`${note.line}-${note.text}`}>
+              {note.line !== undefined && <span className="line">Line {note.line}</span>}
+              {note.text}
+            </li>
+          ))}
+          {notes.length > NOTES_SHOWN && <li className="more">and {notes.length - NOTES_SHOWN} more</li>}
+        </ul>
+      )}
+    </div>
   );
 }
