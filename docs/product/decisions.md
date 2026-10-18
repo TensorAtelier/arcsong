@@ -1,5 +1,18 @@
 # Decisions
 
+## 2026-10-18 — cycle 3
+
+- North star: 0 stars (no new snapshot: the machine clock is still on 2026-10-17; v0.3.0 has 0 downloads; nothing announced)
+- Picked (chain 2 features, one release, v0.4.0):
+  - e2e-in-ci (0.84: I3 C0.7 core2 / E3 Cx1 R0 U1) — run `scripts/release-qa` on CI so a broken core journey can't reach a release unnoticed.
+  - lyrics-help = lyrics-check (0.67: I2 C0.5 core2 / E2 Cx0 R0 U1) + length-estimate (rescored 0.80: I1 C0.8 core2 / E1 Cx0 R0 U1 — X-001 measured 71 s for a verse + chorus, ~165 s for a full song) — one feature: both live under the Lyrics box. Flags what YuE2 reads badly (no section labels, no blank line between sections, stage directions in brackets/parentheses, very long lines) and estimates the length.
+- Passed over: song-metadata (rescored 0.50: needs `mutagen`, upkeep 1); cloud-engine-modal (0.58) — a week's build, next cycle with nothing else beside it.
+- Repay from cycle 2: J6 real weights — still on battery this morning; stays open.
+- CI: the last run's Windows job was lost by the runner (no log, step never concluded); rerun.
+- Shipped: (pending)
+- Release QA: (pending)
+- Next: (pending)
+
 ## 2026-10-17 — cycle 2
 
 - North star: 0 stars (Δ 0; same day as v0.2.0; announcement not posted yet)

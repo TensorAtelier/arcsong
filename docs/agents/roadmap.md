@@ -12,15 +12,14 @@ landing: merge
 - [x] style-dice          — no style chips; a dice button next to Style fills a random tag-form style → .scratch/style-dice/REPORT.md
 - [x] release-qa-script   — release journeys 1–5 on the fake Engine as one command over the DevTools protocol → .scratch/release-qa-script/REPORT.md
 - [x] song-name           — a required Song name in Create and Cover, shared by a sketch's takes; every song stores its name (existing ones backfilled) → .scratch/song-name/REPORT.md
-- [ ] e2e-in-ci           — the same journeys headless on CI                                    (needs: release-qa-script)
+- [ ] e2e-in-ci           — `scripts/release-qa` on CI                                         (needs: release-qa-script)
+- [ ] lyrics-help         — under Lyrics: flag what YuE2 reads badly, and estimate the song's length
 - [ ] cloud-engine-modal  — render on the user's own Modal account: a CUDA Engine over `yue2` behind a remote worker (needs: X-001 result)
 - [ ] runpod-serverless   — the same remote protocol on RunPod serverless                       (needs: cloud-engine-modal)
 
 ## Later
 
 - song-metadata: title, artist and cover art written into downloaded files.
-- length-estimate: expected song length from the lyrics.
-- lyrics-check: flag lyrics YuE2 reads badly (missing section labels, no blank lines, stage directions).
 - vocal-less takes flagged in Compare and the Library (from score-zero-notes: needs the Score per take).
 - swap-limit: an option to raise mlx-Yue's 64 MiB swap-out stop, if the stop keeps tripping.
 - Homebrew tap; a project page on tensoratelier.com.
