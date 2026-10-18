@@ -12,7 +12,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "cover", label: "Cover a recording" },
 ];
 
-const SECTION_TAGS = ["Intro", "Verse", "Chorus", "Bridge", "Outro"];
+const SECTION_TAGS = ["Intro", "Verse", "Pre-Chorus", "Chorus", "Interlude", "Bridge", "Outro"];
 
 /** Sketch renders quick drafts with different seeds; Single renders one Take at full quality. */
 type Kind = "sketch" | "single";
