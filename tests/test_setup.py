@@ -410,7 +410,7 @@ def test_the_real_transcription_weights_are_described(tmp_path):
     assert ffmpeg["id"] == "ffmpeg" and ffmpeg["status"] in ("ok", "fail")
 
 
-def test_a_parts_progress_counts_only_its_own_files(tmp_path):
+def test_a_parts_progress_counts_only_its_own_files(tmp_path, monkeypatch):
     """The covers weights sit beside the song weights, so a part must not count the other's
     files as its own download progress."""
     from arcsong.models import TranscriptionModels, bytes_on_disk
@@ -419,6 +419,15 @@ def test_a_parts_progress_counts_only_its_own_files(tmp_path):
     (shared / "converted").mkdir(parents=True)
     (shared / "converted" / "ar-8bit.safetensors").write_bytes(b"x" * 4096)  # a song weight
     covers = TranscriptionModels(shared)
+    # Small declared files, so "more than the whole part" is kilobytes, not ~5 GB on disk (writing
+    # that filled Windows runners until they died).
+    declared = {
+        "sheetsage2/config.json": 2060,
+        "sheetsage2/model.safetensors": 4000,
+        "mert2/model.safetensors": 3000,
+    }
+    monkeypatch.setattr(covers, "files", lambda: dict(declared))
+    total = sum(declared.values())
 
     assert bytes_on_disk(covers) == 0
 
@@ -433,13 +442,11 @@ def test_a_parts_progress_counts_only_its_own_files(tmp_path):
     in_flight.write_bytes(b"z" * 1000)
 
     assert bytes_on_disk(covers) == 2060 + 1000
-    assert bytes_on_disk(covers) < weights_state(covers)["bytes_total"]
+    assert bytes_on_disk(covers) < total
 
-    # Half-written files never push a part past its own total. Only the size matters, so set it
-    # without writing ~5 GB (sparse on APFS and ext4; writing it filled a Windows runner's disk).
-    with in_flight.open("r+b") as half:
-        half.truncate(weights_state(covers)["bytes_total"] * 2)
-    assert bytes_on_disk(covers) == weights_state(covers)["bytes_total"]
+    # Half-written files never push a part past its own total.
+    in_flight.write_bytes(b"z" * (total * 2))
+    assert bytes_on_disk(covers) == total
 
 
 def test_the_licence_names_every_set_of_weights_arcsong_downloads(tmp_path):
