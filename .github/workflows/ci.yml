@@ -50,3 +50,37 @@ jobs:
         working-directory: web
       - run: npm run typecheck
         working-directory: web
+
+  journeys:
+    # The release journeys (docs/product/product.md → Release) in headless Chrome against the fake
+    # Engine: scripts/release-qa exits non-zero when any journey fails.
+    name: Release journeys
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: uv sync --frozen
+      - name: ffmpeg for the cover journey
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Walk the journeys
+        # `shell: bash` adds pipefail, so tee can't hide a failing journey.
+        shell: bash
+        run: |
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable)" scripts/release-qa | tee release-qa.log
+      - name: Keep the screenshots
+        if: always()
+        run: |
+          dir="$(sed -n 's/^screenshots: //p' release-qa.log)"
+          mkdir -p journeys && if [ -n "$dir" ]; then cp -r "$dir"/. journeys/; fi
+          cp release-qa.log journeys/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-journeys
+          path: journeys/
