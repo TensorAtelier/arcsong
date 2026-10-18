@@ -9,9 +9,14 @@
 - Passed over: song-metadata (rescored 0.50: needs `mutagen`, upkeep 1); cloud-engine-modal (0.58) — a week's build, next cycle with nothing else beside it.
 - Repay from cycle 2: J6 real weights — still on battery this morning; stays open.
 - CI: the last run's Windows job was lost by the runner (no log, step never concluded); rerun.
-- Shipped: (pending)
-- Release QA: (pending)
-- Next: (pending)
+- Shipped: **v0.4.0** (https://github.com/TensorAtelier/arcsong/releases/tag/v0.4.0) — e2e-in-ci, lyrics-help. CI green on 658aeae (seven jobs, the journeys included); the tag installs with `uvx --from git+…@v0.4.0` and serves the committed bundle.
+- Release QA: verify green (277 passed, ruff, tsc); `scripts/release-qa` J1–J5 pass locally and on CI. J6 real weights: **not run** — still on battery (64%, discharging); third release without it.
+- Incidents:
+  - Windows runners died mid-suite twice (no log): the covers-progress test still reserved ~5 GB on NTFS after the truncate fix; it now declares small files.
+  - The release commit's journeys failed once with "Chrome did not start" (a 10 s window on a cold runner): now 30 s, and Chrome's own output is printed on failure.
+- Metrics: no new row (machine clock still 2026-10-17 at the start of the run); v0.3.0 and v0.4.0 have 0 downloads; nothing announced.
+- Shortcuts: J6 — repay on AC power before the announcement; it has now been skipped for v0.3.0 and v0.4.0, so it moves to NEEDS-YOU-level visibility in the next run's opening if still open.
+- Next: cloud-engine-modal (0.58) as the cycle's only build — a week's work; it needs one owner call on how a user connects their Modal account (the PM's default: the user runs `modal setup` themselves and Arcsong uses that login; no keys stored by Arcsong). The announcement is still the lever on the north star; until it goes out, stars stay at 0 and the kill clock hasn't started.
 
 ## 2026-10-17 — cycle 2
 
