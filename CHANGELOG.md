@@ -3,7 +3,9 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
-## Unreleased
+## 0.4.0 — 2026-10-18
+
+Help with lyrics.
 
 - Under Lyrics, Create estimates the song's length and points out what YuE2 is likely to misread:
   missing section labels, no blank line between sections, stage directions like "(guitar

@@ -1,6 +1,6 @@
 [project]
 name = "arcsong"
-version = "0.3.0"
+version = "0.4.0"
 description = "Local app for generating full songs with the YuE2 music model on your own Mac"
 readme = "README.md"
 requires-python = ">=3.12"
