@@ -6,7 +6,7 @@
 
 const LABEL = /^\[([^\]]*)\]$/;
 const KNOWN = new Set(["intro", "verse", "pre-chorus", "chorus", "post-chorus", "interlude", "bridge", "hook", "break", "outro"]);
-// A whole line in parentheses or brackets that isn't a label reads like a note to a musician.
+// A whole line in parentheses or asterisks reads like a note to a musician (or an ad-lib).
 const DIRECTION = /^\(.*\)$|^\*.*\*$/;
 const LONG_LINE = 80;
 
@@ -34,8 +34,11 @@ export function lyricsNotes(lyrics: string): LyricsNote[] {
   const firstLabel = lines.findIndex((line) => labelName(line) !== null);
   if (firstLabel === -1) {
     notes.push({ text: "No section labels: start each part with one, like [Verse] or [Chorus], on its own line." });
-  } else if (lines.slice(0, firstLabel).some((line) => line.trim())) {
-    notes.push({ line: 1, text: "Lines before the first label: put a label like [Verse] above them." });
+  } else {
+    const firstText = lines.findIndex((line) => line.trim());
+    if (firstText < firstLabel) {
+      notes.push({ line: firstText + 1, text: "Lines before the first label: put a label like [Verse] above them." });
+    }
   }
 
   lines.forEach((raw, index) => {
@@ -51,7 +54,7 @@ export function lyricsNotes(lyrics: string): LyricsNote[] {
       return;
     }
     if (DIRECTION.test(line)) {
-      notes.push({ line: index + 1, text: `"${line}" will be sung as words. For an instrumental part, use an empty [Interlude].` });
+      notes.push({ line: index + 1, text: `"${line}" will be sung as words. If it means an instrumental part, use an empty [Interlude] instead.` });
     } else if (line.length > LONG_LINE) {
       notes.push({ line: index + 1, text: "A long line: split it where you'd take a breath." });
     }
@@ -77,8 +80,7 @@ export function lengthEstimate(lyrics: string): { low: number; high: number } | 
 /** "about 45–70 s" for short songs, "about 2–3½ min" for longer ones (bounds rounded outward). */
 export function formatEstimate({ low, high }: { low: number; high: number }): string {
   if (high < 120) {
-    const five = (seconds: number) => Math.round(seconds / 5) * 5;
-    return `about ${five(low)}–${five(high)} s`;
+    return `about ${Math.floor(low / 5) * 5}–${Math.ceil(high / 5) * 5} s`;
   }
   const show = (minutes: number) => (minutes % 1 ? `${Math.floor(minutes) || ""}½` : String(minutes));
   const low2 = Math.floor(low / 30) / 2;

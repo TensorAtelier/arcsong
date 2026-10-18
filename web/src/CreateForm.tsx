@@ -329,7 +329,9 @@ function LyricsHelp({ lyrics }: { lyrics: string }) {
       <span className="muted small">
         {estimate
           ? `Song length: ${formatEstimate(estimate)} from these lyrics.`
-          : "Empty lyrics make an instrumental; the model picks its length."}
+          : lyrics.trim()
+            ? "No sung lines yet: as it stands this is an instrumental, and the model picks its length."
+            : "Empty lyrics make an instrumental; the model picks its length."}
       </span>
       {notes.length > 0 && (
         <ul className="lyrics-notes">

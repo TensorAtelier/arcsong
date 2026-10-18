@@ -5,4 +5,4 @@ size: lite
 
 - [x] plan
 - [x] build
-- [ ] review
+- [x] review
