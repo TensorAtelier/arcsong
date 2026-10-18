@@ -186,6 +186,16 @@ button.star.on { color: var(--accent-ink); }
   background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent-ink);
   border-radius: 6px; padding: 3px 10px; font-family: var(--mono); font-size: 12px;
 }
+.hint-tip {
+  position: relative; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 999px;
+  border: 1px solid var(--border-strong); color: var(--muted); font-size: 12px; font-weight: 600; cursor: help;
+}
+.hint-tip [role="tooltip"] {
+  display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: max-content; max-width: 300px;
+  padding: 8px 12px; border-radius: 8px; background: var(--raised); border: 1px solid var(--border); color: var(--text);
+  box-shadow: var(--shadow); font-size: 13px; font-weight: 400; line-height: 1.5; text-align: left;
+}
+.hint-tip:hover [role="tooltip"], .hint-tip:focus [role="tooltip"] { display: block; }
 .segmented { display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
 .segmented button { border: none; border-radius: 999px; padding: 6px 14px; color: var(--muted); }
 .segmented button[aria-pressed="true"] { background: var(--raised); color: var(--text); font-weight: 600; }

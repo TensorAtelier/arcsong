@@ -147,6 +147,16 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
               [{tag}]
             </button>
           ))}
+          <span className="hint-tip" tabIndex={0} aria-describedby="section-hint">
+            ?
+            <span id="section-hint" role="tooltip">
+              Each label on its own line, blank line before it.
+              <br />
+              Number repeats: [Verse 2], [Chorus 3].
+              <br />
+              Instrumental part: an empty [Interlude].
+            </span>
+          </span>
         </div>
       </div>
       <textarea
