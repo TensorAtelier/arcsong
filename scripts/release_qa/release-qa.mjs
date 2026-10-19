@@ -104,7 +104,6 @@ try {
     await waitFor(`document.body.textContent.includes('Setup is complete')`, 30000, "setup complete");
     await go(BASE + "#/");
     await sleep(800);
-    await clickText(".mode", "Single song");
     await fill("#style", STYLE);
     await fill("#lyrics", LYRICS);
     await sleep(300);
@@ -112,7 +111,7 @@ try {
     const unnamedBlocked = await evaluate(`document.querySelector('.cta button[type=submit]').disabled`);
     await fill("#song-name", "First Light");
     await sleep(200);
-    await click(".cta button[type=submit]");
+    await click(".cta button[value=single]");
     await waitFor(`!!document.querySelector('.finished li')`, 60000, "a finished song");
     const title = await evaluate(`document.querySelector('.finished .row-title').textContent`);
     await click(".finished button.play");
@@ -139,7 +138,7 @@ try {
     await fill("#style", STYLE);
     await fill("#lyrics", LYRICS);
     await sleep(300);
-    await click(".cta button[type=submit]"); // Sketch · 4 takes is the default
+    await click(".cta button[value=sketch]"); // 4 takes is the default
     await waitFor(`/Compare your last sketch \\(4 takes\\)/.test(document.querySelector('.compare-link')?.textContent ?? '')`, 120000, "the finished sketch's Compare link");
     const linkText = await evaluate(`document.querySelector('.compare-link').textContent`);
     await click(".compare-link");

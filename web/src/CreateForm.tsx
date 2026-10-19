@@ -25,7 +25,8 @@ const SECTION_HINT = [
   "Instrumental part: an empty [Interlude].",
 ];
 
-/** Sketch renders quick drafts with different seeds; Single renders one Take at full quality. */
+/** Sketch renders quick drafts with different seeds; Single renders one Take at full quality.
+ * Each has its own submit button, so the choice is made at the moment of rendering. */
 type Kind = "sketch" | "single";
 const SKETCH_STEPS = 8;
 const SINGLE_STEPS = 32;
@@ -42,7 +43,6 @@ interface Props {
 
 export default function CreateForm({ onCreated, initial, canRender, cover }: Props) {
   const [tab, setTab] = useState<Tab>("write");
-  const [kind, setKind] = useState<Kind>(initial && initial.steps === SINGLE_STEPS ? "single" : "sketch");
   const [name, setName] = useState(initial?.title ?? "");
   const [style, setStyle] = useState(initial?.style ?? "");
   const [lyrics, setLyrics] = useState(initial?.lyrics ?? "");
@@ -55,7 +55,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
   const lyricsBox = useRef<HTMLTextAreaElement>(null);
 
   const seedValue = seed === "" ? null : Number(seed);
-  const count = kind === "sketch" ? takes : 1;
+  const blocked = submitting || !name.trim() || !style.trim() || !canRender;
 
   async function run(action: () => Promise<void>) {
     setSubmitting(true);
@@ -72,6 +72,10 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
   function submit(event: FormEvent) {
     event.preventDefault();
     if (tab === "plan") return void run(planOnly);
+    // Enter in a field submits with the first button, Make the song.
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const kind: Kind = submitter?.value === "sketch" ? "sketch" : "single";
+    const count = kind === "sketch" ? takes : 1;
     void run(async () => {
       const steps = kind === "sketch" ? SKETCH_STEPS : SINGLE_STEPS;
       const request = { title: name.trim(), style, lyrics, mode, seed: seedValue, precision, steps } as const;
@@ -223,18 +227,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
         >
           {initial && <p className="muted small">Loaded from the Library. Change anything, then render.</p>}
 
-          {tab === "write" ? (
-            <div className="modes" role="radiogroup" aria-label="How to render">
-              <button type="button" role="radio" className="mode" aria-checked={kind === "sketch"} onClick={() => setKind("sketch")}>
-                <strong>Sketch · {takes} takes</strong>
-                <span>Quick drafts with different seeds, side by side. Finalize the one you like.</span>
-              </button>
-              <button type="button" role="radio" className="mode" aria-checked={kind === "single"} onClick={() => setKind("single")}>
-                <strong>Single song</strong>
-                <span>One take at full quality, {SINGLE_STEPS} steps. Best once you know the sound.</span>
-              </button>
-            </div>
-          ) : (
+          {tab === "plan" && (
             <p className="intro">
               Arcsong writes the melody and chords in a few seconds, as notation you can read, play on a piano and
               edit. Render audio from it when it sounds right.
@@ -272,7 +265,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
               <summary>
                 Advanced: {mode === "full" ? "melody + chords" : mode === "melody" ? "melody only" : "no Score"} ·{" "}
                 {precision === "8bit" ? "8-bit" : "bf16"}
-                {tab === "write" && kind === "sketch" && ` · ${takes} takes`}
+                {tab === "write" && ` · sketches of ${takes}`}
               </summary>
               <div className="grid">
                 <div>
@@ -290,7 +283,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
                     <option value="bf16">bf16</option>
                   </select>
                 </div>
-                {tab === "write" && kind === "sketch" && (
+                {tab === "write" && (
                   <div>
                     <label htmlFor="takes">Takes in a sketch</label>
                     <select id="takes" value={takes} onChange={(e) => setTakes(Number(e.target.value))}>
@@ -308,24 +301,27 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
           {notices}
 
           <div className="cta">
-            <button type="submit" className="primary big" disabled={submitting || !name.trim() || !style.trim() || !canRender}>
-              {submitting
-                ? tab === "plan"
-                  ? "Planning…"
-                  : "Adding…"
-                : tab === "plan"
-                  ? "Plan the melody"
-                  : kind === "sketch"
-                    ? `Sketch ${takes} takes`
-                    : "Make the song"}
-            </button>
-            <span className="muted">
-              {tab === "plan"
-                ? "A few seconds · no audio yet"
-                : kind === "sketch"
-                  ? `Quick drafts at ${SKETCH_STEPS} steps${seed !== "" ? `, seeds ${seed}–${Number(seed) + takes - 1}` : ""} · keep writing while they render`
-                  : `Full quality at ${SINGLE_STEPS} steps`}
-            </span>
+            {tab === "plan" ? (
+              <>
+                <button type="submit" className="primary big" disabled={blocked}>
+                  {submitting ? "Planning…" : "Plan the melody"}
+                </button>
+                <span className="muted">A few seconds · no audio yet</span>
+              </>
+            ) : (
+              <>
+                <button type="submit" name="kind" value="single" className="primary big two-line" disabled={blocked}>
+                  {submitting ? "Adding…" : "Make the song"}
+                  <small>One take, full quality</small>
+                </button>
+                <button type="submit" name="kind" value="sketch" className="big two-line" disabled={blocked}>
+                  {submitting ? "Adding…" : `Sketch ${takes} takes`}
+                  <small>
+                    Quick drafts to compare{seed !== "" ? `, seeds ${seed}–${Number(seed) + takes - 1}` : ""}
+                  </small>
+                </button>
+              </>
+            )}
           </div>
         </form>
       )}

@@ -97,20 +97,21 @@ directory yourself if you want the songs and the 11 GB of weights gone too.
 
 ## Your first song
 
-1. **Create → Write a song.** Type a style — a language, a genre, a few instruments and a voice,
-   e.g. *English, late-night lo-fi soul, warm Rhodes, brushed drums, soft male vocal* — or click
-   the suggestions under the box. Write lyrics with section tags (the `[Verse]`, `[Chorus]` …
+1. **Create → Write a song.** Name the song and type a style — a language, a genre, a few
+   instruments and a voice, e.g. *English, late-night lo-fi soul, warm Rhodes, brushed drums, soft
+   male vocal* — or roll the dice beside the box for a random one. Write lyrics with section tags (the `[Verse]`, `[Chorus]` …
    buttons insert them at the cursor). Leave the lyrics empty for an instrumental.
-2. **Sketch 4 takes.** Four quick drafts with different seeds, 8 synthesis steps each. They
+2. **Sketch 4 takes** (the second button at the bottom). Four quick drafts with different seeds, 8 synthesis steps each. They
    render one after another while you keep writing; the column on the right shows each stage.
 3. **Compare & pick.** Play the takes against each other: `1`–`4` switch take at the same
    moment in the song, `Space` plays or pauses, `S` stars the one you like.
 4. **Finalize** the starred take. It re-synthesizes the same music at full quality (32 steps);
    nothing about the melody or the voice changes.
-5. **Library.** Every take, grouped by sketch, newest first. The ⋯ menu renames a song, opens its
-   Score, downloads FLAC or WAV (named after the title) and deletes it.
+5. **Library.** Every take, grouped by sketch, newest first. **Lyrics** on a row shows its lyrics
+   and settings; the ⋯ menu renames a song, opens its Score, downloads FLAC or WAV (named after
+   the title) and deletes it.
 
-Already know the sound you want? Pick **Single song** instead of Sketch: one take at full quality.
+Already know the sound you want? Click **Make the song** instead: one take at full quality.
 
 ## When something goes wrong
 
