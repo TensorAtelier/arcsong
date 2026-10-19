@@ -56,6 +56,10 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
 
   const seedValue = seed === "" ? null : Number(seed);
   const blocked = submitting || !name.trim() || !style.trim() || !canRender;
+  const missing =
+    canRender && (!name.trim() || !style.trim())
+      ? `Add ${[!name.trim() && "a song name", !style.trim() && "a style"].filter(Boolean).join(" and ")} to start.`
+      : null;
 
   async function run(action: () => Promise<void>) {
     setSubmitting(true);
@@ -238,65 +242,66 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
           {styleField}
           {lyricsField}
 
-          <div className="seed-row">
-            <div className="field">
-              <label htmlFor="seed">Seed</label>
-              <div className="controls">
-                <input
-                  id="seed"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={seed}
-                  onChange={(e) => setSeed(e.target.value.replace(/\D/g, ""))}
-                  placeholder="random"
-                />
-                <button
-                  type="button"
-                  className="dice"
-                  aria-label="New random seed"
-                  title="New random seed"
-                  onClick={() => setSeed(String(Math.floor(Math.random() * 100000)))}
-                >
-                  <DiceIcon />
-                </button>
+          <details className="advanced" open={initial !== undefined && initial.mode !== "full"}>
+            <summary>
+              Advanced: {seed === "" ? "random seed" : `seed ${seed}`} ·{" "}
+              {mode === "full" ? "melody + chords" : mode === "melody" ? "melody only" : "no Score"} ·{" "}
+              {precision === "8bit" ? "8-bit" : "bf16"}
+              {tab === "write" && ` · sketches of ${takes}`}
+            </summary>
+            <div className="grid">
+              <div>
+                <label htmlFor="seed">Seed</label>
+                <div className="controls">
+                  <input
+                    id="seed"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={seed}
+                    onChange={(e) => setSeed(e.target.value.replace(/\D/g, ""))}
+                    placeholder="random"
+                  />
+                  <button
+                    type="button"
+                    className="dice"
+                    aria-label="New random seed"
+                    title="New random seed"
+                    onClick={() => setSeed(String(Math.floor(Math.random() * 100000)))}
+                  >
+                    <DiceIcon />
+                  </button>
+                </div>
               </div>
+              <div>
+                <label htmlFor="mode">Planning</label>
+                <select id="mode" value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
+                  <option value="full">Melody + chords</option>
+                  <option value="melody">Melody only</option>
+                  {tab === "write" && <option value="off">Off (no Score)</option>}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="precision">Precision</label>
+                <select id="precision" value={precision} onChange={(e) => setPrecision(e.target.value as Precision)}>
+                  <option value="8bit">8-bit (faster)</option>
+                  <option value="bf16">bf16</option>
+                </select>
+              </div>
+              {tab === "write" && (
+                <div>
+                  <label htmlFor="takes">Takes in a sketch</label>
+                  <select id="takes" value={takes} onChange={(e) => setTakes(Number(e.target.value))}>
+                    <option value={2}>2</option>
+                    <option value={4}>4</option>
+                    <option value={8}>8</option>
+                  </select>
+                </div>
+              )}
             </div>
-            <details className="advanced" open={initial !== undefined && initial.mode !== "full"}>
-              <summary>
-                Advanced: {mode === "full" ? "melody + chords" : mode === "melody" ? "melody only" : "no Score"} ·{" "}
-                {precision === "8bit" ? "8-bit" : "bf16"}
-                {tab === "write" && ` · sketches of ${takes}`}
-              </summary>
-              <div className="grid">
-                <div>
-                  <label htmlFor="mode">Planning</label>
-                  <select id="mode" value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
-                    <option value="full">Melody + chords (recommended)</option>
-                    <option value="melody">Melody only</option>
-                    {tab === "write" && <option value="off">Off (no Score)</option>}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="precision">Precision</label>
-                  <select id="precision" value={precision} onChange={(e) => setPrecision(e.target.value as Precision)}>
-                    <option value="8bit">8-bit (faster)</option>
-                    <option value="bf16">bf16</option>
-                  </select>
-                </div>
-                {tab === "write" && (
-                  <div>
-                    <label htmlFor="takes">Takes in a sketch</label>
-                    <select id="takes" value={takes} onChange={(e) => setTakes(Number(e.target.value))}>
-                      <option value={2}>2</option>
-                      <option value={4}>4</option>
-                      <option value={8}>8</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-              <p className="hint">The same seed, precision and quality reproduce the same song.</p>
-            </details>
-          </div>
+            <p className="hint">
+              Melody + chords is recommended. The same seed, precision and quality reproduce the same song.
+            </p>
+          </details>
 
           {notices}
 
@@ -322,6 +327,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
                 </button>
               </>
             )}
+            {missing && <span className="muted">{missing}</span>}
           </div>
         </form>
       )}

@@ -9,6 +9,9 @@ while the project is at 0.x, minor versions may change behaviour.
   explains each in three short lines.
 - Write a song ends with two buttons, **Make the song** (one take, full quality) and **Sketch 4
   takes** (quick drafts to compare), in place of the Sketch / Single cards at the top of the form.
+- Seed moves into Advanced, which now spans the form (it used to share a row with Seed and squeeze
+  its dropdowns); the summary line shows the seed. While a song name or style is missing, the
+  buttons say which.
 - The Library shows a song's settings and lyrics from a toggle on its row, not the ⋯ menu.
 - Lyrics are tidied when a song is queued: each line trimmed, blank lines at the start and end
   dropped, blank lines between sections kept.

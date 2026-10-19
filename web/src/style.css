@@ -238,11 +238,9 @@ button.dice { width: 46px; flex-shrink: 0; padding: 0; background: var(--raised)
 .lyrics-notes { list-style: none; margin: 0; padding: 8px 12px; border-left: 2px solid var(--warn); background: var(--field); border-radius: 0 8px 8px 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .lyrics-notes .line { font-family: var(--mono); font-size: 12px; color: var(--warn); margin-right: 8px; }
 .lyrics-notes .more { color: var(--muted); }
-.seed-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.seed-row .controls { display: flex; gap: 6px; }
-.seed-row input { width: 130px; font-family: var(--mono); }
-.seed-row button { height: 46px; }
-.seed-row button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); }
+.advanced .controls { display: flex; gap: 6px; }
+.advanced #seed { flex: 1; min-width: 0; font-family: var(--mono); }
+.advanced .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 .advanced { margin: 0; }
 .advanced summary { font-weight: 400; color: var(--muted); font-size: 14px; }
 .advanced .grid { margin-top: 12px; }
