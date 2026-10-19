@@ -259,3 +259,9 @@ def test_a_staged_upload_never_survives(client, tmp_path, monkeypatch):
     with serve(tmp_path):  # a fresh server sweeps what the last one was still receiving
         pass
     assert not leftover.exists()
+
+
+def test_a_covers_lyrics_are_trimmed(client):
+    job = upload(client, lyrics="  [Verse]  \n new words \n\n").json()
+
+    assert job["request"]["lyrics"] == "[Verse]\nnew words"

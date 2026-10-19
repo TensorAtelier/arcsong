@@ -295,14 +295,23 @@ function SongRow({
       <a role="menuitem" href={api.downloadUrl(song.id, "wav")} download>
         Download WAV
       </a>
-      <button type="button" role="menuitem" aria-expanded={details} onClick={() => setDetails((open) => !open)}>
-        {details ? "Hide" : "Show"} settings and lyrics
-      </button>
       <hr />
       <button type="button" role="menuitem" className="danger" onClick={() => setConfirming(true)}>
         Delete…
       </button>
     </Menu>
+  );
+
+  const detailsToggle = (
+    <button
+      type="button"
+      className="details-toggle"
+      aria-expanded={details}
+      title={details ? "Hide settings and lyrics" : "Show settings and lyrics"}
+      onClick={() => setDetails((open) => !open)}
+    >
+      {request.lyrics.trim() ? "Lyrics" : "Details"}
+    </button>
   );
 
   const title = <SongTitle song={song} onSong={onSong} editing={renaming} onEditingChange={setRenaming} />;
@@ -317,6 +326,7 @@ function SongRow({
           </span>
           {player}
           <div className="row-actions">
+            {detailsToggle}
             {star}
             {draft && !finalActive && (
               <button type="button" className="finalize" disabled={busy} onClick={() => void finalize()}>
@@ -348,6 +358,7 @@ function SongRow({
           </div>
           {player}
           <div className="row-actions">
+            {detailsToggle}
             {star}
             {finalState}
             {menu}

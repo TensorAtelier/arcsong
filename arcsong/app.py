@@ -50,6 +50,11 @@ def _name(value: str | None) -> str | None:
     return (value.strip() or None) if value is not None else None
 
 
+def _tidy_lyrics(value: str) -> str:
+    """Lyrics without stray spaces: each line trimmed, blank lines kept only between sections."""
+    return "\n".join(line.strip() for line in value.splitlines()).strip("\n")
+
+
 class SongRequest(BaseModel):
     # The song's name. Create requires one; the API leaves it optional for scripts and old requests.
     title: str | None = Field(default=None, max_length=TITLE_LENGTH * 2)
@@ -66,6 +71,11 @@ class SongRequest(BaseModel):
     @classmethod
     def _blank_title(cls, value: str | None) -> str | None:
         return _name(value)
+
+    @field_validator("lyrics")
+    @classmethod
+    def _lyrics(cls, value: str) -> str:
+        return _tidy_lyrics(value)
 
     @model_validator(mode="after")
     def _score_needs_a_planning_mode(self):
@@ -92,6 +102,11 @@ class ScoreRequest(BaseModel):
     @classmethod
     def _blank_title(cls, value: str | None) -> str | None:
         return _name(value)
+
+    @field_validator("lyrics")
+    @classmethod
+    def _lyrics(cls, value: str) -> str:
+        return _tidy_lyrics(value)
 
 
 class CheckScore(BaseModel):
@@ -487,7 +502,7 @@ def _cover_request(
     """The Song request a cover re-sings with, plus the name of the recording it came from."""
     return {
         "style": style,
-        "lyrics": lyrics,
+        "lyrics": _tidy_lyrics(lyrics),
         "mode": mode,
         "seed": seed if seed is not None else random.randrange(SEED_LIMIT),
         "precision": precision,

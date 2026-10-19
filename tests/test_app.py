@@ -104,3 +104,17 @@ def test_every_job_snapshot_is_newer_than_the_last(client):
     later = client.get(f"/api/jobs/{job['id']}").json()
     listed = client.get("/api/jobs").json()[0]
     assert job["seq"] < later["seq"] < listed["seq"]
+
+
+MESSY = "\n  \n  [Verse]  \n\thello there \r\n\n [Chorus]\n  sing it  \n\n\n"
+TIDY = "[Verse]\nhello there\n\n[Chorus]\nsing it"
+
+
+def test_lyrics_are_trimmed_line_by_line_keeping_blank_lines(client):
+    song = client.post("/api/jobs", json={"style": "pop", "lyrics": MESSY}).json()
+    score = client.post("/api/scores", json={"style": "pop", "lyrics": MESSY}).json()
+    group = client.post("/api/groups", json={"style": "pop", "lyrics": MESSY, "count": 2}).json()
+
+    assert song["request"]["lyrics"] == TIDY
+    assert score["request"]["lyrics"] == TIDY
+    assert all(job["request"]["lyrics"] == TIDY for job in group)

@@ -3,6 +3,14 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
+## Unreleased
+
+- Create's section buttons add [Pre-Chorus] and [Interlude], and a ? beside them and beside Style
+  explains each in three short lines.
+- The Library shows a song's settings and lyrics from a toggle on its row, not the ⋯ menu.
+- Lyrics are tidied when a song is queued: each line trimmed, blank lines at the start and end
+  dropped, blank lines between sections kept.
+
 ## 0.4.0 — 2026-10-18
 
 Help with lyrics.
