@@ -14,6 +14,17 @@ const TABS: { id: Tab; label: string }[] = [
 
 const SECTION_TAGS = ["Intro", "Verse", "Pre-Chorus", "Chorus", "Interlude", "Bridge", "Outro"];
 
+const STYLE_HINT = [
+  "Short tags, comma-separated. No sentences.",
+  "Cover language, genre, instruments, voice, mood.",
+  "The dice picks a random style.",
+];
+const SECTION_HINT = [
+  "Each label on its own line, blank line before it.",
+  "Number repeats: [Verse 2], [Chorus 3].",
+  "Instrumental part: an empty [Interlude].",
+];
+
 /** Sketch renders quick drafts with different seeds; Single renders one Take at full quality. */
 type Kind = "sketch" | "single";
 const SKETCH_STEPS = 8;
@@ -115,7 +126,10 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
 
   const styleField = (
     <div className="field">
-      <label htmlFor="style">Style</label>
+      <div className="label-row start">
+        <label htmlFor="style">Style</label>
+        <Hint id="style-hint" lines={STYLE_HINT} align="left" />
+      </div>
       <div className="with-dice">
         <input
           id="style"
@@ -147,16 +161,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
               [{tag}]
             </button>
           ))}
-          <span className="hint-tip" tabIndex={0} aria-describedby="section-hint">
-            ?
-            <span id="section-hint" role="tooltip">
-              Each label on its own line, blank line before it.
-              <br />
-              Number repeats: [Verse 2], [Chorus 3].
-              <br />
-              Instrumental part: an empty [Interlude].
-            </span>
-          </span>
+          <Hint id="section-hint" lines={SECTION_HINT} />
         </div>
       </div>
       <textarea
@@ -355,5 +360,19 @@ function LyricsHelp({ lyrics }: { lyrics: string }) {
         </ul>
       )}
     </div>
+  );
+}
+
+/** A "?" that shows a few short lines on hover or keyboard focus. */
+function Hint({ id, lines, align = "right" }: { id: string; lines: string[]; align?: "left" | "right" }) {
+  return (
+    <span className={`hint-tip ${align}`} tabIndex={0} aria-describedby={id}>
+      ?
+      <span id={id} role="tooltip">
+        {lines.map((line) => (
+          <span key={line}>{line}</span>
+        ))}
+      </span>
+    </span>
   );
 }

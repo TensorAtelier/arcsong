@@ -191,11 +191,13 @@ button.star.on { color: var(--accent-ink); }
   border: 1px solid var(--border-strong); color: var(--muted); font-size: 12px; font-weight: 600; cursor: help;
 }
 .hint-tip [role="tooltip"] {
-  display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: max-content; max-width: 300px;
+  display: none; flex-direction: column; position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: max-content; max-width: 360px;
   padding: 8px 12px; border-radius: 8px; background: var(--raised); border: 1px solid var(--border); color: var(--text);
   box-shadow: var(--shadow); font-size: 13px; font-weight: 400; line-height: 1.5; text-align: left;
 }
-.hint-tip:hover [role="tooltip"], .hint-tip:focus [role="tooltip"] { display: block; }
+.hint-tip.left [role="tooltip"] { right: auto; left: 0; }
+.hint-tip:hover [role="tooltip"], .hint-tip:focus [role="tooltip"] { display: flex; }
+.label-row.start { justify-content: flex-start; }
 .segmented { display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
 .segmented button { border: none; border-radius: 999px; padding: 6px 14px; color: var(--muted); }
 .segmented button[aria-pressed="true"] { background: var(--raised); color: var(--text); font-weight: 600; }
