@@ -234,6 +234,18 @@ button.star.on { color: var(--accent-ink); }
 .with-dice { display: flex; gap: 6px; }
 .with-dice input { flex: 1; min-width: 0; }
 button.dice { width: 46px; flex-shrink: 0; padding: 0; background: var(--raised); }
+button.browse { flex-shrink: 0; padding: 0 16px; background: var(--raised); font-size: 14px; }
+button.browse[aria-expanded="true"] { border-color: var(--accent); color: var(--accent-ink); }
+.tag-browser {
+  margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--field);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.tag-browser input[type="search"] { padding: 8px 12px; background: var(--panel); }
+.tag-groups { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
+.tag-groups h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.tag-browser p { margin: 0; }
+button.style-tag { padding: 4px 10px; border-radius: 999px; font-size: 13px; background: var(--panel); }
+button.style-tag[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
 .lyrics-help { display: flex; flex-direction: column; gap: 6px; }
 .lyrics-notes { list-style: none; margin: 0; padding: 8px 12px; border-left: 2px solid var(--warn); background: var(--field); border-radius: 0 8px 8px 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .lyrics-notes .line { font-family: var(--mono); font-size: 12px; color: var(--warn); margin-right: 8px; }

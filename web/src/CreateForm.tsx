@@ -3,6 +3,8 @@ import { api, type Job, type Mode, type Precision, type SongRequest } from "./ap
 import { DiceIcon } from "./icons";
 import { formatEstimate, lengthEstimate, lyricsNotes } from "./lyrics";
 import { randomStyle } from "./styles";
+import TagBrowser from "./TagBrowser";
+import { toggleTag } from "./tags";
 
 type Tab = "write" | "plan" | "cover";
 
@@ -15,9 +17,9 @@ const TABS: { id: Tab; label: string }[] = [
 const SECTION_TAGS = ["Intro", "Verse", "Pre-Chorus", "Chorus", "Interlude", "Bridge", "Outro"];
 
 const STYLE_HINT = [
-  "Short tags, comma-separated. No sentences.",
-  "Cover language, genre, instruments, voice, mood.",
-  "The dice picks a random style.",
+  "Short phrases, comma-separated. No sentences.",
+  "Cover language, genre, instruments, voice, tempo.",
+  "Browse for ideas; the dice picks a random style.",
 ];
 const SECTION_HINT = [
   "Each label on its own line, blank line before it.",
@@ -45,6 +47,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
   const [tab, setTab] = useState<Tab>("write");
   const [name, setName] = useState(initial?.title ?? "");
   const [style, setStyle] = useState(initial?.style ?? "");
+  const [browsing, setBrowsing] = useState(false);
   const [lyrics, setLyrics] = useState(initial?.lyrics ?? "");
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "full");
   const [seed, setSeed] = useState(initial?.seed != null ? String(initial.seed) : "");
@@ -155,7 +158,17 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
         >
           <DiceIcon />
         </button>
+        <button
+          type="button"
+          className="browse"
+          aria-expanded={browsing}
+          aria-controls="tag-browser"
+          onClick={() => setBrowsing((open) => !open)}
+        >
+          Browse
+        </button>
       </div>
+      {browsing && <TagBrowser style={style} onToggle={(tag) => setStyle((current) => toggleTag(current, tag))} />}
     </div>
   );
 
