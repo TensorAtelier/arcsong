@@ -5,7 +5,7 @@ while the project is at 0.x, minor versions may change behaviour.
 
 ## Unreleased
 
-- **Browse** beside Style opens a searchable style dictionary (about 230 phrases in seven groups:
+- **Browse** beside Style opens a searchable style dictionary (about 215 phrases in seven groups:
   language, genre, mood, instruments, voice, tempo and key, sound). Clicking a phrase adds it to
   Style or takes it out. YuE2 has no fixed vocabulary; the list is a hand-picked starting point.
 - Create's section buttons add [Pre-Chorus] and [Interlude], and a ? beside them and beside Style
