@@ -234,3 +234,21 @@ def test_a_running_score_job_can_be_cancelled(tmp_path):
     assert cancelled["status"] == "cancelled" and cancelled["score"] is None
     assert after["status"] == "done" and after["score"]
     assert starts == 1  # cancelling a Score job doesn't cost a worker restart
+
+
+def test_a_score_turns_instrumental_keeping_every_note_and_chord(client):
+    from lyra.music_tools.abc_tools import parse_abc
+
+    original = fake_score({"seed": 5})
+    before = parse_abc(original)
+
+    result = client.post("/api/score/instrumental", json={"abc": original}).json()
+    after = parse_abc(result["abc"])
+
+    assert before.voices["Vocal"].notes  # the fake plans a vocal melody
+    assert after.voices["Vocal"].notes == []
+    assert all(note in after.voices["Ins"].notes for note in before.voices["Vocal"].notes)
+    chords = [symbol for _, symbol in before.voices["Vocal"].chords]
+    assert [symbol for _, symbol in after.voices["Vocal"].chords] == chords
+    assert result["moved"] == len(before.voices["Vocal"].notes)
+    assert client.post("/api/score/instrumental", json={"abc": "nope"}).status_code == 422

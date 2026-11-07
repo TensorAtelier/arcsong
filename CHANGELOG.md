@@ -5,6 +5,14 @@ while the project is at 0.x, minor versions may change behaviour.
 
 ## Unreleased
 
+- **Make instrumental** on the Score page: YuE2's own conversion (vendored from its instrumental
+  kit, MIT) moves every vocal note to the instrument part and keeps the chords; rendering then
+  follows YuE2's instrumental recipe — the style starts with "Instrumental", drops vocal phrases
+  and ends "no vocals, no singing", the lyrics keep only section labels, and the title gains
+  "(instrumental)". `POST /api/score/instrumental`.
+- The lyrics notes accept exactly the section names YuE2's score tools know (Intro, Verse,
+  Pre-Chorus, Chorus, Bridge, Interlude, Outro, Instrumental); Post-Chorus, Hook and Break now
+  get the "may be sung" note.
 - **Browse** beside Style opens a searchable style dictionary (about 215 phrases in seven groups:
   language, genre, mood, instruments, voice, tempo and key, sound). Clicking a phrase adds it to
   Style or takes it out. YuE2 has no fixed vocabulary; the list is a hand-picked starting point.

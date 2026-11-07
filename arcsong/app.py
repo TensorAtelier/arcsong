@@ -292,6 +292,23 @@ def create_app(
         except AbcError as error:
             raise HTTPException(422, str(error)) from None
 
+    @app.post("/api/score/instrumental")
+    def instrumental_score(body: StripChords):
+        """YuE2's own instrumental conversion: every Vocal note moves to Ins, chords stay."""
+        from lyra.music_tools.abc_tools import AbcError
+
+        from arcsong.vendor.yue2_instrumental import convert_score
+
+        try:
+            abc, check = convert_score(body.abc)
+        except (AbcError, ValueError, KeyError) as error:
+            raise HTTPException(422, str(error)) from None
+        return {
+            "abc": abc,
+            "moved": check["vocal_notes_before"],
+            "trimmed": len(check["affected_ins_notes"]),
+        }
+
     @app.get("/api/songs/{song_id}/score")
     def song_score(song_id: int):
         """The Score saved with a Take, if its planning mode wrote one."""

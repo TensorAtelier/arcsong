@@ -22,6 +22,15 @@ It also bundles three fonts, all under the SIL Open Font License 1.1, from their
 [Fontsource](https://fontsource.org) packages: Bricolage Grotesque, Instrument Sans and
 JetBrains Mono. The page loads them from `arcsong/static/assets/`, never from a CDN.
 
+## YuE2 instrumental conversion
+
+`arcsong/vendor/yue2_instrumental/` holds `compile_score.py`, `instrumentalize.py` and
+`common.py` from the YuE2 repository's instrumental skill
+(<https://github.com/multimodal-art-projection/YuE>, `skills/yue2-music/instrumental/scripts`,
+commit 0495110587a4), unchanged apart from their imports. MIT licence, Copyright (c) 2026
+yue2-music contributors; the full text is `arcsong/vendor/yue2_instrumental/LICENSE`. Used by
+the Score page's Make instrumental.
+
 ## Model weights
 
 The weights arcsong downloads are **not** covered by this repository's licence. All of them are

@@ -1,11 +1,12 @@
 /** Help under the Lyrics box: what YuE2 is likely to misread, and roughly how long the song will be.
  *
  * YuE2 reads lyrics as sections: a `[Label]` on its own line, the sung lines under it, a blank line
- * before the next label (its own example: `[Intro]`, `[Verse]`, `[Pre-Chorus]`, `[Chorus]`,
- * `[Interlude]`, `[Bridge]`, `[Outro]`). Everything else in the box is sung. */
+ * before the next label (`[Intro]`, `[Verse]`, `[Pre-Chorus]`, `[Chorus]`, `[Bridge]`,
+ * `[Interlude]`, `[Outro]`, `[Instrumental]` — the sections YuE2's own score tools know). Everything else in the box is sung. */
 
 const LABEL = /^\[([^\]]*)\]$/;
-const KNOWN = new Set(["intro", "verse", "pre-chorus", "chorus", "post-chorus", "interlude", "bridge", "hook", "break", "outro"]);
+// The section names YuE2's own score tools accept (its instrumental kit's `SECTIONS`).
+const KNOWN = new Set(["intro", "verse", "pre-chorus", "chorus", "bridge", "interlude", "outro", "instrumental"]);
 // A whole line in parentheses or asterisks reads like a note to a musician (or an ad-lib).
 const DIRECTION = /^\(.*\)$|^\*.*\*$/;
 const LONG_LINE = 80;

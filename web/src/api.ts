@@ -280,6 +280,12 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ abc }),
     }).then((r) => json<{ abc: string }>(r)),
+  instrumental: (abc: string) =>
+    fetch("/api/score/instrumental", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ abc }),
+    }).then((r) => json<{ abc: string; moved: number; trimmed: number }>(r)),
   setup: () => fetch("/api/setup").then((r) => json<Setup>(r)),
   runChecks: () => post<Setup>("/api/setup/checks"),
   acknowledgeLicence: () => post<Setup>("/api/setup/licence"),

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, type Job, type ScoreCheck, type SongRequest } from "./api";
 import { PauseIcon, PlayIcon } from "./icons";
 import { claimAudio, onAudioClaimed } from "./player";
+import { instrumentalLyrics, instrumentalStyle, instrumentalTitle } from "./instrumental";
 import { formatClock } from "./PlayerUI";
 
 /** The vendored FluidR3 piano (see THIRD_PARTY_NOTICES.md); abcjs appends the instrument file. */
@@ -29,6 +30,8 @@ export default function ScoreView({ source, title, onJob }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [check, setCheck] = useState<ScoreCheck | null>(null);
   const [busy, setBusy] = useState(false);
+  // Set by Make instrumental: the render then follows YuE2's instrumental rules.
+  const [instrumental, setInstrumental] = useState<{ moved: number; trimmed: number } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   // The parsed Score the notation is showing, which MIDI export needs.
   const [tune, setTune] = useState<abcjs.TuneObject | null>(null);
@@ -159,7 +162,7 @@ export default function ScoreView({ source, title, onJob }: Props) {
   // The model sometimes plans a take's vocal voice as rests only, lyrics or not: the song then
   // has no sung melody to follow. Count it as a property of this take, not a broken summary.
   const noVocal = report !== null && report !== undefined && report.voices.Vocal.sounding_notes === 0;
-  const unsung = noVocal && request !== null && hasSungLyrics(request.lyrics);
+  const unsung = noVocal && !instrumental && request !== null && hasSungLyrics(request.lyrics);
 
   return (
     <section className="score" aria-label="Score">
@@ -234,8 +237,31 @@ export default function ScoreView({ source, title, onJob }: Props) {
             )}
           </div>
           <div className="actions">
-            <button type="button" disabled={busy || !edited} onClick={() => setText(original)}>
+            <button
+              type="button"
+              disabled={busy || !edited}
+              onClick={() => {
+                setText(original);
+                setInstrumental(null);
+              }}
+            >
               Undo changes
+            </button>
+            <button
+              type="button"
+              disabled={busy || check?.ok === false || instrumental !== null}
+              title="Move the vocal melody to the instrument part (YuE2's own conversion)"
+              onClick={() =>
+                act(
+                  () => api.instrumental(text),
+                  (result) => {
+                    setText(result.abc);
+                    setInstrumental({ moved: result.moved, trimmed: result.trimmed });
+                  },
+                )
+              }
+            >
+              Make instrumental
             </button>
             <button
               type="button"
@@ -264,7 +290,17 @@ export default function ScoreView({ source, title, onJob }: Props) {
                 disabled={busy || check?.ok === false}
                 onClick={() =>
                   act(
-                    () => api.create({ ...request, steps, abc: text, title: title ?? request.title }),
+                    () =>
+                      api.create({
+                        ...request,
+                        ...(instrumental && {
+                          style: instrumentalStyle(request.style),
+                          lyrics: instrumentalLyrics(request.lyrics),
+                        }),
+                        steps,
+                        abc: text,
+                        title: instrumental ? instrumentalTitle(title ?? request.title ?? "") : (title ?? request.title),
+                      }),
                     (job) => {
                       onJob(job);
                       window.location.hash = "#/";
@@ -274,7 +310,18 @@ export default function ScoreView({ source, title, onJob }: Props) {
               >
                 Render the song
               </button>
-              <span className="muted">The Score fixes the melody; the voice and arrangement come from the style.</span>
+              {instrumental ? (
+                <p className="instrumental-note">
+                  <strong>Instrumental.</strong>{" "}
+                  {instrumental.moved > 0
+                    ? `${instrumental.moved} vocal notes moved to the instrument part`
+                    : "There was no vocal melody to move"}
+                  {instrumental.trimmed > 0 && `; ${instrumental.trimmed} instrument notes shortened where they overlapped`}.
+                  {" "}Renders with the style “{instrumentalStyle(request.style)}” and only the section labels as lyrics.
+                </p>
+              ) : (
+                <span className="muted">The Score fixes the melody; the voice and arrangement come from the style.</span>
+              )}
             </div>
           )}
           {actionError && <p className="error small">{actionError}</p>}
