@@ -95,6 +95,30 @@ uv tool uninstall arcsong    # remove the app (your songs and weights stay)
 Nothing is installed system-wide, and removing the tool leaves your data alone — delete the data
 directory yourself if you want the songs and the 11 GB of weights gone too.
 
+## No Apple Silicon? Render on Modal
+
+Arcsong can render on your own [Modal](https://modal.com) account instead of the Mac, so it also
+runs on Windows, Linux and smaller Macs. The app still runs on your machine and keeps your songs
+there; each song is made on a cloud GPU (an NVIDIA L4) billed to your Modal account.
+
+```sh
+uv tool install 'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'
+modal setup                     # Modal's own login, once; Arcsong never sees your token
+arcsong serve --engine modal
+```
+
+On the Setup page, **Set up on Modal** deploys a small app called `arcsong` into your Modal
+workspace and fetches the weights (about 8 GB) into a Modal Volume there, in the cloud. After
+that, Create, Sketch, Compare, Finalize and the Score page work as on the Mac.
+
+- **Cost and speed** (measured November 2026): a sketch take at 8 steps took about a minute on a
+  warm GPU; the first job after a pause waits two to three minutes for the GPU to start and the
+  model to load. A full-quality 3-minute song costs about $0.05 of GPU time. The GPU shuts down
+  five minutes after the last job, and Modal bills by the second.
+- **Not on Modal yet:** covers (they need the Mac engine), and the 8-bit/bf16 choice (Modal
+  renders bf16). A Draft made on the Mac can't be finalized on Modal, or the other way round.
+- To remove it: `modal app stop arcsong` and `modal volume delete arcsong-yue2-weights`.
+
 ## Your first song
 
 1. **Create → Write a song.** Name the song and type a style — a language, a genre, a few
