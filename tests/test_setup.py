@@ -13,6 +13,7 @@ from arcsong.models import (
     VAE_FILES,
     FakeModels,
     MlxYueModels,
+    ModalModels,
     check,
     models_dir,
     weights_state,
@@ -478,3 +479,22 @@ def test_progress_survives_a_file_the_hub_renames_underneath_it(tmp_path, monkey
     monkeypatch.setattr(Path, "stat", stat_but_gone)
 
     assert bytes_on_disk(models) == 0
+
+
+def test_modal_setup_drops_the_mac_checks_and_says_where_songs_render(tmp_path):
+    models = ModalModels(tmp_path / "modal")
+    with serve(tmp_path, models) as client:
+        before = client.get("/api/setup").json()
+        (tmp_path / "modal").mkdir()
+        marker = next(iter(models.files()))
+        (tmp_path / "modal" / marker).touch()  # what a finished "Set up on Modal" leaves
+        after = client.get("/api/setup").json()
+
+    weights_check = {p["id"]: p for p in before["parts"]}["engine"]["checks"][-1]
+    assert before["checks"] == []  # memory and power are Modal's business
+    assert before["weights"]["remote"] == "Modal" and not before["weights"]["installed"]
+    assert weights_check["detail"] == "not set up on Modal yet"
+    assert after["weights"]["installed"]
+    assert {p["id"]: p for p in after["parts"]}["engine"]["checks"][-1]["detail"] == (
+        "on your Modal account"
+    )

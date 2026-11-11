@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-11-11 — cycle 4
+
+- North star: 0 stars (Δ 0 since 2026-10-17; 22 unique cloners, mostly CI; nothing announced, so the kill clock hasn't started).
+- Since cycle 3, outside `/pm`: nine owner-requested UI changes on `main` (section buttons and hints, Library lyrics toggle, lyrics tidying, Make the song / Sketch buttons, Seed in Advanced, the style dictionary, Make instrumental). Unreleased; they ship with this cycle's release.
+- Picked (chain 1, one release, v0.5.0):
+  - cloud-engine-modal (rescored 0.73: I4 C0.8 core2 / E5 Cx3 R0 U1 — risk 0: a new `--engine modal`, the Mac engine untouched; upkeep 1: the remote image pins its own yue2 wheel and weights revision). The owner asked about it three times since cycle 3; it is the roadmap's next entry and what lets Windows, Linux and small Macs make songs at all.
+- Owner call from cycle 3 (how a user connects Modal) — decided by the PM, not escalated: it creates no account or key and stores nothing, so it is cheap to undo. The user installs `arcsong[modal]`, runs `modal setup` once (Modal's own login, kept in `~/.modal.toml`), and Setup's Download deploys a Modal app named `arcsong` into their workspace and fills its weights Volume. Arcsong never sees or stores a token. By: PM (the cycle-3 default; the owner's three asks raised no objection).
+- Spend: testing on the owner's Modal account inside the approved $30 monthly credit, capped at $5 for this cycle.
+- Scope cut (Not yet): covers on Modal (SheetSage2 stays on the Mac engine), RunPod (next on the roadmap, same remote shape), a precision choice on Modal (yue2 on CUDA renders bf16).
+- J6 real weights: the Mac is on battery again (60%); fourth release without it.
+
 ## 2026-10-18 — cycle 3
 
 - North star: 0 stars (no new snapshot: the machine clock is still on 2026-10-17; v0.3.0 has 0 downloads; nothing announced)

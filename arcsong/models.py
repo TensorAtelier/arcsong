@@ -4,6 +4,7 @@ cancel is a kill and the server never imports MLX."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -71,6 +72,8 @@ def weights_state(models: Models) -> dict[str, Any]:
         "bytes_on_disk": bytes_on_disk(models),
         "missing": missing,
         "stray": stray,
+        # Where the weights really live when that isn't this machine ("Modal"), else None.
+        "remote": getattr(models, "remote", None),
     }
 
 
@@ -336,6 +339,63 @@ def _ffmpeg_check() -> Check:
         return check("ffmpeg", label, "fail", f"not found; covers need it — {FFMPEG_HINT}")
     version = out.splitlines()[0] if out.strip() else "installed"
     return check("ffmpeg", label, "ok", version)
+
+
+# --- Modal ---------------------------------------------------------------------------------
+
+MODAL_INSTALL = "uv tool install --force 'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'"
+
+
+@dataclass
+class ModalModels:
+    """The song model on the user's own Modal account. "Downloading" deploys `modal_app` there
+    and fills its weights Volume; a marker file here records that it was done."""
+
+    directory: Path
+    remote: str = "Modal"
+
+    def files(self) -> dict[str, int]:
+        # Named after the app's code, so an Arcsong whose Modal app changed asks to set up again.
+        return {_deployed_marker(): 0}
+
+    def stray_files(self) -> list[str]:
+        return []
+
+    def engine_checks(self) -> list[Check]:
+        try:
+            import modal
+        except ImportError:
+            detail = f"the Modal client isn't installed; run {MODAL_INSTALL}"
+            return [check("runtime", "Modal client", "fail", detail)]
+        # Modal's own login, from `modal setup` (or MODAL_TOKEN_ID); Arcsong stores no token.
+        if not (modal.config.config.get("token_id") or os.environ.get("MODAL_TOKEN_ID")):
+            detail = "not logged in; run `modal setup` in a terminal, then check again"
+            return [check("runtime", "Modal login", "fail", detail)]
+        return [check("runtime", "Modal login", "ok", "logged in with `modal setup`")]
+
+    def download(self, phase: Phase) -> None:
+        phase("deploying")
+        app = Path(__file__).with_name("modal_app.py")
+        deployed = subprocess.run(
+            [sys.executable, "-m", "modal", "deploy", str(app)], capture_output=True, text=True
+        )
+        if deployed.returncode:
+            # One line: the page shows the last line of a failure, and Modal wraps its output.
+            raise RuntimeError(" ".join((deployed.stderr or deployed.stdout).split())[-1000:])
+        phase("downloading")
+        import modal
+
+        # About 8 GB into the Volume, inside Modal's cloud; minutes the first time, seconds after.
+        modal.Function.from_name("arcsong", "download").remote()
+        self.directory.mkdir(parents=True, exist_ok=True)
+        for old in self.directory.glob("deployed*"):
+            old.unlink()
+        (self.directory / _deployed_marker()).touch()
+
+
+def _deployed_marker() -> str:
+    code = Path(__file__).with_name("modal_app.py").read_bytes()
+    return f"deployed-{hashlib.sha256(code).hexdigest()[:12]}"
 
 
 # --- fake -----------------------------------------------------------------------------------

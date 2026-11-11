@@ -5,6 +5,11 @@ while the project is at 0.x, minor versions may change behaviour.
 
 ## Unreleased
 
+- **Render on Modal** (`arcsong serve --engine modal`, with `arcsong[modal]`): songs render on a
+  cloud GPU in your own Modal account, so Arcsong runs on Windows, Linux and smaller Macs too.
+  Setup's **Set up on Modal** deploys an `arcsong` app there and fetches the weights into a
+  Modal Volume; your login stays Modal's own (`modal setup`). Sketch, Compare, Finalize and the
+  Score page work as on the Mac; covers still need the Mac engine.
 - **Make instrumental** on the Score page: YuE2's own conversion (vendored from its instrumental
   kit, MIT) moves every vocal note to the instrument part and keeps the chords; rendering then
   follows YuE2's instrumental recipe — the style starts with "Instrumental", drops vocal phrases

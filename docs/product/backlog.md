@@ -17,7 +17,7 @@ First scoring 2026-10-17, against the draft charter (north star: stars; nothing 
 | song-metadata — FLAC/MP3 tags (title, artist "Arcsong", art from the seed gradient) on download | feature | 1 | 0.5 | 2 | 1 | 0 | 0 | 1 | 0.50 | candidate — rescored: needs mutagen |
 | length-estimate — expected song length from the lyrics, shown under Lyrics | PLAN #8 | 1 | 0.8 | 2 | 1 | 0 | 0 | 1 | 0.80 | shipped cycle 3 (v0.4.0, as lyrics-help) |
 | swap-limit — let Arcsong raise mlx-Yue's 64 MiB swap-out stop (overrides upstream's guard) | defect (2026-10-17) | 2 | 0.5 | 2 | 1 | 1 | 2 | 1 | 0.40 | wait: needs a second real failure after today's fix |
-| cloud-engine-modal — `RemoteEngine` + `CudaEngine` over `yue2`, run on the user's own Modal account | research (owner ask) | 4 | 0.8 | 2 | 5 | 3 | 1 | 2 | 0.58 | rescored after X-001 (confidence 0.5 → 0.8) |
+| cloud-engine-modal — `--engine modal`: yue2 on the user's own Modal account, deployed from Setup | research (owner ask ×3) | 4 | 0.8 | 2 | 5 | 3 | 0 | 1 | 0.73 | picked cycle 4 |
 | runpod-serverless — the same remote protocol on RunPod serverless (handler + image) | research (owner ask) | 3 | 0.4 | 2 | 3 | 2 | 1 | 2 | 0.30 | after cloud-engine-modal |
 | ai-lyric-writer — draft lyrics with a local LLM (Ollama / LM Studio) | feature (riff has one) | 2 | 0.3 | 2 | 3 | 2 | 0 | 2 | 0.17 | parked |
 | homebrew-tap | roadmap (M6 leftovers) | 2 | 0.5 | 1 | 2 | 1 | 0 | 1 | 0.25 | parked |

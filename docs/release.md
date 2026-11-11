@@ -20,6 +20,13 @@ real test fails at once with "Another Lyra process owns the GPU":
 ARCSONG_REAL_ENGINE=1 caffeinate -ims uv run pytest -q tests/test_real_engine.py
 ```
 
+When the Modal engine changed, journey 7 (`docs/product/product.md` → Release) on your own Modal
+account — a few cents of GPU time; `modal billing report --for today` shows it:
+
+```sh
+uv sync --extra modal && uv run arcsong serve --engine modal --data "$(mktemp -d)" --port 8853
+```
+
 And the browser journeys from `docs/product/product.md` → Release, on the fake Engine in a private
 headless Chrome (needs Node and Google Chrome; touches nothing of yours):
 

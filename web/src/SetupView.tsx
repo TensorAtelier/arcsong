@@ -47,7 +47,11 @@ export default function SetupView({ setup, error, onChanged }: Props) {
           ✓ Setup is complete. <a href="#/">Make a song</a>
         </p>
       ) : (
-        <p className="muted">Arcsong needs the YuE2 model weights on this Mac before it can make songs.</p>
+        <p className="muted">
+          {setup.weights.remote
+            ? `Arcsong renders on your own ${setup.weights.remote} account; set it up once below.`
+            : "Arcsong needs the YuE2 model weights on this Mac before it can make songs."}
+        </p>
       )}
       {actionError && (
         <p className="error" role="alert">
@@ -181,9 +185,13 @@ function PartSection({ part, acknowledged, busy, checking, onAct }: PartProps) {
             max={download.bytes_total || 1}
           />
           <p className="small muted">
-            {download.phase === "verifying"
-              ? "Verifying the weights…"
-              : `Downloading ${formatBytes(download.bytes ?? 0)} of ${formatBytes(download.bytes_total ?? 0)}`}
+            {weights.remote
+              ? download.phase === "deploying"
+                ? `Deploying Arcsong to your ${weights.remote} account…`
+                : `Fetching the weights into your ${weights.remote} account (about 8 GB, in the cloud; minutes the first time)…`
+              : download.phase === "verifying"
+                ? "Verifying the weights…"
+                : `Downloading ${formatBytes(download.bytes ?? 0)} of ${formatBytes(download.bytes_total ?? 0)}`}
           </p>
           <button type="button" disabled={busy} onClick={() => void onAct(() => api.cancelDownload(part.id))}>
             Cancel download
@@ -212,9 +220,11 @@ function PartSection({ part, acknowledged, busy, checking, onAct }: PartProps) {
             disabled={busy || !acknowledged}
             onClick={() => void onAct(() => api.startDownload(part.id))}
           >
-            {download.state === "failed" || download.state === "cancelled" || weights.bytes_on_disk > 0
-              ? "Download again"
-              : `Download (${formatBytes(weights.bytes_total)})`}
+            {weights.remote
+              ? `Set up on ${weights.remote}`
+              : download.state === "failed" || download.state === "cancelled" || weights.bytes_on_disk > 0
+                ? "Download again"
+                : `Download (${formatBytes(weights.bytes_total)})`}
           </button>
           {!acknowledged && <p className="hint">Acknowledge the licence above to download.</p>}
           {blocked && weights.installed && (
@@ -226,7 +236,13 @@ function PartSection({ part, acknowledged, busy, checking, onAct }: PartProps) {
         <p className="small">
           <span className="ok-text">✓ Ready</span>{" "}
           <span className="muted">
-            {formatBytes(weights.bytes_total)} in <code>{weights.dir}</code>
+            {weights.remote ? (
+              `Renders on your ${weights.remote} account`
+            ) : (
+              <>
+                {formatBytes(weights.bytes_total)} in <code>{weights.dir}</code>
+              </>
+            )}
           </span>
         </p>
       )}
