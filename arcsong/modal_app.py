@@ -59,7 +59,8 @@ def download() -> dict:
 
 
 @app.cls(
-    gpu="L4",
+    # Cheapest first; Modal takes the next when none is free (a song peaks at 9.6 GiB).
+    gpu=["L4", "A10G", "L40S"],
     volumes={WEIGHTS: volume},
     timeout=30 * 60,
     max_containers=1,  # one song at a time, like the Mac; it also caps the bill

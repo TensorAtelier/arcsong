@@ -116,10 +116,13 @@ class Setup:
             checking = self._checking or not self._part_checks
         parts = [self._part_snapshot(part) for part in self.parts.values()]
         engine = next(p for p in parts if p["id"] == ENGINE)
+        # Memory and power only matter when this machine renders.
+        remote = engine["weights"]["remote"]
+        local_checks = [] if remote else [_ram_check(), _power_check(self.allow_battery)]
         can_render = _part_usable(engine)
         return {
             "seq": seq,
-            "checks": [_ram_check(), _power_check(self.allow_battery)],
+            "checks": local_checks,
             "checking": checking,
             "parts": parts,
             # The Engine part, also at the top level: most of the page only cares about it.
@@ -365,6 +368,11 @@ def _part_usable(snapshot: dict[str, Any]) -> bool:
 def _weights_check(weights: dict[str, Any], download_state: str, label: str = "Model") -> Check:
     label = f"{label} weights"
     where = weights["dir"]
+    if weights["remote"]:
+        if weights["installed"]:
+            return check("weights", label, "ok", f"on your {weights['remote']} account")
+        status = "warn" if download_state == "running" else "fail"
+        return check("weights", label, status, f"not set up on {weights['remote']} yet")
     if weights["installed"]:
         return check("weights", label, "ok", f"installed in {where}")
     if download_state == "running":

@@ -8,6 +8,7 @@ Draft's plan and Semantic tokens back to be re-synthesized at more steps.
 from __future__ import annotations
 
 import shutil
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -47,18 +48,22 @@ class ModalEngine:
 
         with modal.Queue.ephemeral() as events:
             call = self._renderer().run.spawn(job, events)
+            # `FunctionCall.get(timeout=…)` doesn't return early while the call is pending, so it
+            # waits on a side thread and this loop stays free to relay events and cancel.
+            outcome: dict[str, Any] = {}
+            waiter = threading.Thread(target=_wait, args=(call, outcome), daemon=True)
+            waiter.start()
             while True:
                 if cancelled():
                     call.cancel()
                     raise Cancelled(job["kind"])
-                try:
-                    result = call.get(timeout=POLL_SECONDS)
-                except TimeoutError:
-                    result = None
+                waiter.join(POLL_SECONDS)
                 for event in events.get_many(1000, block=False):
                     emit(event)
-                if result is not None:
-                    return result
+                if not waiter.is_alive():
+                    if "error" in outcome:
+                        raise outcome["error"]
+                    return outcome["result"]
 
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         emit({"type": "stage", "stage": STAGES[0]})  # the container may take a minute to start
@@ -95,6 +100,13 @@ class ModalEngine:
 
     def transcribe(self, audio, request, out_dir, cancelled, emit) -> ScoreOutput:
         raise RuntimeError(COVERS_ADVICE)
+
+
+def _wait(call, outcome: dict[str, Any]) -> None:
+    try:
+        outcome["result"] = call.get()
+    except BaseException as error:  # the remote's own error, re-raised in the worker
+        outcome["error"] = error
 
 
 def _save(result: dict[str, Any], out_dir: Path) -> TakeOutput:

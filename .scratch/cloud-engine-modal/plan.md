@@ -9,7 +9,7 @@
 
 - [x] 01 — remote app: `arcsong/modal_app.py` deploys with `modal deploy`; `download` fills the Volume; `Renderer.run(job, queue)` does plan / render / finalize and streams stage events. Check: `modal run` one plan and one 8-step render.
 - [x] 02 — engine: `ModalEngine` (render, plan_only, finalize; transcribe refuses) writes the Take directory from the returned files, forwards events, cancels the remote call. Check: unit tests with a fake remote.
-- [ ] 03 — wiring: `--engine modal`, `ModalModels` (checks: client installed, logged in; Download = deploy + weights), covers part says "Mac engine only", optional extra. Check: Setup page on `--engine modal` in the browser.
+- [x] 03 — wiring: `--engine modal`, `ModalModels` (checks: client installed, logged in; Download = deploy + weights), covers part says "Mac engine only", optional extra. Check: Setup page on `--engine modal` in the browser.
 - [ ] 04 — real run: sketch of 2, Finalize, Plan a melody through the app on Modal; record time and cost. Docs: README section, CHANGELOG, CLAUDE.md.
 
 ## Notes

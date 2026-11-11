@@ -184,7 +184,11 @@ export default function App() {
       <header className="app-header">
         <div className="brand">
           <h1>Arcsong</h1>
-          <p>Songs from your words, made privately on this Mac</p>
+          <p>
+            {setup?.weights.remote
+              ? `Songs from your words, made on your own ${setup.weights.remote} account`
+              : "Songs from your words, made privately on this Mac"}
+          </p>
         </div>
         <div className="header-right">
           <nav className="views" aria-label="Views">

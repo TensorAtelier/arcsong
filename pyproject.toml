@@ -27,6 +27,10 @@ dependencies = [
   "python-multipart>=0.0.9",
 ]
 
+[project.optional-dependencies]
+# `--engine modal`: render on your own Modal account (https://modal.com).
+modal = ["modal>=1.6"]
+
 [project.urls]
 Homepage = "https://github.com/TensorAtelier/arcsong"
 Source = "https://github.com/TensorAtelier/arcsong"

@@ -147,7 +147,7 @@ export interface Check {
 
 export interface Download {
   state: "idle" | "running" | "done" | "failed" | "cancelled";
-  phase?: "starting" | "downloading" | "verifying";
+  phase?: "starting" | "deploying" | "downloading" | "verifying";
   bytes?: number;
   bytes_total?: number;
   reason?: string;
@@ -178,6 +178,8 @@ export interface Weights {
   bytes_on_disk: number;
   missing: string[];
   stray: string[];
+  /** Where the weights live when that isn't this machine ("Modal"). */
+  remote: string | null;
 }
 
 export interface Setup {
