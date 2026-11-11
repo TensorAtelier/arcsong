@@ -19,6 +19,7 @@ APP_NAME = "arcsong"
 # What yue2's SymbolicPlan.load and a Final need from a Draft made on Modal.
 PLAN_FILES = ("plan.json", "abc_tokens.npy", "prefix.npy", "plan_manifest.json", "semantic.npy")
 POLL_SECONDS = 0.5
+CANCELLED_ELSEWHERE = "The job was stopped on Modal (from its dashboard or `modal app stop`)."
 COVERS_ADVICE = "Covers run on the Mac engine only: start Arcsong with --engine mlx to make one."
 MAC_DRAFT_ADVICE = (
     "This Draft was made by the Mac engine, which Modal can't continue. Finalize it with "
@@ -35,8 +36,8 @@ class ModalEngine:
         self._remote = remote
 
     def load(self) -> None:
-        """Nothing to load here: the model lives in the remote container. Looking the app up
-        fails early, with Modal's own message, if it isn't deployed or the login is missing."""
+        """Nothing to load here: the model lives in the remote container. The lookup is lazy, so
+        a missing app or login only shows at the first job, in Modal's own words."""
         if self._remote is None:
             import modal
 
@@ -58,12 +59,17 @@ class ModalEngine:
                     call.cancel()
                     raise Cancelled(job["kind"])
                 waiter.join(POLL_SECONDS)
+                finished = not waiter.is_alive()  # read before draining, so no event is left over
                 for event in events.get_many(1000, block=False):
                     emit(event)
-                if not waiter.is_alive():
-                    if "error" in outcome:
-                        raise outcome["error"]
-                    return outcome["result"]
+                if finished:
+                    error = outcome.get("error")
+                    if error is None:
+                        return outcome["result"]
+                    if isinstance(error, Exception):
+                        raise error
+                    # Modal's InputCancellation is a BaseException: the worker would die on it.
+                    raise RuntimeError(CANCELLED_ELSEWHERE) from error
 
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         emit({"type": "stage", "stage": STAGES[0]})  # the container may take a minute to start

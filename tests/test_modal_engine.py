@@ -73,3 +73,84 @@ def test_a_cancel_stops_the_job(tmp_path):
     with pytest.raises(Cancelled):
         ModalEngine(remote=Remote({})).render(REQUEST, tmp_path / "take", lambda: True, print)
     assert not (tmp_path / "take").exists()
+
+
+class FakeCall:
+    """A spawned call: `get` blocks until the remote side finishes, as Modal's does."""
+
+    def __init__(self, queue, outcome, delay):
+        self.queue, self.outcome, self.delay = queue, outcome, delay
+        self.cancelled = False
+
+    def get(self):
+        import time
+
+        time.sleep(self.delay)
+        self.queue.append({"type": "progress", "stage": "synthesis", "tokens": 9})  # a last event
+        if isinstance(self.outcome, BaseException):
+            raise self.outcome
+        return self.outcome
+
+    def cancel(self):
+        self.cancelled = True
+
+
+def fake_modal(monkeypatch, outcome, delay=0.0):
+    """Stand in for the `modal` module: an ephemeral queue and a Renderer that spawns calls."""
+    import contextlib
+    import types
+
+    calls = []
+
+    class Queue(list):
+        def get_many(self, n, block=False):
+            taken = self[:n]
+            del self[:n]
+            return taken
+
+    @contextlib.contextmanager
+    def ephemeral():
+        yield Queue()
+
+    def spawn(job, events):
+        calls.append(FakeCall(events, outcome, delay))
+        return calls[-1]
+
+    renderer = types.SimpleNamespace(run=types.SimpleNamespace(spawn=spawn))
+    module = types.SimpleNamespace(Queue=types.SimpleNamespace(ephemeral=ephemeral))
+    monkeypatch.setitem(__import__("sys").modules, "modal", module)
+    engine = ModalEngine(remote=None)
+    engine._renderer = lambda: renderer
+    engine._remote = engine._call
+    return engine, calls
+
+
+def test_the_call_loop_relays_every_event_and_returns_the_result(monkeypatch, tmp_path):
+    engine, _ = fake_modal(monkeypatch, {"files": TAKE, "audio_seconds": 3.0}, delay=0.7)
+    events = []
+    take = engine.render(REQUEST, tmp_path / "take", lambda: False, events.append)
+    assert take.audio_seconds == 3.0
+    assert events[-1]["tokens"] == 9  # put just before the call finished, still relayed
+
+
+def test_the_call_loop_cancels_the_remote_call(monkeypatch, tmp_path):
+    engine, calls = fake_modal(monkeypatch, {"files": TAKE, "audio_seconds": 3.0}, delay=5)
+    with pytest.raises(Cancelled):
+        engine.render(REQUEST, tmp_path / "take", lambda: True, print)
+    assert calls[0].cancelled
+
+
+def test_remote_errors_reach_the_job_and_outside_cancels_dont_kill_it(monkeypatch, tmp_path):
+    from arcsong.modal_engine import CANCELLED_ELSEWHERE
+
+    engine, _ = fake_modal(monkeypatch, ValueError("bad score"))
+    with pytest.raises(ValueError, match="bad score"):
+        engine.plan_only(REQUEST, lambda: False, print)
+
+    class InputCancellation(BaseException):  # what Modal raises; not an Exception
+        pass
+
+    engine, _ = fake_modal(monkeypatch, InputCancellation())
+    with pytest.raises(RuntimeError) as stopped:
+        engine.plan_only(REQUEST, lambda: False, print)
+    assert str(stopped.value) == CANCELLED_ELSEWHERE

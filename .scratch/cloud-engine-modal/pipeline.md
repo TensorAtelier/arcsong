@@ -4,5 +4,5 @@ mode: auto
 size: lite
 
 - [x] plan
-- [ ] build
-- [ ] review
+- [x] build
+- [x] review

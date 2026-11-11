@@ -99,7 +99,8 @@ directory yourself if you want the songs and the 11 GB of weights gone too.
 
 Arcsong can render on your own [Modal](https://modal.com) account instead of the Mac, so it also
 runs on Windows, Linux and smaller Macs. The app still runs on your machine and keeps your songs
-there; each song is made on a cloud GPU (an NVIDIA L4) billed to your Modal account.
+there; each song is made on a cloud GPU billed to your Modal account (an NVIDIA L4, or an A10G
+or L40S when no L4 is free; the L40S costs more per second).
 
 ```sh
 uv tool install 'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'
@@ -111,13 +112,16 @@ On the Setup page, **Set up on Modal** deploys a small app called `arcsong` into
 workspace and fetches the weights (about 8 GB) into a Modal Volume there, in the cloud. After
 that, Create, Sketch, Compare, Finalize and the Score page work as on the Mac.
 
-- **Cost and speed** (measured November 2026): a sketch take at 8 steps took about a minute on a
-  warm GPU; the first job after a pause waits two to three minutes for the GPU to start and the
-  model to load. A full-quality 3-minute song costs about $0.05 of GPU time. The GPU shuts down
-  five minutes after the last job, and Modal bills by the second.
+- **Cost and speed** (measured October–November 2026): a 3-minute song at full quality took
+  about 200 s and $0.045 from a cold L4; a one-minute sketch take took under a minute on a warm
+  GPU. The first job after a pause waits about three minutes while the GPU starts and the model
+  loads, longer if GPUs are scarce. The GPU shuts down five minutes after the last job, and
+  Modal bills by the second. Stopping Arcsong mid-song leaves that song running on Modal until
+  it finishes; cancel it in the page instead.
 - **Not on Modal yet:** covers (they need the Mac engine), and the 8-bit/bf16 choice (Modal
   renders bf16). A Draft made on the Mac can't be finalized on Modal, or the other way round.
-- To remove it: `modal app stop arcsong` and `modal volume delete arcsong-yue2-weights`.
+- To remove it: `modal app stop arcsong` and `modal volume delete arcsong-yue2-weights`, then
+  delete the `modal` folder in Arcsong's data directory so Setup offers to set it up again.
 
 ## Your first song
 

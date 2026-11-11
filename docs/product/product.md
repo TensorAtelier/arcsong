@@ -99,3 +99,6 @@ and diff (4), and rendering the cover (5).
 5. Cover — upload → transcribed Score → render (covers part installed).
 6. Real weights (pre-release only, owner's Mac on AC): `ARCSONG_REAL_ENGINE=1 caffeinate -ims uv
    run pytest -q tests/test_real_engine.py`.
+7. Modal (pre-release, when Modal code changed; owner's Modal account, inside the monthly credit):
+   `arcsong serve --engine modal` on a fresh data dir → Set up on Modal → a sketch of 2 → Finalize
+   one → Plan a melody → Cancel one mid-render; both takes and the Final play in the Library.

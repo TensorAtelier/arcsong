@@ -14,7 +14,8 @@ landing: merge
 - [x] song-name           — a required Song name in Create and Cover, shared by a sketch's takes; every song stores its name (existing ones backfilled) → .scratch/song-name/REPORT.md
 - [x] e2e-in-ci           — `scripts/release-qa` on CI → .scratch/e2e-in-ci/REPORT.md
 - [x] lyrics-help         — under Lyrics: flag what YuE2 reads badly, and estimate the song's length → .scratch/lyrics-help/REPORT.md
-- [ ] cloud-engine-modal  — render on the user's own Modal account: a CUDA Engine over `yue2` behind a remote worker (needs: X-001 result)
+- [x] owner-ui-requests   — section buttons and hints, Library lyrics toggle, lyrics tidying, Make the song / Sketch buttons, the style dictionary, Make instrumental (owner requests between cycles 3 and 4)
+- [x] cloud-engine-modal  — `--engine modal`: render on the user's own Modal account, set up from Setup → .scratch/cloud-engine-modal/REPORT.md
 - [ ] runpod-serverless   — the same remote protocol on RunPod serverless                       (needs: cloud-engine-modal)
 
 ## Later
@@ -23,6 +24,8 @@ landing: merge
 - vocal-less takes flagged in Compare and the Library (from score-zero-notes: needs the Score per take).
 - swap-limit: an option to raise mlx-Yue's 64 MiB swap-out stop, if the stop keeps tripping.
 - Homebrew tap; a project page on tensoratelier.com.
+- covers on Modal: SheetSage2 in the Modal app (from cloud-engine-modal's Not yet).
+- Modal precision choice (8-bit on CUDA) and finalizing across engines (from cloud-engine-modal).
 
 ## Out of scope
 

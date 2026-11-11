@@ -4,6 +4,7 @@ cancel is a kill and the server never imports MLX."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -354,7 +355,8 @@ class ModalModels:
     remote: str = "Modal"
 
     def files(self) -> dict[str, int]:
-        return {"deployed": 0}
+        # Named after the app's code, so an Arcsong whose Modal app changed asks to set up again.
+        return {_deployed_marker(): 0}
 
     def stray_files(self) -> list[str]:
         return []
@@ -378,14 +380,22 @@ class ModalModels:
             [sys.executable, "-m", "modal", "deploy", str(app)], capture_output=True, text=True
         )
         if deployed.returncode:
-            raise RuntimeError((deployed.stderr or deployed.stdout).strip()[-2000:])
+            # One line: the page shows the last line of a failure, and Modal wraps its output.
+            raise RuntimeError(" ".join((deployed.stderr or deployed.stdout).split())[-1000:])
         phase("downloading")
         import modal
 
         # About 8 GB into the Volume, inside Modal's cloud; minutes the first time, seconds after.
         modal.Function.from_name("arcsong", "download").remote()
         self.directory.mkdir(parents=True, exist_ok=True)
-        (self.directory / "deployed").touch()
+        for old in self.directory.glob("deployed*"):
+            old.unlink()
+        (self.directory / _deployed_marker()).touch()
+
+
+def _deployed_marker() -> str:
+    code = Path(__file__).with_name("modal_app.py").read_bytes()
+    return f"deployed-{hashlib.sha256(code).hexdigest()[:12]}"
 
 
 # --- fake -----------------------------------------------------------------------------------

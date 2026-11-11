@@ -486,7 +486,8 @@ def test_modal_setup_drops_the_mac_checks_and_says_where_songs_render(tmp_path):
     with serve(tmp_path, models) as client:
         before = client.get("/api/setup").json()
         (tmp_path / "modal").mkdir()
-        (tmp_path / "modal" / "deployed").touch()  # what a finished "Set up on Modal" leaves
+        marker = next(iter(models.files()))
+        (tmp_path / "modal" / marker).touch()  # what a finished "Set up on Modal" leaves
         after = client.get("/api/setup").json()
 
     weights_check = {p["id"]: p for p in before["parts"]}["engine"]["checks"][-1]
