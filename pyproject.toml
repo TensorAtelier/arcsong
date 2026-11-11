@@ -30,6 +30,8 @@ dependencies = [
 [project.optional-dependencies]
 # `--engine modal`: render on your own Modal account (https://modal.com).
 modal = ["modal>=1.6"]
+# `--engine runpod`: render on your own RunPod account (https://runpod.io).
+runpod = ["runpod>=2.0"]
 
 [project.urls]
 Homepage = "https://github.com/TensorAtelier/arcsong"

@@ -393,9 +393,80 @@ class ModalModels:
         (self.directory / _deployed_marker()).touch()
 
 
-def _deployed_marker() -> str:
-    code = Path(__file__).with_name("modal_app.py").read_bytes()
+def _deployed_marker(app: str = "modal_app.py") -> str:
+    code = Path(__file__).with_name(app).read_bytes()
     return f"deployed-{hashlib.sha256(code).hexdigest()[:12]}"
+
+
+# --- RunPod --------------------------------------------------------------------------------
+
+RUNPOD_INSTALL = (
+    "uv tool install --force 'arcsong[runpod] @ git+https://github.com/TensorAtelier/arcsong'"
+)
+RUNPOD_CONFIG = Path.home() / ".runpod" / "config.toml"
+
+
+@dataclass
+class RunPodModels:
+    """The song model on the user's own RunPod account. "Downloading" deploys `runpod_app`
+    there with `rp flash deploy`; the weights are staged by RunPod on each worker's host, so
+    nothing is stored. A marker file here records that it was done."""
+
+    directory: Path
+    remote: str = "RunPod"
+    config: Path = RUNPOD_CONFIG
+
+    def files(self) -> dict[str, int]:
+        return {_deployed_marker("runpod_app.py"): 0}
+
+    def stray_files(self) -> list[str]:
+        return []
+
+    def engine_checks(self) -> list[Check]:
+        try:
+            import runpod  # noqa: F401
+        except ImportError:
+            detail = f"the Runpod SDK isn't installed; run {RUNPOD_INSTALL}"
+            return [check("runtime", "RunPod client", "fail", detail)]
+        # RunPod's own key: $RUNPOD_API_KEY, else what `rp login` saved; Arcsong stores none.
+        if not (os.environ.get("RUNPOD_API_KEY") or _runpod_saved_key(self.config)):
+            detail = (
+                "no API key; run `rp login` in a terminal (or set RUNPOD_API_KEY), "
+                "then check again"
+            )
+            return [check("runtime", "RunPod key", "fail", detail)]
+        return [check("runtime", "RunPod key", "ok", "found RunPod's own login")]
+
+    def download(self, phase: Phase) -> None:
+        phase("deploying")
+        import tempfile
+
+        # `rp flash deploy` packages its whole directory, so it gets one holding only the app.
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copy(Path(__file__).with_name("runpod_app.py"), tmp)
+            cli = "import sys; from runpod.rp_cli.main import run; sys.exit(run())"
+            deployed = subprocess.run(
+                [sys.executable, "-c", cli, "flash", "deploy", "--python-version", "3.12"],
+                cwd=tmp,
+                capture_output=True,
+                text=True,
+            )
+        if deployed.returncode:
+            raise RuntimeError(" ".join((deployed.stderr or deployed.stdout).split())[-1000:])
+        self.directory.mkdir(parents=True, exist_ok=True)
+        for old in self.directory.glob("deployed*"):
+            old.unlink()
+        (self.directory / _deployed_marker("runpod_app.py")).touch()
+
+
+def _runpod_saved_key(config: Path) -> bool:
+    import tomllib
+
+    try:
+        saved = tomllib.loads(config.read_text())
+    except (OSError, tomllib.TOMLDecodeError):
+        return False
+    return bool(str(saved.get("apikey") or saved.get("api_key") or "").strip())
 
 
 # --- fake -----------------------------------------------------------------------------------

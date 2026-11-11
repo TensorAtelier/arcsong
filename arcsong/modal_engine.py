@@ -31,6 +31,9 @@ Remote = Callable[[dict[str, Any], CancelCheck, Emit], dict[str, Any]]
 
 
 class ModalEngine:
+    mac_draft_advice = MAC_DRAFT_ADVICE
+    cancelled_elsewhere = CANCELLED_ELSEWHERE
+
     def __init__(self, app_name: str = APP_NAME, remote: Remote | None = None):
         self.app_name = app_name
         self._remote = remote
@@ -69,7 +72,7 @@ class ModalEngine:
                     if isinstance(error, Exception):
                         raise error
                     # Modal's InputCancellation is a BaseException: the worker would die on it.
-                    raise RuntimeError(CANCELLED_ELSEWHERE) from error
+                    raise RuntimeError(self.cancelled_elsewhere) from error
 
     def plan_only(self, request: dict[str, Any], cancelled: CancelCheck, emit: Emit) -> ScoreOutput:
         emit({"type": "stage", "stage": STAGES[0]})  # the container may take a minute to start
@@ -97,7 +100,7 @@ class ModalEngine:
             raise FileNotFoundError("its Draft was deleted")
         # mlx-Yue keeps its own synthesis noise; yue2 on CUDA would make different music from it.
         if (source_dir / "noise.npy").exists():
-            raise ValueError(MAC_DRAFT_ADVICE)
+            raise ValueError(self.mac_draft_advice)
         names = [*PLAN_FILES, *(["score.abc"] if (source_dir / "score.abc").exists() else [])]
         files = {name: (source_dir / name).read_bytes() for name in names}
         emit({"type": "stage", "stage": STAGES[2]})
