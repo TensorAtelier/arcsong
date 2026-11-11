@@ -18,7 +18,7 @@ First scoring 2026-10-17, against the draft charter (north star: stars; nothing 
 | length-estimate — expected song length from the lyrics, shown under Lyrics | PLAN #8 | 1 | 0.8 | 2 | 1 | 0 | 0 | 1 | 0.80 | shipped cycle 3 (v0.4.0, as lyrics-help) |
 | swap-limit — let Arcsong raise mlx-Yue's 64 MiB swap-out stop (overrides upstream's guard) | defect (2026-10-17) | 2 | 0.5 | 2 | 1 | 1 | 2 | 1 | 0.40 | wait: needs a second real failure after today's fix |
 | cloud-engine-modal — `--engine modal`: yue2 on the user's own Modal account, deployed from Setup | research (owner ask ×3) | 4 | 0.8 | 2 | 5 | 3 | 0 | 1 | 0.73 | picked cycle 4 |
-| runpod-serverless — the same remote protocol on RunPod serverless (handler + image) | research (owner ask) | 3 | 0.4 | 2 | 3 | 2 | 1 | 2 | 0.30 | after cloud-engine-modal |
+| runpod-serverless — `--engine runpod` on the user's own RunPod account (Runpod SDK / Flash) | research (owner ask; key set up 2026-11-11) | 3 | 0.8 | 2 | 4 | 2 | 0 | 2 | 0.60 | picked cycle 5 after X-002 kept |
 | ai-lyric-writer — draft lyrics with a local LLM (Ollama / LM Studio) | feature (riff has one) | 2 | 0.3 | 2 | 3 | 2 | 0 | 2 | 0.17 | parked |
 | homebrew-tap | roadmap (M6 leftovers) | 2 | 0.5 | 1 | 2 | 1 | 0 | 1 | 0.25 | parked |
 | runpod-pod-template — whole app in a Docker image as a RunPod template | research (owner ask) | 2 | 0.3 | 1 | 3 | 2 | 1 | 2 | 0.08 | parked: needs a CUDA engine and a non-local bind |
@@ -40,6 +40,29 @@ Notes on the owner's four asks:
   RunPod second, on the same remote protocol.
 
 ## Experiments
+
+### X-002 — YuE2 on RunPod Serverless (Flash)
+
+- Hypothesis: yue2 0.1.5 renders on a Flash GPU worker's own torch (2.9.1, though it pins 2.10.0),
+  and a queue generator can return a ~50 MB Take in chunks under RunPod's 10 MB result cap, so
+  `--engine runpod` can follow the Modal engine's shape with no image to build or host.
+- Smallest test: `spike/runpod_yue2.py` — one `rp flash dev --once` run: the 3B model staged by
+  `runpod.Model` (no volume), the VAE downloaded on the worker, one 32-step song, every file
+  streamed back in 6 MB chunks and compared byte for byte.
+- Success line: a playable song whose files arrive complete, ≤ $0.50 for the run, ≤ 15 min end to
+  end from cold.
+- Budget: the owner approved up to $3 of their RunPod balance for this cycle (2026-11-11).
+- Review: this cycle.
+- Result: **kept** (2026-11-11). On an RTX 4090 (ADA_24) with the image's torch 2.9.1+cu128, yue2
+  0.1.5 rendered a 70 s song at 32 steps in 38 s of function time (VAE download 2 s, load 5 s,
+  planning 9 s, semantic 12 s, synthesis 4 s, decoding 4 s); 167 s end to end from a cold endpoint,
+  most of it the worker pulling the runtime image. The 11 MB FLAC came back byte for byte as 1 MB
+  generator chunks (6 MB chunks were dropped by the stream; the stored result kept them).
+  Six runs cost $0.18. What it took: install yue2 with `--no-deps` on the worker and list its other
+  pins without torch (its torch==2.10.0 pin upgraded torch and broke the image's torchvision);
+  wait on `job.stream(timeout=…)`, since `fn.stream()` gives up at 300 s; a failed generator job
+  ends its stream silently, so read `job.result()` for the error. Not tested: a full 3-minute
+  Take (~50 MB, ~50 chunks) — the build's real run checks it. Script: `spike/runpod_yue2.py`.
 
 ### X-001 — cloud rendering on Modal
 

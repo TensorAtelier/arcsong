@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-11-11 — cycle 5
+
+- North star: 0 stars (same day as cycle 4's snapshot; no new row). Nothing announced yet.
+- Owner, this session: set up RunPod (Claude Code plugin signed in; `runpodctl` 3.1.0 with `RUNPOD_API_KEY` in `~/.zshrc`; $15 balance) and ran `/pm` — the key cycle 4 named as runpod-serverless's blocker.
+- Owner call (in chat, asked by the PM): RunPod test spend **up to $3** of their balance; anything left deployed may stay. By: owner.
+- Picked:
+  - X-002 (experiment, not a build): runpod-serverless stays at 0.30 — confidence 0.4 because two unknowns surfaced in orient: yue2 0.1.5 pins torch 2.10.0 while Flash GPU workers run torch 2.9.1 and drop torch pins, and RunPod caps a job's result at 10 MB while a Take is ~50 MB. Low confidence on a real ask → the smallest test first (rubric).
+  - announcement-v0.5.0 draft (`docs/product/announcement-v0.5.0.md`) — cycle 4's "next": the post is the only lever on the north star; the owner posts it.
+- Design found on the way: `runpod.Model` stages the 7.3 GB 3B weights on the host before a worker starts, so a RunPod engine needs no network volume (the 0.53 GB VAE downloads on the worker) — no monthly storage bill.
+- X-002: **kept** — yue2 renders on Flash's torch 2.9.1 (70 s song, 38 s on a 4090, 167 s from cold), files return complete in 1 MB stream chunks, $0.18 for six runs. runpod-serverless rescored 0.30 → 0.60 (C 0.4 → 0.8) and picked as the cycle's build (chain 1). Above song-metadata (0.50) on score and on the owner's evident ask.
+
 ## 2026-11-11 — cycle 4
 
 - North star: 0 stars (Δ 0 since 2026-10-17; 22 unique cloners, mostly CI; nothing announced, so the kill clock hasn't started).
