@@ -10,6 +10,14 @@
 - Spend: testing on the owner's Modal account inside the approved $30 monthly credit, capped at $5 for this cycle.
 - Scope cut (Not yet): covers on Modal (SheetSage2 stays on the Mac engine), RunPod (next on the roadmap, same remote shape), a precision choice on Modal (yue2 on CUDA renders bf16).
 - J6 real weights: the Mac is on battery again (60%); fourth release without it.
+- Shipped: **v0.5.0** (https://github.com/TensorAtelier/arcsong/releases/tag/v0.5.0) — cloud-engine-modal plus the nine owner-requested UI changes. CI green on b3ca4ee (seven jobs, the journeys included); the tag installs with `uvx --from 'arcsong[modal] @ git+…@v0.5.0'` and serves Setup on `--engine modal`.
+- Build: lite pipeline, four tickets (`.scratch/cloud-engine-modal/REPORT.md`). Goal-mode QA: PASS WITH NOTES; seven of eight findings fixed before merge (app-versioned deploy marker, call-loop tests, one-line deploy errors, last-event drain, Modal-side cancels no longer kill the worker, README figures, a docstring); one left (wording when finalizing a Modal Draft on the Mac — unsupported and documented).
+- Release QA: verify green (289 passed, ruff, tsc); `scripts/release-qa` J1–J5 pass locally and on CI. J7 Modal (new journey): pass — Set up on Modal, sketch of 2, Finalize (16 s), Plan a melody (13 s), live progress, Cancel mid-render, Library playback; $0.15 of the owner's Modal credit. J6 real weights: **not run** (battery).
+- Incidents: no L4 was free on Modal, so the first take waited ~14 min with no runner — `Renderer` now falls back to A10G and L40S. `FunctionCall.get(timeout=…)` blocks while a call is pending — the engine waits on a side thread.
+- Left running on the owner's account: the deployed `arcsong` app (scales to zero, nothing billed while idle) and the weights Volume `arcsong-yue2-weights` (from X-001).
+- Metrics: 0 stars, 22 unique cloners (mostly CI), 8 unique views, 1 download (Δ +13 cloners, +5 views since 2026-10-17; nothing announced).
+- Shortcuts: J6 not run — repay on AC power before the announcement (fourth release); the README's Modal cost figure is X-001's L4 number, not a fresh one — repay when a full-quality song is next rendered on Modal.
+- Next: the announcement is now the only real lever — v0.5.0 is the first release that reaches people without an Apple Silicon Mac, which widens who can star it; the PM drafts a new post (the v0.2.0 draft is stale) and the owner posts it. Build candidates: runpod-serverless (0.30, needs a RunPod API key → NEEDS-YOU when picked), covers on Modal, song-metadata (0.50). If nothing is announced by next run, the cycle is maintenance-sized.
 
 ## 2026-10-18 — cycle 3
 
