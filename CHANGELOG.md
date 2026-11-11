@@ -3,7 +3,9 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
-## Unreleased
+## 0.5.0 — 2026-11-11
+
+Render on your own Modal account, instrumentals, and a calmer Create page.
 
 - **Render on Modal** (`arcsong serve --engine modal`, with `arcsong[modal]`): songs render on a
   cloud GPU in your own Modal account, so Arcsong runs on Windows, Linux and smaller Macs too.
