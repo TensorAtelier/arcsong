@@ -107,6 +107,31 @@ def test_a_failed_job_says_why_in_one_line(tmp_path):
         engine.plan_only(REQUEST, lambda: False, print)
 
 
+def test_a_lost_stream_cancels_the_job_and_says_why(tmp_path):
+    class Lost(FakeJob):
+        def stream(self, timeout):
+            yield {"type": "stage", "stage": "planning"}
+            raise TimeoutError("job x stream did not complete within 2700.0s")
+
+    job = Lost([])
+    engine, _ = engine_with(job)
+    with pytest.raises(RuntimeError, match=r"^RunPod: job x stream did not complete"):
+        engine.render(REQUEST, tmp_path / "take", lambda: False, print)
+    assert job.cancelled  # not left running and billing
+
+
+def test_failure_reasons_are_the_workers_own_message():
+    from arcsong.runpod_engine import reason
+
+    sdk = RuntimeError(
+        "remote execution failed: handler: bad score \ntraceback: Traceback (most recent call"
+        " last):\n  ...\nValueError: bad score\n\nlogs:\nDownloading vae 100%"
+    )
+    assert reason(sdk) == "bad score"
+    plain = RuntimeError("Traceback:\n  ...\nValueError: bad score\nlogs:\nDownloading vae 100%")
+    assert reason(plain) == "ValueError: bad score"
+
+
 def test_a_job_cancelled_on_runpod_or_cut_short_is_a_plain_failure(tmp_path):
     engine, _ = engine_with(FakeJob([], status="CANCELLED"))
     with pytest.raises(RuntimeError, match="stopped on RunPod"):
@@ -126,26 +151,56 @@ def test_a_mac_draft_is_refused_naming_runpod(tmp_path):
         engine.finalize(tmp_path / "mac", REQUEST, tmp_path / "final", lambda: False, print)
 
 
-def test_setup_finds_runpods_own_key(tmp_path, monkeypatch):
+def fake_sdk(monkeypatch, saved):
+    """Stand in for the Runpod SDK (CI has no extras): `saved` is what `rp login` stored."""
     import sys
     import types
 
-    monkeypatch.setitem(sys.modules, "runpod", types.ModuleType("runpod"))  # CI has no extras
+    functions = types.ModuleType("runpod.cli.groups.config.functions")
+    profiles = []
+
+    def get_credentials(profile="default"):
+        profiles.append(profile)
+        return saved.get(profile)
+
+    functions.get_credentials = get_credentials
+    monkeypatch.setitem(sys.modules, "runpod", types.ModuleType("runpod"))
+    monkeypatch.setitem(sys.modules, "runpod.cli.groups.config.functions", functions)
+    return profiles
+
+
+def test_setup_finds_runpods_own_key(tmp_path, monkeypatch):
     monkeypatch.delenv("RUNPOD_API_KEY", raising=False)
-    config = tmp_path / "config.toml"
-    models = RunPodModels(tmp_path / "runpod", config=config)
-    assert models.engine_checks()[0]["status"] == "fail"  # no file
+    monkeypatch.delenv("RUNPOD_PROFILE", raising=False)
+    models = RunPodModels(tmp_path / "runpod")
 
-    config.write_text('apikey = ""\napiurl = "https://api.runpod.io/graphql"\n')
-    assert models.engine_checks()[0]["status"] == "fail"  # `runpodctl doctor` left it empty
+    fake_sdk(monkeypatch, {})
+    assert models.engine_checks()[0]["status"] == "fail"  # never logged in
 
-    config.write_text('apikey = "rpa_x"\n')
+    fake_sdk(monkeypatch, {"default": {"api_key": " "}})
+    assert models.engine_checks()[0]["status"] == "fail"  # an empty key is no key
+
+    profiles = fake_sdk(monkeypatch, {"default": {"api_key": "rpa_x"}})
+    assert models.engine_checks()[0]["status"] == "ok"  # what `rp login` saves
+    assert profiles == ["default"]
+
+    profiles = fake_sdk(monkeypatch, {"work": {"api_key": "rpa_w"}})
+    monkeypatch.setenv("RUNPOD_PROFILE", "work")
     assert models.engine_checks()[0]["status"] == "ok"
+    assert profiles == ["work"]
 
-    config.unlink()
+    fake_sdk(monkeypatch, {})
     monkeypatch.setenv("RUNPOD_API_KEY", "rpa_y")
     assert models.engine_checks()[0]["status"] == "ok"
     assert models.remote == "RunPod"
+
+
+def test_setup_asks_for_the_client_when_it_is_missing(tmp_path, monkeypatch):
+    import sys
+
+    monkeypatch.setitem(sys.modules, "runpod", None)  # import fails
+    [missing] = RunPodModels(tmp_path / "runpod").engine_checks()
+    assert missing["status"] == "fail" and "arcsong[runpod]" in missing["detail"]
 
 
 def test_setup_deploys_from_a_folder_holding_only_the_app(tmp_path, monkeypatch):
@@ -169,14 +224,6 @@ def test_setup_deploys_from_a_folder_holding_only_the_app(tmp_path, monkeypatch)
     assert seen["args"] == ["flash", "deploy", "--python-version", "3.12"]
     assert phases == ["deploying"]
     assert sorted(p.name for p in (tmp_path / "runpod").iterdir()) == sorted(models.files())
-
-
-def test_setup_asks_for_the_client_when_it_is_missing(tmp_path, monkeypatch):
-    import sys
-
-    monkeypatch.setitem(sys.modules, "runpod", None)  # import fails
-    [missing] = RunPodModels(tmp_path / "runpod").engine_checks()
-    assert missing["status"] == "fail" and "arcsong[runpod]" in missing["detail"]
 
 
 def test_a_failed_deploy_is_one_line(tmp_path, monkeypatch):

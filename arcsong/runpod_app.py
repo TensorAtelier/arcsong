@@ -13,6 +13,8 @@ Only `runpod` is imported at module level: the worker has no Arcsong, the Mac ha
 from __future__ import annotations
 
 import base64
+import sys
+import threading
 import time
 
 import runpod
@@ -40,7 +42,18 @@ PROGRESS_SECONDS = 0.5  # token counts go back at most this often
 
 model = runpod.Model(f"m-a-p/YuE2-3B:{MODEL_REV}")
 app = runpod.App(APP_NAME)
-_state: dict = {}  # the loaded pipeline, kept while the worker stays warm
+# Kept on `sys`, not in this module: RunPod's runtime gave each job its own copy of the module,
+# so a module-level lock let a job start planning while a cancelled one still held the GPU, and
+# CUDA graph capture failed in both (2026-11-11). One process, one lock, one loaded pipeline.
+_process = sys.__dict__.setdefault("_arcsong_runpod", {"lock": threading.Lock(), "state": {}})
+_lock = _process["lock"]
+_state: dict = _process["state"]  # the loaded pipeline, kept while the worker stays warm
+
+
+class Stopped(Exception):
+    """The job was cancelled (its stream closed). The GPU work stops at the next stage boundary:
+    raising from inside a generation left CUDA with a device-side assert that failed the next
+    job on the same worker (2026-11-11)."""
 
 
 @app.queue(
@@ -57,22 +70,27 @@ _state: dict = {}  # the loaded pipeline, kept while the worker stays warm
 def render(job: dict):
     """One job: `plan` returns the Score; `render` and `finalize` return the Take's files."""
     import queue
-    import threading
 
     events: queue.Queue = queue.Queue()
     outcome: dict = {}
+    stop = threading.Event()
 
     def work() -> None:
         try:
-            outcome["result"] = _run(job, events.put)
+            # One song on the GPU at a time: a cancelled job's thread unwinds before the next runs.
+            with _lock:
+                outcome["result"] = _run(job, events.put, stop)
         except BaseException as error:  # noqa: BLE001 — re-raised below, in the generator
             outcome["error"] = error
         finally:
             events.put(None)
 
     threading.Thread(target=work, daemon=True).start()
-    while (event := events.get()) is not None:
-        yield event
+    try:
+        while (event := events.get()) is not None:
+            yield event
+    finally:
+        stop.set()  # a cancel closes this generator; the GPU work stops at the next stage
     if "error" in outcome:
         raise outcome["error"]
     result = outcome["result"]
@@ -107,11 +125,16 @@ def _pipeline():
     return _state["pipe"]
 
 
-def _run(job: dict, emit) -> dict:
+def _run(job: dict, emit, stop) -> dict:
     import tempfile
     from pathlib import Path
 
+    def check() -> None:
+        if stop.is_set():
+            raise Stopped()
+
     request = job["request"]
+    check()
     pipe = _pipeline()
     from yue2.pipeline import SemanticResult, SymbolicPlan
 
@@ -140,10 +163,14 @@ def _run(job: dict, emit) -> dict:
             )
             if job["kind"] == "plan":
                 return {"abc": plan.abc}
+            check()
             emit({"type": "stage", "stage": "semantic generation"})
-            semantic = pipe.generate_semantic(plan, on_token=_counter("semantic generation", emit))
+            tokens = _counter("semantic generation", emit)
+            semantic = pipe.generate_semantic(plan, on_token=tokens)
+        check()
         emit({"type": "stage", "stage": "synthesis"})
         latents = pipe.synthesize(semantic)
+        check()
         emit({"type": "stage", "stage": "decoding"})
         audio = pipe.decode(latents)
         take = out / "take"

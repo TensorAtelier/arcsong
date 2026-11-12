@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import queue
+import re
 import threading
 from typing import Any
 
@@ -56,7 +57,8 @@ class RunPodEngine(ModalEngine):
             if chunk is _DONE:
                 break
             if isinstance(chunk, BaseException):
-                raise chunk
+                _cancel_quietly(handle)  # a lost stream mustn't leave the job running and billing
+                raise RuntimeError(f"RunPod: {reason(chunk)}") from chunk
             kind = chunk.get("type")
             if kind == "result":
                 header = chunk
@@ -80,10 +82,28 @@ class RunPodEngine(ModalEngine):
             return RuntimeError(self.cancelled_elsewhere)
         try:
             handle.result(timeout=30)  # a failed job raises its worker's error here
-        except Exception as error:  # noqa: BLE001 — the remote traceback; its last line says why
-            lines = [line for line in str(error).splitlines() if line.strip()]
-            return RuntimeError(f"RunPod: {lines[-1].strip() if lines else error}")
+        except Exception as error:  # noqa: BLE001 — the remote traceback, summed up
+            return RuntimeError(f"RunPod: {reason(error)}")
         return RuntimeError(f"RunPod ended the job with no song (status {status}).")
+
+
+def reason(error: BaseException) -> str:
+    """One line from a RunPod error: the handler's own message, else the traceback's last line.
+    The SDK formats a failed job as "handler: …\ntraceback: …" with "logs: …" after it."""
+    text = str(error)
+    handler = re.search(r"handler:\s*(.+?)\s*(?:\ntraceback:|$)", text, re.S)
+    if handler and handler.group(1).strip():
+        return handler.group(1).strip().splitlines()[-1].strip()
+    text = text.split("\nlogs:", 1)[0]
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return lines[-1] if lines else type(error).__name__
+
+
+def _cancel_quietly(handle) -> None:
+    try:
+        handle.cancel()
+    except Exception:  # noqa: BLE001 — best effort; the job's own failure is what gets reported
+        pass
 
 
 def _read(handle, chunks: queue.Queue) -> None:

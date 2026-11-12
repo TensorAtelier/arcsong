@@ -27,6 +27,13 @@ account — a few cents of GPU time; `modal billing report --for today` shows it
 uv sync --extra modal && uv run arcsong serve --engine modal --data "$(mktemp -d)" --port 8853
 ```
 
+When the RunPod engine changed, the same journey on your own RunPod account (`runpodctl user`
+shows the balance before and after):
+
+```sh
+uv sync --extra runpod && uv run arcsong serve --engine runpod --data "$(mktemp -d)" --port 8853
+```
+
 And the browser journeys from `docs/product/product.md` → Release, on the fake Engine in a private
 headless Chrome (needs Node and Google Chrome; touches nothing of yours):
 

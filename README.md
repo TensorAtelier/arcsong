@@ -5,8 +5,9 @@ own Mac. Arcsong is a local web app around the [YuE2](https://huggingface.co/m-a
 music model, running through the [mlx-Yue](https://github.com/vanch007/mlx-Yue) port on Apple
 Silicon. Nothing is sent anywhere: the model, the weights and your songs stay on the machine.
 
-> **Status: v0.2.0, early.** Apple Silicon only. Rendering on your own cloud GPU (Modal, RunPod)
-> is being explored for Windows, Linux and smaller Macs.
+> **Status: v0.6.0, early.** Renders on an Apple Silicon Mac, or on a cloud GPU in your own
+> [Modal](#no-apple-silicon-render-on-modal) or [RunPod](#or-render-on-runpod) account (Windows,
+> Linux, smaller Macs).
 
 ## Hear it first
 
@@ -103,7 +104,7 @@ there; each song is made on a cloud GPU billed to your Modal account (an NVIDIA 
 or L40S when no L4 is free; the L40S costs more per second).
 
 ```sh
-uv tool install 'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'
+uv tool install --with-executables-from modal 'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'
 modal setup                     # Modal's own login, once; Arcsong never sees your token
 arcsong serve --engine modal
 ```
@@ -122,6 +123,36 @@ that, Create, Sketch, Compare, Finalize and the Score page work as on the Mac.
   renders bf16). A Draft made on the Mac can't be finalized on Modal, or the other way round.
 - To remove it: `modal app stop arcsong` and `modal volume delete arcsong-yue2-weights`, then
   delete the `modal` folder in Arcsong's data directory so Setup offers to set it up again.
+
+## Or render on RunPod
+
+The same, on your own [RunPod](https://runpod.io) account: each song runs as a Serverless job on
+a 24 GB GPU (an RTX 4090, L4, A5000 or 3090, whichever has stock), billed to your RunPod balance.
+
+```sh
+uv tool install --with-executables-from runpod 'arcsong[runpod] @ git+https://github.com/TensorAtelier/arcsong'
+rp login                        # RunPod's own login, once (or export RUNPOD_API_KEY)
+arcsong serve --engine runpod
+```
+
+On the Setup page, **Set up on RunPod** deploys a Serverless endpoint called `render` (app
+`arcsong`) to your account, in about two minutes. Nothing is stored there: RunPod stages the
+model weights on the GPU's host for each worker, so there is no volume to pay for.
+
+- **Cost and speed** (measured November 2026): a sketch of two 2.6-minute takes, a Finalize, a
+  planned melody and a cancelled song used about $0.05 of balance in all. The first job after a
+  pause takes about three minutes before it starts (RunPod pulls its GPU image); a take on a warm
+  worker took about a minute, a Finalize 25 s. The worker stops two minutes after the last job;
+  nothing bills while it's stopped.
+- **Your key on RunPod:** RunPod's SDK copies your API key into the endpoint's settings on your
+  own account (it does that for every app it deploys). Arcsong itself stores no key.
+- **Not on RunPod yet:** covers, and the 8-bit/bf16 choice (it renders bf16). A Draft made on the
+  Mac can't be finalized on RunPod.
+- To remove it: `rp flash app delete arcsong --yes`, then delete the `runpod` folder in Arcsong's
+  data directory.
+
+`--with-executables-from` puts the cloud's own command (`modal`, `rp`) on your PATH beside
+`arcsong`; without it `uv tool install` exposes only `arcsong`.
 
 ## Your first song
 

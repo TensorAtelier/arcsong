@@ -343,7 +343,11 @@ def _ffmpeg_check() -> Check:
 
 # --- Modal ---------------------------------------------------------------------------------
 
-MODAL_INSTALL = "uv tool install --force 'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'"
+# --with-executables-from: `uv tool install` otherwise puts only `arcsong` on PATH, not `modal`.
+MODAL_INSTALL = (
+    "uv tool install --force --with-executables-from modal "
+    "'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'"
+)
 
 
 @dataclass
@@ -401,9 +405,9 @@ def _deployed_marker(app: str = "modal_app.py") -> str:
 # --- RunPod --------------------------------------------------------------------------------
 
 RUNPOD_INSTALL = (
-    "uv tool install --force 'arcsong[runpod] @ git+https://github.com/TensorAtelier/arcsong'"
+    "uv tool install --force --with-executables-from runpod "
+    "'arcsong[runpod] @ git+https://github.com/TensorAtelier/arcsong'"
 )
-RUNPOD_CONFIG = Path.home() / ".runpod" / "config.toml"
 
 
 @dataclass
@@ -414,7 +418,6 @@ class RunPodModels:
 
     directory: Path
     remote: str = "RunPod"
-    config: Path = RUNPOD_CONFIG
 
     def files(self) -> dict[str, int]:
         return {_deployed_marker("runpod_app.py"): 0}
@@ -429,7 +432,7 @@ class RunPodModels:
             detail = f"the Runpod SDK isn't installed; run {RUNPOD_INSTALL}"
             return [check("runtime", "RunPod client", "fail", detail)]
         # RunPod's own key: $RUNPOD_API_KEY, else what `rp login` saved; Arcsong stores none.
-        if not (os.environ.get("RUNPOD_API_KEY") or _runpod_saved_key(self.config)):
+        if not (os.environ.get("RUNPOD_API_KEY", "").strip() or _runpod_saved_key()):
             detail = (
                 "no API key; run `rp login` in a terminal (or set RUNPOD_API_KEY), "
                 "then check again"
@@ -459,14 +462,16 @@ class RunPodModels:
         (self.directory / _deployed_marker("runpod_app.py")).touch()
 
 
-def _runpod_saved_key(config: Path) -> bool:
-    import tomllib
+def _runpod_saved_key() -> bool:
+    """What `rp login` saved, read the way the Runpod SDK reads it (`[<profile>] api_key`)."""
+    from runpod.cli.groups.config.functions import get_credentials
 
+    profile = os.environ.get("RUNPOD_PROFILE", "").strip() or "default"
     try:
-        saved = tomllib.loads(config.read_text())
-    except (OSError, tomllib.TOMLDecodeError):
+        credentials = get_credentials(profile) or {}
+    except Exception:  # noqa: BLE001 — an unreadable file is the same as no key
         return False
-    return bool(str(saved.get("apikey") or saved.get("api_key") or "").strip())
+    return bool(str(credentials.get("api_key") or "").strip())
 
 
 # --- fake -----------------------------------------------------------------------------------

@@ -102,3 +102,5 @@ and diff (4), and rendering the cover (5).
 7. Modal (pre-release, when Modal code changed; owner's Modal account, inside the monthly credit):
    `arcsong serve --engine modal` on a fresh data dir → Set up on Modal → a sketch of 2 → Finalize
    one → Plan a melody → Cancel one mid-render; both takes and the Final play in the Library.
+   The same for RunPod (`--engine runpod`, when RunPod code changed; owner's RunPod balance,
+   inside what the owner approved), with one take a full-length song (~50 MB of returned files).
