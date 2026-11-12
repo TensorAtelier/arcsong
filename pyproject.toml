@@ -1,6 +1,6 @@
 [project]
 name = "arcsong"
-version = "0.5.0"
+version = "0.6.0"
 description = "Local app for generating full songs with the YuE2 music model on your own Mac"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -30,6 +30,8 @@ dependencies = [
 [project.optional-dependencies]
 # `--engine modal`: render on your own Modal account (https://modal.com).
 modal = ["modal>=1.6"]
+# `--engine runpod`: render on your own RunPod account (https://runpod.io).
+runpod = ["runpod>=2.0"]
 
 [project.urls]
 Homepage = "https://github.com/TensorAtelier/arcsong"

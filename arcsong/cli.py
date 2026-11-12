@@ -13,6 +13,7 @@ ENGINES = {
     "mlx": "arcsong.mlx_engine:MlxYueEngine",
     "fake": "arcsong.fake_engine:FakeEngine",
     "modal": "arcsong.modal_engine:ModalEngine",
+    "runpod": "arcsong.runpod_engine:RunPodEngine",
 }
 
 REQUIRE_AC_ENV = "ARCSONG_REQUIRE_AC"
@@ -56,6 +57,7 @@ def main(argv: list[str] | None = None) -> None:
         FakeModels,
         MlxYueModels,
         ModalModels,
+        RunPodModels,
         TranscriptionModels,
         check,
         models_dir,
@@ -68,10 +70,13 @@ def main(argv: list[str] | None = None) -> None:
         covers = TranscriptionModels(directory)
         # Songs render on battery unless the user asks for mlx-Yue's AC guard.
         kwargs = {"models": str(directory), "require_ac": not allow_battery}
-    elif args.engine == "modal":
+    elif args.engine in ("modal", "runpod"):
         from arcsong.modal_engine import COVERS_ADVICE
 
-        models = ModalModels(data / "modal")
+        if args.engine == "modal":
+            models = ModalModels(data / "modal")
+        else:
+            models = RunPodModels(data / "runpod")
         # SheetSage2 runs on the Mac engine only, so the part stays visible but never usable.
         covers = FakeModels(
             data / "covers-models", checks=[check("runtime", "Covers", "fail", COVERS_ADVICE)]

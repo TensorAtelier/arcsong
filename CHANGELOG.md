@@ -3,6 +3,19 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
+## 0.6.0 — 2026-11-11
+
+Render on your own RunPod account.
+
+- **Render on RunPod** (`arcsong serve --engine runpod`, with `arcsong[runpod]`): songs render as
+  Serverless jobs on a 24 GB GPU in your own RunPod account. Setup's **Set up on RunPod** deploys
+  an `arcsong` app there with the Runpod SDK (`rp flash deploy`); RunPod stages the weights on
+  each worker's host, so nothing is stored and no volume bills. Your key stays RunPod's own
+  (`rp login` or `$RUNPOD_API_KEY`). Sketch, Compare, Finalize and the Score page work as on the
+  Mac; covers still need the Mac engine.
+- **Fixed:** the Modal install line put only `arcsong` on PATH, so `modal setup` was "command not
+  found". Both cloud installs now use `uv tool install --with-executables-from modal|runpod`.
+
 ## 0.5.0 — 2026-11-11
 
 Render on your own Modal account, instrumentals, and a calmer Create page.
