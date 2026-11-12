@@ -10,6 +10,15 @@
   - announcement-v0.5.0 draft (`docs/product/announcement-v0.5.0.md`) — cycle 4's "next": the post is the only lever on the north star; the owner posts it.
 - Design found on the way: `runpod.Model` stages the 7.3 GB 3B weights on the host before a worker starts, so a RunPod engine needs no network volume (the 0.53 GB VAE downloads on the worker) — no monthly storage bill.
 - X-002: **kept** — yue2 renders on Flash's torch 2.9.1 (70 s song, 38 s on a 4090, 167 s from cold), files return complete in 1 MB stream chunks, $0.18 for six runs. runpod-serverless rescored 0.30 → 0.60 (C 0.4 → 0.8) and picked as the cycle's build (chain 1). Above song-metadata (0.50) on score and on the owner's evident ask.
+- Shipped: **v0.6.0** (https://github.com/TensorAtelier/arcsong/releases/tag/v0.6.0) — `--engine runpod`, plus the fix for v0.5.0's Modal install line (`uv tool install` left `modal` off PATH; both cloud installs now use `--with-executables-from`). The tag installs in isolation with `arcsong`, `rp` and `runpod` on PATH and serves Setup on `--engine runpod`.
+- QA: FAIL first, four defects, all fixed before merge — Setup missed the key `rp login` saves; failures showed whole tracebacks; a lost stream left the job billing; Cancel only cancelled the job record while the GPU kept working.
+- Incident: the first two cancel fixes broke the real worker — a job queued after a cancel failed with "CUDA error … previous error during capture". The worker logs showed RunPod loads a fresh copy of the app module per job in the same process, so a module-level lock didn't hold and the next job's generation overlapped the cancelled one. Fixed with the lock and pipeline on `sys`, and stops only at stage boundaries (a cancelled song can hold the GPU ~90 s). Re-verified on RunPod: cancel mid-semantic, then a plan (22 s) and a song (24 s) both succeed.
+- Release QA: verify green (305 passed, ruff, tsc); `scripts/release-qa` J1–J5 pass. J7 on RunPod: pass — Set up on RunPod (deploy 65–100 s), sketch of two 2.6-min takes (196 s cold, ~60 s warm), Finalize, Plan a melody, live progress, Cancel, Library playback. J6 real weights: **not run** (battery; fifth release).
+- Spend: ~$0.49 of the owner's $3 RunPod budget (X-002 $0.18). Left on the account: the `arcsong` endpoint (`render`, scales to zero, nothing billed while idle).
+- Metrics: same day as cycle 4's snapshot; no new row.
+- Shortcuts: a cancel waits for the current stage to end — repay if users cancel often on RunPod (needs a CUDA-safe stop inside generation). J6 still open — repay on AC power before the announcement.
+- Owner question this cycle: better audio quality. Already in the app: 32 synthesis steps (Make the song / Finalize) and bf16 on the Mac; output is yue2's own 48 kHz FLAC. Candidate added for next cycle: a local mastering pass on download (loudness + limiter), unscored.
+- Next: the announcement (now `announcement-v0.6.0.md`: Mac, Modal and RunPod) is still the only lever on the north star — the owner posts it. Build candidates: mastering pass, song-metadata (0.50), covers on the cloud engines.
 
 ## 2026-11-11 — cycle 4
 
