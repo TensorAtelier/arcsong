@@ -24,6 +24,9 @@ def run_serve(monkeypatch, tmp_path, *extra: str) -> dict:
     monkeypatch.setattr(arcsong.app, "create_app", fake_create_app)
     monkeypatch.setattr(cli.uvicorn, "Config", lambda *a, **k: None)
     monkeypatch.setattr(cli, "Server", lambda config, shutting_down: SimpleNamespace(run=dict))
+    if "--engine" not in extra and "--all" not in extra:
+        extra = ("--engine", "mlx", *extra)
+    extra = tuple(x for x in extra if x != "--all")
     cli.main(["serve", "--data", str(tmp_path), "--mlx-models", str(tmp_path / "w"), *extra])
     return captured
 
@@ -34,6 +37,16 @@ def test_battery_is_allowed_by_default(monkeypatch, tmp_path):
 
     assert built["spec"].kwargs["require_ac"] is False
     assert built["kwargs"]["allow_battery"] is True
+
+
+def test_with_every_engine_the_macs_follows_the_same_flag(monkeypatch, tmp_path):
+    monkeypatch.delenv(cli.REQUIRE_AC_ENV, raising=False)
+    monkeypatch.setattr(cli, "apple_silicon", lambda: True)
+    built = run_serve(monkeypatch, tmp_path, "--all", "--require-ac")
+
+    mac = built["spec"][0]
+    assert mac.id == "mlx" and mac.spec.kwargs["require_ac"] is True
+    assert built["kwargs"]["allow_battery"] is False
 
 
 def test_require_ac_turns_the_guard_on(monkeypatch, tmp_path):

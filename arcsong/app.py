@@ -13,6 +13,7 @@ import shutil
 import threading
 import uuid
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -66,6 +67,8 @@ class SongRequest(BaseModel):
     steps: Literal[8, 32] = 32
     # An edited Score to render instead of writing one; upstream needs a planning mode for it.
     abc: str | None = None
+    # Where it renders (an Engine id from Setup); none: the first one set up.
+    engine: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -97,6 +100,7 @@ class ScoreRequest(BaseModel):
     precision: Literal["8bit", "bf16"] = "8bit"
     # Planning ignores this; it is kept so rendering from the Score uses the chosen quality.
     steps: Literal[8, 32] = 32
+    engine: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -141,31 +145,50 @@ def variation_seeds(seed: int | None, count: int) -> list[int]:
     return [(seed + i) % SEED_LIMIT for i in range(count)]
 
 
+@dataclass
+class Engine:
+    """One place songs can render: its id (`mlx`, `modal`, `runpod`), Setup's name for it, the
+    spec its worker builds, and the weights (or deployment) Setup installs for it."""
+
+    id: str
+    label: str
+    spec: EngineSpec
+    models: Models
+    summary: str = ""
+
+
 def create_app(
-    spec: EngineSpec,
+    spec: EngineSpec | list[Engine],
     data: str | Path | None = None,
     cancel_grace: float | None = None,
     load_retry: float | None = None,
     models: Models | None = None,
     covers: Models | None = None,
     allow_battery: bool = True,
+    covers_engine: str | None = None,
 ) -> FastAPI:
-    """`models` are the weights the Engine needs and `covers` the optional transcription ones;
-    by default both are fake weights that are already installed, so tests of other features
-    never meet the Setup gate. `allow_battery` only changes what the Setup page says: the
-    Engine is told separately, through its own `require_ac` kwarg."""
+    """`spec` is the one Engine, whose weights are `models`, or a list of Engines (the first is
+    the default) each with its own. `covers` are the optional transcription weights, which run
+    on `covers_engine` (default: the first). By default all weights are fake and already
+    installed, so tests of other features never meet the Setup gate. `allow_battery` only
+    changes what the Setup page says: the Engine is told separately, through its own
+    `require_ac` kwarg."""
     root = data_dir(data)
     songs_dir = root / "songs"
     songs_dir.mkdir(exist_ok=True)
-    models = models or FakeModels(root / "models")
+    if isinstance(spec, EngineSpec):
+        summary = "Writes and sings songs. Needed to make anything."
+        models = models or FakeModels(root / "models")
+        engines = [Engine(ENGINE, "Song model", spec, models, summary)]
+    else:
+        engines = spec
     covers = covers or FakeModels(root / "covers-models")
+    covers_engine = covers_engine or engines[0].id
+    labels = {engine.id: engine.label for engine in engines}
     parts = [
-        Part(
-            ENGINE,
-            "Song model",
-            models,
-            "Writes and sings songs. Needed to make anything.",
-            required=True,
+        *(
+            Part(e.id, e.label, e.models, e.summary, required=len(engines) == 1, engine=True)
+            for e in engines
         ),
         Part(
             COVERS,
@@ -181,7 +204,8 @@ def create_app(
         store = Store(root / "arcsong.db")
         options = {"cancel_grace": cancel_grace, "load_retry": load_retry}
         kwargs = {k: v for k, v in options.items() if v is not None}
-        runner = JobRunner(store, songs_dir, spec, **kwargs)
+        specs = {engine.id: engine.spec for engine in engines}
+        runner = JobRunner(store, songs_dir, specs, **kwargs)
         setup = Setup(
             parts, store, runner.publish_message, runner.next_seq, allow_battery=allow_battery
         )
@@ -201,14 +225,27 @@ def create_app(
     # the server alive (uvicorn waits for open connections before running lifespan shutdown).
     app.state.shutting_down = threading.Event()
 
+    def engine_for(requested: str | None) -> str:
+        """The Engine a new job renders on, or the reason it can't (422 unknown, 409 not set up)."""
+        setup = app.state.setup
+        engine = requested or setup.default_engine()
+        if engine not in labels:
+            raise HTTPException(422, f"No Engine called {engine!r}; choose one of {list(labels)}.")
+        if not setup.can_render(engine):
+            if len(labels) == 1:
+                detail = "The model weights are not installed yet; finish Setup first."
+            else:
+                detail = f"{labels[engine]} isn't set up yet; finish its part of Setup first."
+            raise HTTPException(409, detail)
+        return engine
+
     @app.post("/api/jobs", status_code=201)
     def create_job(body: SongRequest):
-        if not app.state.setup.can_render():
-            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
-        request = body.model_dump()
+        engine = engine_for(body.engine)
+        request = body.model_dump(exclude={"engine"})
         if request["seed"] is None:
             request["seed"] = random.randrange(SEED_LIMIT)
-        job = app.state.store.create_job(request)
+        job = app.state.store.create_job(request, engine=engine)
         app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
         return app.state.runner.job(job["id"])
@@ -230,6 +267,7 @@ def create_app(
         only while the job runs."""
         if not app.state.setup.usable(COVERS):
             raise HTTPException(409, "Covers aren't set up yet; finish the Covers part of Setup.")
+        engine = engine_for(covers_engine)
         if not rights_confirmed:
             raise HTTPException(422, "Confirm you have the rights to this recording.")
         if steps not in (8, 32):
@@ -245,7 +283,7 @@ def create_app(
                 raise HTTPException(422, "That file is empty.")
             request = _cover_request(style, lyrics, mode, seed, precision, steps, audio.filename)
             request["title"] = _name(title)
-            job = app.state.store.create_job(request, kind="cover")
+            job = app.state.store.create_job(request, kind="cover", engine=engine)
             path = uploads / f"{job['id']}{suffix}"
             staged.replace(path)
         finally:
@@ -258,12 +296,11 @@ def create_app(
     @app.post("/api/scores", status_code=201)
     def create_score(body: ScoreRequest):
         """Queue a Score-only run: planning alone, no audio."""
-        if not app.state.setup.can_render():
-            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
-        request = {**body.model_dump(), "abc": None}
+        engine = engine_for(body.engine)
+        request = {**body.model_dump(exclude={"engine"}), "abc": None}
         if request["seed"] is None:
             request["seed"] = random.randrange(SEED_LIMIT)
-        job = app.state.store.create_job(request, kind="score")
+        job = app.state.store.create_job(request, kind="score", engine=engine)
         app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
         return app.state.runner.job(job["id"])
@@ -324,11 +361,10 @@ def create_app(
     @app.post("/api/groups", status_code=201)
     def create_group(body: GroupRequest):
         """Queue Variations: `count` jobs of one Song request that differ only in seed."""
-        if not app.state.setup.can_render():
-            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
-        base = body.model_dump(exclude={"count"})
+        engine = engine_for(body.engine)
+        base = body.model_dump(exclude={"count", "engine"})
         requests = [{**base, "seed": seed} for seed in variation_seeds(body.seed, body.count)]
-        jobs = app.state.store.create_group(requests)
+        jobs = app.state.store.create_group(requests, engine=engine)
         for job in jobs:
             app.state.runner.publish(job["id"])
         app.state.runner.dispatch()
@@ -435,9 +471,11 @@ def create_app(
 
     @app.post("/api/songs/{song_id}/finalize", status_code=201)
     def finalize_song(song_id: int):
-        """Queue this Draft's Final: its saved Semantic tokens and noise at 32 Synthesis steps."""
-        if not app.state.setup.can_render():
-            raise HTTPException(409, "The model weights are not installed yet; finish Setup first.")
+        """Queue this Draft's Final: its saved Semantic tokens and noise at 32 Synthesis steps, on
+        the Engine that made the Draft."""
+        song = app.state.store.get_song(song_id)
+        if song is not None:
+            engine_for(app.state.runner.engine_of(song))
         job, refused = app.state.runner.finalize(song_id)
         if job is None:
             raise HTTPException(404 if refused == "no such song" else 409, refused)

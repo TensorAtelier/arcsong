@@ -1,3 +1,4 @@
+import { ENGINE_LABELS } from "./engine";
 import { useEffect, useState } from "react";
 import { api, FINAL_STEPS, type Job, type Live, type Song, type Stage } from "./api";
 import { formatSeconds } from "./format";
@@ -183,6 +184,7 @@ function describeJob(job: Job, groups: Map<number, number[]>): string {
     parts.push(job.request.steps < FINAL_STEPS ? "quick draft" : "full quality");
   }
   if (job.request.abc) parts.push("from an edited Score");
+  if (job.engine && ENGINE_LABELS[job.engine]) parts.push(`on ${ENGINE_LABELS[job.engine]}`);
   return parts.join(" · ");
 }
 
@@ -247,10 +249,10 @@ function Failure({ job, onChanged, onDismiss }: { job: Job; onChanged: (job: Job
     try {
       onChanged(
         job.kind === "score"
-          ? await api.createScore({ ...job.request, title: job.title })
+          ? await api.createScore({ ...job.request, title: job.title, engine: job.engine ?? undefined })
           : job.source_song_id !== null
             ? await api.finalize(job.source_song_id)
-            : await api.create({ ...job.request, title: job.title }),
+            : await api.create({ ...job.request, title: job.title, engine: job.engine ?? undefined }),
       );
       onDismiss();
     } catch (e) {

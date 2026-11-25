@@ -1,6 +1,7 @@
-"""The job runner inside the server: feeds queued jobs to the worker one at a time, turns the
-worker's events into database updates and live progress, broadcasts job changes, and replaces
-the worker process when it dies."""
+"""The job runner inside the server: feeds queued jobs to the workers, turns their events into
+database updates and live progress, broadcasts job changes, and replaces a worker process when
+it dies. Each Engine (the Mac, Modal, RunPod) is a lane with its own worker that runs one job at
+a time, so a song on RunPod never waits behind one on the Mac."""
 
 from __future__ import annotations
 
@@ -53,36 +54,56 @@ class Broadcaster:
                 q.put(message)
 
 
+class Lane:
+    """One Engine: its worker process, and the job that worker is running."""
+
+    def __init__(self, name: str, spec: EngineSpec, default: bool):
+        self.name, self.spec = name, spec
+        # The default lane also runs jobs that name no Engine, and starts its worker at once.
+        self.default = default
+        self.process = None
+        self.jobs = self.events = self.cancel = None
+        self.running: int | None = None
+        self.live: dict[str, Any] = {}
+        self.cancel_asked_at: float | None = None
+        self.worker_ready = False
+        self.load_failed_at: float | None = None
+        self.thread: threading.Thread | None = None
+
+
+DEFAULT_LANE = "engine"
+
+
 class JobRunner:
     def __init__(
         self,
         store: Store,
         songs_dir: Path,
-        spec: EngineSpec,
+        engines: EngineSpec | dict[str, EngineSpec],
         cancel_grace: float = CANCEL_GRACE_SECONDS,
         load_retry: float = LOAD_RETRY_SECONDS,
     ):
+        """`engines`: one spec, or one per Engine id, the first being the default."""
         self.store = store
         self.songs_dir = songs_dir
         # A cover's transcription exports (MIDI, LAB, result.json) live beside the songs.
         self.covers_dir = songs_dir.parent / "covers"
         self.uploads_dir = songs_dir.parent / "uploads"
-        self.spec = spec
+        if isinstance(engines, EngineSpec):
+            engines = {DEFAULT_LANE: engines}
+        self.lanes = {
+            name: Lane(name, spec, i == 0) for i, (name, spec) in enumerate(engines.items())
+        }
+        self.default_engine = next(iter(self.lanes))
         self.cancel_grace = cancel_grace
         self.load_retry = load_retry
         self.broadcaster = Broadcaster()
         self._ctx = mp.get_context("spawn")
         self._lock = threading.RLock()
-        self._running: int | None = None
-        self._live: dict[str, Any] = {}
-        self._cancel_asked_at: float | None = None
         self._stopping = threading.Event()
         # Microseconds since the epoch, so snapshots from a restarted server still outrank
         # snapshots a page kept from the previous one.
         self._seq = itertools.count(time.time_ns() // 1000)
-        self._process = None
-        self._worker_ready = False
-        self._load_failed_at: float | None = None
         self.worker_starts = 0
 
     # --- lifecycle -------------------------------------------------------------------------
@@ -92,52 +113,59 @@ class JobRunner:
         for job_id in self.store.recover():
             self._discard_partial_take(job_id)
             self._discard_upload(job_id)
-        self._start_worker()
-        self._thread = threading.Thread(target=self._pump, name="arcsong-events", daemon=True)
-        self._thread.start()
+        for lane in self.lanes.values():
+            if lane.default:
+                self._start_worker(lane)
+            lane.thread = threading.Thread(
+                target=self._pump, args=(lane,), name=f"arcsong-events-{lane.name}", daemon=True
+            )
+            lane.thread.start()
         self.dispatch()
 
     def stop(self) -> None:
         self._stopping.set()
-        self._thread.join(timeout=2)
+        for lane in self.lanes.values():
+            if lane.thread is not None:
+                lane.thread.join(timeout=2)
         with self._lock:
-            process = self._process
-            if process is not None:
-                if self._running is not None:
-                    self._cancel.value = self._running
-                self._jobs.put(None)
-        if process is None:
-            return
-        process.join(timeout=STOP_WAIT_SECONDS)
-        if process.is_alive():
-            process.kill()
-            process.join()
-        # A Take that was already saving when we asked it to stop still counts.
-        while True:
-            try:
-                self._handle(self._events.get(timeout=0.2))
-            except queue.Empty:
-                break
+            stopping = [lane for lane in self.lanes.values() if lane.process is not None]
+            for lane in stopping:
+                if lane.running is not None:
+                    lane.cancel.value = lane.running
+                lane.jobs.put(None)
+        for lane in stopping:
+            lane.process.join(timeout=STOP_WAIT_SECONDS)
+            if lane.process.is_alive():
+                lane.process.kill()
+                lane.process.join()
+            # A Take that was already saving when we asked it to stop still counts.
+            while True:
+                try:
+                    self._handle(lane, lane.events.get(timeout=0.2))
+                except queue.Empty:
+                    break
 
-    def _start_worker(self) -> None:
+    def _start_worker(self, lane: Lane) -> None:
         with self._lock:
-            self._jobs = self._ctx.Queue()
-            self._events = self._ctx.Queue()
-            self._cancel = self._ctx.Value("q", NO_JOB)
-            self._process = self._ctx.Process(
+            lane.jobs = self._ctx.Queue()
+            lane.events = self._ctx.Queue()
+            lane.cancel = self._ctx.Value("q", NO_JOB)
+            lane.process = self._ctx.Process(
                 target=worker_main,
-                args=(self.spec, self._jobs, self._events, self._cancel, os.getpid()),
+                args=(lane.spec, lane.jobs, lane.events, lane.cancel, os.getpid()),
                 daemon=True,
             )
-            self._worker_ready = False
-            self._process.start()
+            lane.worker_ready = False
+            lane.process.start()
             self.worker_starts += 1
 
-    def _replace_worker(self, outcome: str, error: str | None, restart: bool = True) -> None:
+    def _replace_worker(
+        self, lane: Lane, outcome: str, error: str | None, restart: bool = True
+    ) -> None:
         """The worker died or had to be killed: close out its job, and start a fresh worker
         now (`restart`) or leave it to the next dispatch (after a failed model load)."""
         with self._lock:
-            process, job_id = self._process, self._running
+            process, job_id = lane.process, lane.running
             if process is not None:
                 if process.is_alive():
                     process.kill()
@@ -146,22 +174,23 @@ class JobRunner:
                 self.store.mark_finished(job_id, outcome, error)
                 self._discard_partial_take(job_id)
                 self._discard_upload(job_id)
-                self._running, self._live, self._cancel_asked_at = None, {}, None
+                lane.running, lane.live, lane.cancel_asked_at = None, {}, None
             if restart:
-                self._start_worker()
+                self._start_worker(lane)
             else:
-                self._process = None
+                lane.process = None
         if job_id is not None:
             self.publish(job_id)
         self.dispatch()
 
-    def _load_failed(self, error: str) -> None:
+    def _load_failed(self, lane: Lane, error: str) -> None:
         """The model could not load: fail the job waiting for it with the real reason, and
         don't start another worker until a job needs one and the retry delay has passed."""
         reason = error.strip().splitlines()[-1] if error.strip() else "unknown error"
         with self._lock:
-            self._load_failed_at = time.monotonic()
-        self._replace_worker("failed", f"The model could not load: {reason}\n\n{error}", False)
+            lane.load_failed_at = time.monotonic()
+        message = f"The model could not load: {reason}\n\n{error}"
+        self._replace_worker(lane, "failed", message, False)
 
     # --- jobs ------------------------------------------------------------------------------
 
@@ -172,32 +201,47 @@ class JobRunner:
         with self._lock:
             job = self.store.get_job(job_id)
             if job is not None:
-                job["live"] = dict(self._live) if job_id == self._running else None
+                job["live"] = self._live().get(job_id)
                 job["seq"] = next(self._seq)
         return job
 
     def jobs(self) -> list[dict[str, Any]]:
         with self._lock:
-            running, live = self._running, dict(self._live)
-            seq = next(self._seq)
+            live, seq = self._live(), next(self._seq)
             listed = self.store.list_jobs()
-        return [{**j, "live": live if j["id"] == running else None, "seq": seq} for j in listed]
+        return [{**j, "live": live.get(j["id"]), "seq": seq} for j in listed]
 
     def group(self, group_id: int) -> list[dict[str, Any]]:
         """A group's jobs, oldest first, with live progress like `jobs()`."""
         with self._lock:
-            running, live = self._running, dict(self._live)
-            seq = next(self._seq)
+            live, seq = self._live(), next(self._seq)
             listed = self.store.list_group(group_id)
-        return [{**j, "live": live if j["id"] == running else None, "seq": seq} for j in listed]
+        return [{**j, "live": live.get(j["id"]), "seq": seq} for j in listed]
+
+    def _live(self) -> dict[int, dict[str, Any]]:
+        """Each running job's live progress, by job id."""
+        return {
+            lane.running: dict(lane.live)
+            for lane in self.lanes.values()
+            if lane.running is not None
+        }
+
+    def engine_of(self, job: dict[str, Any]) -> str:
+        """The Engine a job or song runs on; one from before jobs had an Engine, the default."""
+        return job.get("engine") or self.default_engine
 
     def dispatch(self) -> None:
-        """Send the oldest queued job to the worker if it is idle, starting a worker if there is
-        none (unless the last model load failed too recently)."""
+        """Send each idle lane its oldest queued job."""
+        for lane in self.lanes.values():
+            self._dispatch(lane)
+
+    def _dispatch(self, lane: Lane) -> None:
+        """Send the lane's oldest queued job to its worker if it is idle, starting a worker if
+        there is none (unless the last model load failed too recently)."""
         with self._lock:
-            if self._running is not None or self._stopping.is_set():
+            if lane.running is not None or self._stopping.is_set():
                 return
-            job = self.store.next_queued()
+            job = self.store.next_queued(lane.name, lane.default)
             if job is None:
                 return
             source_dir = None
@@ -206,20 +250,20 @@ class JobRunner:
                 if source is None:
                     self.store.mark_finished(job["id"], "failed", "its Draft was deleted")
                     self.publish(job["id"])
-                    self.dispatch()  # the next queued job, if any
+                    self._dispatch(lane)  # the next queued job, if any
                     return
                 source_dir = source["dir"]
-            if self._process is None:
-                failed_at = self._load_failed_at
+            if lane.process is None:
+                failed_at = lane.load_failed_at
                 if failed_at is not None and time.monotonic() - failed_at < self.load_retry:
                     return  # the pump retries dispatch once the delay has passed
-                self._start_worker()
-            self._running, self._live = job["id"], {"stage": None}
+                self._start_worker(lane)
+            lane.running, lane.live = job["id"], {"stage": None}
             self.store.mark_running(job["id"])
             out_dir = self.songs_dir / str(job["id"])
             if job["kind"] == "cover":
                 out_dir = self.covers_dir / str(job["id"])
-            self._jobs.put(
+            lane.jobs.put(
                 {
                     "job_id": job["id"],
                     "request": job["request"],
@@ -241,8 +285,10 @@ class JobRunner:
                 self.store.mark_finished(job_id, "cancelled")
                 self._discard_upload(job_id)
             else:
-                self._cancel.value = job_id
-                self._cancel_asked_at = self._cancel_asked_at or time.monotonic()
+                for lane in self.lanes.values():
+                    if lane.running == job_id:
+                        lane.cancel.value = job_id
+                        lane.cancel_asked_at = lane.cancel_asked_at or time.monotonic()
         self.publish(job_id)
         return True
 
@@ -273,7 +319,9 @@ class JobRunner:
                     return None, f"this Draft already has a Final (job #{final['id']})"
             # The Draft's current name, so a queued Final already shows a rename.
             request = {**song["request"], "steps": FINAL_STEPS, "title": song["title"]}
-            job = self.store.create_job(request, source_song_id=song_id)
+            # A Final continues the Draft's own saved tokens, so it runs where the Draft did.
+            engine = self.engine_of(song)
+            job = self.store.create_job(request, source_song_id=song_id, engine=engine)
         self.publish(job["id"])
         self.dispatch()
         return self.job(job["id"]), None
@@ -308,61 +356,66 @@ class JobRunner:
 
     # --- worker events ---------------------------------------------------------------------
 
-    def _pump(self) -> None:
+    def _pump(self, lane: Lane) -> None:
         while not self._stopping.is_set():
             with self._lock:
-                events, process = self._events, self._process
-            try:
-                event = events.get(timeout=0.2)
-            except queue.Empty:
-                event = None
+                events, process = lane.events, lane.process
+            event = None
+            if events is None:
+                time.sleep(0.2)  # this lane's worker hasn't been needed yet
+            else:
+                try:
+                    event = events.get(timeout=0.2)
+                except queue.Empty:
+                    pass
             if event is not None:
-                self._handle(event)
+                self._handle(lane, event)
             # Checked on every pass, not only when idle, so a job that ignores cancel but keeps
             # sending progress still gets killed after the grace period.
-            self._watch(process)
+            self._watch(lane, process)
 
-    def _watch(self, process) -> None:
+    def _watch(self, lane: Lane, process) -> None:
         if self._stopping.is_set():
             return
         if process is None:
-            self.dispatch()  # a load failure is waiting out its retry delay
+            self._dispatch(lane)  # a load failure is waiting out its retry delay
             return
         with self._lock:
-            if process is not self._process:
+            if process is not lane.process:
                 return
-            asked, ready = self._cancel_asked_at, self._worker_ready
+            asked, ready = lane.cancel_asked_at, lane.worker_ready
         if not process.is_alive():
             code = process.exitcode
             if not ready:
-                self._load_failed(f"the worker process exited with code {code} while loading")
+                error = f"the worker process exited with code {code} while loading"
+                self._load_failed(lane, error)
             else:
                 message = f"the worker process exited unexpectedly (code {code})"
-                self._replace_worker("failed", message)
+                self._replace_worker(lane, "failed", message)
         elif asked is not None and time.monotonic() - asked > self.cancel_grace:
-            self._replace_worker("cancelled", None)
+            self._replace_worker(lane, "cancelled", None)
 
-    def _handle(self, event: dict[str, Any]) -> None:
+    def _handle(self, lane: Lane, event: dict[str, Any]) -> None:
         kind = event["type"]
         job_id = event.get("job_id")
         if kind == "ready":
             with self._lock:
-                self._worker_ready, self._load_failed_at = True, None
+                lane.worker_ready, lane.load_failed_at = True, None
             return
         if kind == "load_failed":
             if not self._stopping.is_set():
-                self._load_failed(event["error"])
+                self._load_failed(lane, event["error"])
             return
         with self._lock:
-            current = job_id is not None and job_id == self._running
+            current = job_id is not None and job_id == lane.running
         if kind in ("stage", "progress"):
             if current:
                 with self._lock:
                     if kind == "stage":
-                        self._live = {"stage": event["stage"]}
+                        lane.live = {"stage": event["stage"]}
                     else:
                         fields = {k: v for k, v in event.items() if k not in ("type", "job_id")}
-                        self._live = {**self._live, **fields}
+                        lane.live = {**lane.live, **fields}
                 self.publish(job_id)
             return
         if kind not in ("done", "failed", "cancelled") or not current:
@@ -378,11 +431,11 @@ class JobRunner:
             self._discard_partial_take(job_id)
             self._discard_upload(job_id)
         with self._lock:
-            if self._running == job_id:
-                self._running, self._live, self._cancel_asked_at = None, {}, None
-                self._cancel.value = NO_JOB
+            if lane.running == job_id:
+                lane.running, lane.live, lane.cancel_asked_at = None, {}, None
+                lane.cancel.value = NO_JOB
         self.publish(job_id)
-        self.dispatch()
+        self._dispatch(lane)
 
     def _discard_staged_uploads(self) -> None:
         """Recordings a previous server was still receiving when it died belong to no job."""

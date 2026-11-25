@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import os
+import platform
+import sys
 
 import uvicorn
 
@@ -27,7 +29,14 @@ def main(argv: list[str] | None = None) -> None:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8840)
     serve.add_argument("--data", help="Data directory (default: $ARCSONG_DATA or user data dir)")
-    serve.add_argument("--engine", choices=sorted(ENGINES), default="mlx")
+    serve.add_argument(
+        "--engine",
+        choices=sorted(ENGINES),
+        help=(
+            "Render only with this Engine (default: offer this Mac, when it is an Apple Silicon "
+            "Mac, plus Modal and RunPod, and choose per song)"
+        ),
+    )
     serve.add_argument(
         "--mlx-models",
         help="mlx-Yue weights (default: $ARCSONG_MLX_MODELS or <data>/models)",
@@ -64,7 +73,16 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     data = data_dir(args.data)
-    if args.engine == "mlx":
+    if args.engine is None:
+        engines, covers = _all_engines(data, args.mlx_models, allow_battery)
+        app = create_app(
+            engines,
+            data,
+            covers=covers,
+            covers_engine=engines[0].id,
+            allow_battery=allow_battery,
+        )
+    elif args.engine == "mlx":
         directory = models_dir(data, args.mlx_models)
         models = MlxYueModels(directory)
         covers = TranscriptionModels(directory)
@@ -92,15 +110,61 @@ def main(argv: list[str] | None = None) -> None:
         )
         # Long enough to hear and compare Variations in the page.
         kwargs = {"stage_seconds": 1.0, "audio_seconds": 20.0}
-    app = create_app(
-        EngineSpec(ENGINES[args.engine], kwargs),
-        data,
-        models=models,
-        covers=covers,
-        allow_battery=allow_battery,
-    )
+    if args.engine is not None:
+        app = create_app(
+            EngineSpec(ENGINES[args.engine], kwargs),
+            data,
+            models=models,
+            covers=covers,
+            allow_battery=allow_battery,
+        )
     config = uvicorn.Config(app, host=args.host, port=args.port, timeout_graceful_shutdown=5)
     Server(config, app.state.shutting_down).run()
+
+
+def apple_silicon() -> bool:
+    return sys.platform == "darwin" and platform.machine() == "arm64"
+
+
+def _all_engines(data, mlx_models: str | None, allow_battery: bool):
+    """Every Engine this machine can offer, and the covers weights: the Mac first (the default)
+    when it is an Apple Silicon Mac, then Modal and RunPod."""
+    from arcsong.app import Engine
+    from arcsong.models import (
+        FakeModels,
+        MlxYueModels,
+        ModalModels,
+        RunPodModels,
+        TranscriptionModels,
+        check,
+        models_dir,
+    )
+
+    engines = []
+    if apple_silicon():
+        directory = models_dir(data, mlx_models)
+        kwargs = {"models": str(directory), "require_ac": not allow_battery}
+        engines.append(
+            Engine(
+                "mlx",
+                "This Mac",
+                EngineSpec(ENGINES["mlx"], kwargs),
+                MlxYueModels(directory),
+                "Renders here, free and offline once the weights are downloaded.",
+            )
+        )
+        covers = TranscriptionModels(directory)
+    else:
+        advice = check("runtime", "Covers", "fail", "Covers need an Apple Silicon Mac.")
+        covers = FakeModels(data / "covers-models", checks=[advice])
+    cloud = "Renders on your own {} account: no download here, billed per GPU second there."
+    for engine_id, label, models in (
+        ("modal", "Modal", ModalModels(data / "modal")),
+        ("runpod", "RunPod", RunPodModels(data / "runpod")),
+    ):
+        spec = EngineSpec(ENGINES[engine_id], {})
+        engines.append(Engine(engine_id, label, spec, models, cloud.format(label)))
+    return engines, covers
 
 
 class Server(uvicorn.Server):

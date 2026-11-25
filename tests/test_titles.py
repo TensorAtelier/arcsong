@@ -135,7 +135,7 @@ def test_a_v4_database_gains_titles_with_its_rows_intact(tmp_path):
     store.close()
 
     stored = sqlite3.connect(path).execute("SELECT title FROM songs").fetchone()[0]
-    assert version == SCHEMA_VERSION == 6
+    assert version == SCHEMA_VERSION == 7
     assert song["starred"] is True and song["title"] == "Soft morning light"
     assert song["title_set"] is False
     assert stored == "Soft morning light"  # backfilled: v6 stores every song's name

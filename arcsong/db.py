@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     source_song_id INTEGER,          -- a Final: the Draft it was made from
     kind TEXT NOT NULL DEFAULT 'take',  -- take | score (planning only) | cover (transcription)
     score TEXT,                      -- a Score job's ABC
-    source_audio TEXT                -- a cover job's upload, deleted when the job ends
+    source_audio TEXT,               -- a cover job's upload, deleted when the job ends
+    engine TEXT                      -- mlx | modal | runpod; NULL: the default Engine
 );
 CREATE TABLE IF NOT EXISTS songs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,6 +63,7 @@ MIGRATE_3_TO_4 = ["ALTER TABLE jobs ADD COLUMN source_audio TEXT"]
 
 
 MIGRATE_4_TO_5 = ["ALTER TABLE songs ADD COLUMN title TEXT"]
+MIGRATE_6_TO_7 = ["ALTER TABLE jobs ADD COLUMN engine TEXT"]
 # 5 → 6 has no DDL: every song stores its name (`_backfill_names`), where NULL used to mean "the
 # default", so a name never changes under a song if the default rule does.
 
@@ -114,6 +116,10 @@ class Store:
                 version = 5
             if 0 < version < 6:
                 self._backfill_names()
+                version = 6
+            if 0 < version < 7:
+                columns = {r["name"] for r in self._conn.execute("PRAGMA table_info(jobs)")}
+                self._migrate([] if "engine" in columns else MIGRATE_6_TO_7, 7)
             with self._conn:
                 self._conn.executescript(SCHEMA)
                 self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
@@ -158,12 +164,13 @@ class Store:
         source_song_id: int | None = None,
         kind: str = "take",
         source_audio: str | None = None,
+        engine: str | None = None,
     ) -> dict[str, Any]:
         with self._lock, self._conn:
             cur = self._conn.execute(
                 "INSERT INTO jobs (status, request_json, created_at, source_song_id, kind, "
-                "source_audio) VALUES ('queued', ?, ?, ?, ?, ?)",
-                (json.dumps(request), time.time(), source_song_id, kind, source_audio),
+                "source_audio, engine) VALUES ('queued', ?, ?, ?, ?, ?, ?)",
+                (json.dumps(request), time.time(), source_song_id, kind, source_audio, engine),
             )
             job_id = cur.lastrowid
         return self.get_job(job_id)
@@ -179,14 +186,17 @@ class Store:
         """A Score job is done when its ABC is stored; it never makes a song."""
         self._update(job_id, "status = 'done', finished_at = ?, score = ?", time.time(), abc)
 
-    def create_group(self, requests: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def create_group(
+        self, requests: list[dict[str, Any]], engine: str | None = None
+    ) -> list[dict[str, Any]]:
         """Queue Variations in one transaction; every member's `group_id` is the first job's id."""
         now = time.time()
         with self._lock, self._conn:
             ids = [
                 self._conn.execute(
-                    "INSERT INTO jobs (status, request_json, created_at) VALUES ('queued', ?, ?)",
-                    (json.dumps(request), now),
+                    "INSERT INTO jobs (status, request_json, created_at, engine) "
+                    "VALUES ('queued', ?, ?, ?)",
+                    (json.dumps(request), now, engine),
                 ).lastrowid
                 for request in requests
             ]
@@ -242,11 +252,15 @@ class Store:
             rows = self._conn.execute(f"{JOB_SELECT} ORDER BY j.id DESC").fetchall()
         return [_job(r) for r in rows]
 
-    def next_queued(self) -> dict[str, Any] | None:
+    def next_queued(self, engine: str | None = None, default: bool = True) -> dict[str, Any] | None:
+        """The oldest queued job for `engine` (any engine when None). `default`: this engine
+        also takes jobs that name none (queued before jobs had an engine)."""
+        query, values = "SELECT id FROM jobs WHERE status = 'queued'", ()
+        if engine is not None:
+            query += " AND (engine = ? OR (engine IS NULL AND ?))"
+            values = (engine, default)
         with self._lock:
-            row = self._conn.execute(
-                "SELECT id FROM jobs WHERE status = 'queued' ORDER BY id LIMIT 1"
-            ).fetchone()
+            row = self._conn.execute(f"{query} ORDER BY id LIMIT 1", values).fetchone()
         return self.get_job(row["id"]) if row else None
 
     def mark_running(self, job_id: int) -> None:
@@ -339,7 +353,7 @@ JOB_SELECT = (
     "LEFT JOIN songs s ON s.id = j.song_id"
 )
 SONG_SELECT = (
-    "SELECT s.*, j.request_json, j.group_id, j.source_song_id "
+    "SELECT s.*, j.request_json, j.group_id, j.source_song_id, j.engine "
     "FROM songs s JOIN jobs j ON j.id = s.job_id"
 )
 

@@ -508,3 +508,8 @@ button.rename { font-weight: 400; font-size: 0.8rem; opacity: 0; transition: opa
 
 .instrumental-note { margin: 0; font-size: 13px; color: var(--muted); padding: 8px 12px; border-left: 2px solid var(--accent); background: var(--field); border-radius: 0 8px 8px 0; }
 .instrumental-note strong { color: var(--accent-ink); }
+
+/* Create: where the song renders, when there is more than one Engine. */
+.engine-choice select {
+  max-width: 16rem;
+}
