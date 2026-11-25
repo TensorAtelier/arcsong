@@ -106,7 +106,7 @@ or L40S when no L4 is free; the L40S costs more per second).
 ```sh
 uv tool install --with-executables-from modal 'arcsong[modal] @ git+https://github.com/TensorAtelier/arcsong'
 modal setup                     # Modal's own login, once; Arcsong never sees your token
-arcsong serve --engine modal
+arcsong serve
 ```
 
 On the Setup page, **Set up on Modal** deploys a small app called `arcsong` into your Modal
@@ -120,7 +120,7 @@ that, Create, Sketch, Compare, Finalize and the Score page work as on the Mac.
   Modal bills by the second. Stopping Arcsong mid-song leaves that song running on Modal until
   it finishes; cancel it in the page instead.
 - **Not on Modal yet:** covers (they need the Mac engine), and the 8-bit/bf16 choice (Modal
-  renders bf16). A Draft made on the Mac can't be finalized on Modal, or the other way round.
+  renders bf16).
 - To remove it: `modal app stop arcsong` and `modal volume delete arcsong-yue2-weights`, then
   delete the `modal` folder in Arcsong's data directory so Setup offers to set it up again.
 
@@ -132,7 +132,7 @@ a 24 GB GPU (an RTX 4090, L4, A5000 or 3090, whichever has stock), billed to you
 ```sh
 uv tool install --with-executables-from runpod 'arcsong[runpod] @ git+https://github.com/TensorAtelier/arcsong'
 rp login                        # RunPod's own login, once (or export RUNPOD_API_KEY)
-arcsong serve --engine runpod
+arcsong serve
 ```
 
 On the Setup page, **Set up on RunPod** deploys a Serverless endpoint called `render` (app
@@ -146,8 +146,16 @@ model weights on the GPU's host for each worker, so there is no volume to pay fo
   nothing bills while it's stopped.
 - **Your key on RunPod:** RunPod's SDK copies your API key into the endpoint's settings on your
   own account (it does that for every app it deploys). Arcsong itself stores no key.
-- **Not on RunPod yet:** covers, and the 8-bit/bf16 choice (it renders bf16). A Draft made on the
-  Mac can't be finalized on RunPod.
+- **Not on RunPod yet:** covers, and the 8-bit/bf16 choice (it renders bf16).
+
+## Choose where each song renders
+
+`arcsong serve` offers every place it can render: this Mac (on an Apple Silicon Mac), Modal and
+RunPod. Setup has a section for each; set up any or all of them. Create then has a **Render on**
+choice beside its buttons, remembered in your browser, and each place renders its own songs at
+the same time as the others, so a RunPod song never waits behind one on the Mac. A Final always
+renders where its Draft did (it continues the Draft's own saved tokens), and covers render on the
+Mac. To use one place only, start with `arcsong serve --engine mlx|modal|runpod`.
 - To remove it: `rp flash app delete arcsong --yes`, then delete the `runpod` folder in Arcsong's
   data directory.
 

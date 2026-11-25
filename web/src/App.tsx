@@ -4,6 +4,7 @@ import CompareView from "./CompareView";
 import CoverForm from "./CoverForm";
 import ScoreView from "./ScoreView";
 import CreateForm from "./CreateForm";
+import { reconcileEngine } from "./engine";
 import LibraryView from "./LibraryView";
 import { player, usePlayer } from "./player";
 import { GearIcon } from "./icons";
@@ -30,6 +31,20 @@ function viewFromHash(): View {
 }
 
 /** Covers need their own weights and ffmpeg; the server decides, so the two never disagree. */
+/** The header's line: where songs are made. */
+function tagline(setup: Setup | null): string {
+  const engines = setup?.engines ?? [];
+  if (engines.length > 1) {
+    const clouds = engines.filter((e) => e.id !== "mlx").map((e) => e.label).join(" or ");
+    return engines.some((e) => e.id === "mlx")
+      ? `Songs from your words, made on this Mac or your own ${clouds} account`
+      : `Songs from your words, made on your own ${clouds} account`;
+  }
+  return setup?.weights.remote
+    ? `Songs from your words, made on your own ${setup.weights.remote} account`
+    : "Songs from your words, made privately on this Mac";
+}
+
 function coversPart(setup: Setup | null) {
   return setup?.parts?.find((p) => p.id === "covers");
 }
@@ -81,6 +96,7 @@ export default function App() {
   // REST responses and SSE messages can arrive out of order; keep the newest snapshot.
   const updateSetup = useCallback((next: Setup) => {
     setSetup((current) => (current && current.seq > next.seq ? current : next));
+    reconcileEngine(next);
     if (!routedToSetup.current) {
       routedToSetup.current = true;
       const hash = window.location.hash;
@@ -185,9 +201,7 @@ export default function App() {
         <div className="brand">
           <h1>Arcsong</h1>
           <p>
-            {setup?.weights.remote
-              ? `Songs from your words, made on your own ${setup.weights.remote} account`
-              : "Songs from your words, made privately on this Mac"}
+            {tagline(setup)}
           </p>
         </div>
         <div className="header-right">
@@ -236,6 +250,7 @@ export default function App() {
               initial={draft?.request}
               onCreated={upsert}
               canRender={setup?.can_render ?? true}
+              setup={setup}
               cover={
                 <CoverForm
                   onCreated={upsert}

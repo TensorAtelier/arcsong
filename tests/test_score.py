@@ -196,9 +196,9 @@ def test_a_v1_database_migrates_all_the_way_to_the_current_schema(tmp_path):
     version = store._conn.execute("PRAGMA user_version").fetchone()[0]
     store.close()
 
-    assert version == SCHEMA_VERSION == 6
+    assert version == SCHEMA_VERSION == 7
     assert job["kind"] == "take" and job["score"] is None
-    assert job["source_audio"] is None
+    assert job["source_audio"] is None and job["engine"] is None
 
 
 # --- Review fixes -----------------------------------------------------------------------------

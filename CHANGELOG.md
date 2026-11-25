@@ -3,6 +3,13 @@
 All notable changes to arcsong. Versions follow [semantic versioning](https://semver.org);
 while the project is at 0.x, minor versions may change behaviour.
 
+## Unreleased
+
+- **Choose where each song renders:** `arcsong serve` now offers this Mac, Modal and RunPod
+  together. Setup has a section for each, and Create a **Render on** choice. Each place renders
+  its own queue at the same time as the others; a Final renders where its Draft did. `--engine`
+  still limits Arcsong to one place.
+
 ## 0.6.0 — 2026-11-11
 
 Render on your own RunPod account.

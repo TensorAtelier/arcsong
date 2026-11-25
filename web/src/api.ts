@@ -1,3 +1,5 @@
+import { storedEngine } from "./engine";
+
 export type Mode = "full" | "melody" | "off";
 export type Precision = "8bit" | "bf16";
 export type Status = "queued" | "running" | "done" | "failed" | "cancelled";
@@ -33,6 +35,8 @@ export interface SongRequest {
   abc?: string | null;
   /** A cover: the name of the recording it was transcribed from. */
   source_name?: string | null;
+  /** Where it renders (an Engine id from Setup); left out, the chosen or default one. */
+  engine?: string;
 }
 
 export interface ScoreReport {
@@ -88,6 +92,8 @@ export interface Job {
   group_id: number | null;
   /** A Final: the Draft song it was made from. */
   source_song_id: number | null;
+  /** The Engine it runs on (mlx, modal, runpod); null for jobs from before there was a choice. */
+  engine: string | null;
   starred: boolean | null;
   /** The song's title, or the default one from the request (first sung line). */
   title: string;
@@ -115,6 +121,7 @@ export interface Song {
   request: SongRequest & { seed: number };
   group_id: number | null;
   source_song_id: number | null;
+  engine: string | null;
   starred: boolean;
   /** The title the user gave it, else the default from the request. */
   title: string;
@@ -158,8 +165,10 @@ export interface SetupPart {
   id: "engine" | "covers" | string;
   label: string;
   summary: string;
-  /** The Song model part, which songs need. */
+  /** Songs can't be made without it (the only Engine). */
   required: boolean;
+  /** An Engine's part: this Mac, or a cloud account songs render on. */
+  engine: boolean;
   /** Installed, nothing rewriting it, and its own checks pass — the server's own verdict. */
   usable: boolean;
   /** Its checks have run at least once. */
@@ -190,7 +199,11 @@ export interface Setup {
   checking: boolean;
   /** The Song model and the optional Covers extra. */
   parts: SetupPart[];
-  /** The Song model part's weights, which most of the page cares about. */
+  /** Where songs can render, in Setup's order; the first is the default. */
+  engines: { id: string; label: string; usable: boolean }[];
+  /** The first usable Engine (else the first). */
+  default_engine: string;
+  /** The default Engine's weights. */
   weights: Weights;
   licence: {
     id: string;
@@ -200,10 +213,16 @@ export interface Setup {
     acknowledged_at: number | null;
   };
   download: Download;
-  /** Songs can be made: weights installed, no download running or failed. */
+  /** Songs can be made on at least one Engine. */
   can_render: boolean;
   /** `can_render` and the licence acknowledged. */
   ready: boolean;
+}
+
+/** A request names the Engine it was given, else the one chosen in Create (if any). */
+function withEngine<T extends { engine?: string }>(request: T): T {
+  const engine = request.engine ?? storedEngine();
+  return engine ? { ...request, engine } : request;
 }
 
 function post<T>(url: string): Promise<T> {
@@ -216,7 +235,7 @@ export const api = {
     fetch("/api/jobs", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(request),
+      body: JSON.stringify(withEngine(request)),
     }).then((r) => json<Job>(r)),
   cancel: (id: number) =>
     fetch(`/api/jobs/${id}/cancel`, { method: "POST" }).then((r) => json<Job>(r)),
@@ -230,7 +249,7 @@ export const api = {
     fetch("/api/groups", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...request, count }),
+      body: JSON.stringify({ ...withEngine(request), count }),
     }).then((r) => json<Job[]>(r)),
   group: (id: number) => fetch(`/api/groups/${id}`).then((r) => json<Job[]>(r)),
   star: (songId: number, starred: boolean) =>
@@ -265,7 +284,7 @@ export const api = {
     fetch("/api/scores", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(request),
+      body: JSON.stringify(withEngine(request)),
     }).then((r) => json<Job>(r)),
   score: (jobId: number) => fetch(`/api/scores/${jobId}`).then((r) => json<ScoreJob>(r)),
   songScore: (songId: number) =>

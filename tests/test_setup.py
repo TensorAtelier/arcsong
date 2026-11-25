@@ -34,7 +34,7 @@ def fake_setup(tmp_path, store):
     """A Setup with only the part a unit test needs."""
     from arcsong.setup import ENGINE, Part, Setup
 
-    parts = [Part(ENGINE, "Song model", FakeModels(tmp_path / "models"))]
+    parts = [Part(ENGINE, "Song model", FakeModels(tmp_path / "models"), engine=True)]
     return Setup(parts, store, lambda message: None, iter(range(9**9)).__next__)
 
 

@@ -65,15 +65,17 @@ COVERS = "covers"
 
 @dataclass
 class Part:
-    """One set of weights the Setup page manages. `engine` is needed to make songs; the rest
-    are optional extras (`covers`)."""
+    """One set of weights the Setup page manages: an Engine's (the Mac's, or a cloud account's),
+    which songs render with, or an optional extra (`covers`)."""
 
     id: str
     label: str
     models: Models
     summary: str = ""
-    # The Engine part: songs need it, and it never waits for its checks to finish.
+    # Songs can't be made without it (the only Engine, when there is just one).
     required: bool = False
+    # An Engine part: songs render with it, and it never waits for its checks to finish.
+    engine: bool = False
 
 
 class Setup:
@@ -103,9 +105,17 @@ class Setup:
         self._stopping = threading.Event()
 
     @property
+    def engines(self) -> list[Part]:
+        return [part for part in self.parts.values() if part.engine]
+
+    @property
     def models(self) -> Models:
-        """The song weights; the Engine part is what rendering needs."""
-        return self.parts[ENGINE].models
+        """The default Engine's weights."""
+        return self.engines[0].models
+
+    def default_engine(self) -> str:
+        """Where a song renders when the request names no Engine: the first usable one."""
+        return next((p.id for p in self.engines if self.usable(p.id)), self.engines[0].id)
 
     # --- snapshot --------------------------------------------------------------------------
 
@@ -115,19 +125,24 @@ class Setup:
         with self._lock:
             checking = self._checking or not self._part_checks
         parts = [self._part_snapshot(part) for part in self.parts.values()]
-        engine = next(p for p in parts if p["id"] == ENGINE)
+        engines = [p for p in parts if p["engine"]]
+        default = next((p for p in engines if p["usable"]), engines[0])
         # Memory and power only matter when this machine renders.
-        remote = engine["weights"]["remote"]
-        local_checks = [] if remote else [_ram_check(), _power_check(self.allow_battery)]
-        can_render = _part_usable(engine)
+        local = any(not p["weights"]["remote"] for p in engines)
+        local_checks = [_ram_check(), _power_check(self.allow_battery)] if local else []
+        can_render = any(p["usable"] for p in engines)
         return {
             "seq": seq,
             "checks": local_checks,
             "checking": checking,
             "parts": parts,
-            # The Engine part, also at the top level: most of the page only cares about it.
-            "weights": engine["weights"],
-            "download": engine["download"],
+            "engines": [
+                {"id": p["id"], "label": p["label"], "usable": p["usable"]} for p in engines
+            ],
+            "default_engine": default["id"],
+            # The default Engine's part, also at the top level, for pages that show only one.
+            "weights": default["weights"],
+            "download": default["download"],
             "licence": {**LICENCE, "acknowledged_at": (acknowledged or {}).get("at")},
             "can_render": can_render,
             "ready": can_render and acknowledged is not None,
@@ -147,13 +162,16 @@ class Setup:
             "label": part.label,
             "summary": part.summary,
             "required": part.required,
+            "engine": part.engine,
             "weights": weights,
             "download": download,
             "checked": checked,
             "checks": [
                 *checks,
                 _disk_check(part.models.directory, weights),
-                _weights_check(weights, download["state"], part.label),
+                _weights_check(
+                    weights, download["state"], "Song model" if part.engine else part.label
+                ),
             ],
         }
         snapshot["usable"] = _part_usable(snapshot)
@@ -168,8 +186,11 @@ class Setup:
         snapshot = self.part(part_id)
         return snapshot is not None and snapshot["usable"]
 
-    def can_render(self, *_ignored) -> bool:
-        return self.usable(ENGINE)
+    def can_render(self, engine: str | None = None) -> bool:
+        """Songs can render on `engine`, or on any Engine when None."""
+        if engine is not None:
+            return engine in self.parts and self.parts[engine].engine and self.usable(engine)
+        return any(self.usable(part.id) for part in self.engines)
 
     def publish(self) -> None:
         self._publish({"type": "setup", "setup": self.snapshot()})
@@ -356,7 +377,7 @@ def _part_usable(snapshot: dict[str, Any]) -> bool:
     pass — sizes alone can't catch a corrupt file, so a failed verification blocks too. An
     optional part also waits for its checks: covers without ffmpeg would fail in the worker,
     while the Engine part doesn't wait, since a bad runtime fails the model load anyway."""
-    if not snapshot["checked"] and not snapshot["required"]:
+    if not snapshot["checked"] and not snapshot["engine"]:
         return False
     return (
         snapshot["weights"]["installed"]

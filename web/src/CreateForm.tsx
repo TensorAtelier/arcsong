@@ -1,5 +1,6 @@
 import { type FormEvent, type ReactNode, useRef, useState } from "react";
-import { api, type Job, type Mode, type Precision, type SongRequest } from "./api";
+import { api, type Job, type Mode, type Precision, type Setup, type SongRequest } from "./api";
+import { chosenEngine, storeEngine } from "./engine";
 import { DiceIcon } from "./icons";
 import { formatEstimate, lengthEstimate, lyricsNotes } from "./lyrics";
 import { randomStyle } from "./styles";
@@ -39,11 +40,13 @@ interface Props {
   initial?: SongRequest;
   /** False until Setup has installed the model weights. */
   canRender: boolean;
+  /** Where songs can render; a choice appears when there is more than one. */
+  setup: Setup | null;
   /** The Cover tab's form. */
   cover: ReactNode;
 }
 
-export default function CreateForm({ onCreated, initial, canRender, cover }: Props) {
+export default function CreateForm({ onCreated, initial, canRender, setup, cover }: Props) {
   const [tab, setTab] = useState<Tab>("write");
   const [name, setName] = useState(initial?.title ?? "");
   const [style, setStyle] = useState(initial?.style ?? "");
@@ -53,6 +56,11 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
   const [seed, setSeed] = useState(initial?.seed != null ? String(initial.seed) : "");
   const [precision, setPrecision] = useState<Precision>(initial?.precision ?? "8bit");
   const [takes, setTakes] = useState(4);
+  const [picked, setPicked] = useState<string | undefined>(undefined);
+  const engines = setup?.engines ?? [];
+  // The pick made here, while it is still set up; else the remembered or default one.
+  const engine = engines.find((e) => e.id === picked && e.usable)?.id ?? chosenEngine(setup);
+  const local = engine === undefined || engine === "mlx";
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lyricsBox = useRef<HTMLTextAreaElement>(null);
@@ -85,7 +93,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
     const count = kind === "sketch" ? takes : 1;
     void run(async () => {
       const steps = kind === "sketch" ? SKETCH_STEPS : SINGLE_STEPS;
-      const request = { title: name.trim(), style, lyrics, mode, seed: seedValue, precision, steps } as const;
+      const request = { title: name.trim(), style, lyrics, mode, seed: seedValue, precision, steps, engine } as const;
       if (count > 1) (await api.createGroup(request, count)).forEach(onCreated);
       else onCreated(await api.create(request));
     });
@@ -100,6 +108,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
       seed: seedValue,
       precision,
       steps: SINGLE_STEPS, // planning ignores it; rendering from the Score keeps this quality
+      engine,
     });
     onCreated(job);
     window.location.hash = `#/score/job/${job.id}`;
@@ -259,7 +268,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
             <summary>
               Advanced: {seed === "" ? "random seed" : `seed ${seed}`} ·{" "}
               {mode === "full" ? "melody + chords" : mode === "melody" ? "melody only" : "no Score"} ·{" "}
-              {precision === "8bit" ? "8-bit" : "bf16"}
+              {local && (precision === "8bit" ? "8-bit" : "bf16")}
               {tab === "write" && ` · sketches of ${takes}`}
             </summary>
             <div className="grid">
@@ -293,7 +302,7 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
                   {tab === "write" && <option value="off">Off (no Score)</option>}
                 </select>
               </div>
-              <div>
+              <div hidden={!local}>
                 <label htmlFor="precision">Precision</label>
                 <select id="precision" value={precision} onChange={(e) => setPrecision(e.target.value as Precision)}>
                   <option value="8bit">8-bit (faster)</option>
@@ -317,6 +326,31 @@ export default function CreateForm({ onCreated, initial, canRender, cover }: Pro
           </details>
 
           {notices}
+
+          {engines.length > 1 && (
+            <div className="field engine-choice">
+              <label htmlFor="engine">Render on</label>
+              <select
+                id="engine"
+                value={engine}
+                onChange={(e) => {
+                  setPicked(e.target.value);
+                  storeEngine(e.target.value);
+                }}
+              >
+                {engines.map((e) => (
+                  <option key={e.id} value={e.id} disabled={!e.usable}>
+                    {e.usable ? e.label : `${e.label} (not set up)`}
+                  </option>
+                ))}
+              </select>
+              {engines.some((e) => !e.usable) && (
+                <span className="hint">
+                  <a href="#/setup">Set up</a> another place to render.
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="cta">
             {tab === "plan" ? (

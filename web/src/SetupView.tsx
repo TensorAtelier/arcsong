@@ -48,9 +48,11 @@ export default function SetupView({ setup, error, onChanged }: Props) {
         </p>
       ) : (
         <p className="muted">
-          {setup.weights.remote
-            ? `Arcsong renders on your own ${setup.weights.remote} account; set it up once below.`
-            : "Arcsong needs the YuE2 model weights on this Mac before it can make songs."}
+          {setup.engines.length > 1
+            ? `Set up at least one place to make songs: ${setup.engines.map((e) => e.label).join(", ")}. Each renders the same model; you choose per song in Create.`
+            : setup.weights.remote
+              ? `Arcsong renders on your own ${setup.weights.remote} account; set it up once below.`
+              : "Arcsong needs the YuE2 model weights on this Mac before it can make songs."}
         </p>
       )}
       {actionError && (
@@ -216,7 +218,7 @@ function PartSection({ part, acknowledged, busy, checking, onAct }: PartProps) {
         <>
           <button
             type="button"
-            className={part.id === "engine" && acknowledged ? "primary" : undefined}
+            className={part.engine && acknowledged ? "primary" : undefined}
             disabled={busy || !acknowledged}
             onClick={() => void onAct(() => api.startDownload(part.id))}
           >
